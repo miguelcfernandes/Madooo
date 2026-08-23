@@ -1,8 +1,7 @@
 import { notFound } from 'next/navigation'
 import { requireDbUser } from '@/lib/auth'
-import { leagueSlug } from '@/lib/leagues'
+import { dayKey } from '@/lib/dates'
 import { matchWithSquads, type MatchTeam, type SquadEntry } from '@/lib/matches'
-import { roundNumber } from '@/lib/rounds'
 import { splitSquad } from '@/lib/squad'
 import { ScorelineCard } from '@/components/scoreline-card'
 import { SquadPanel } from '@/components/squad-panel'
@@ -88,15 +87,13 @@ export default async function MatchPage({ params }: PageProps<'/matches/[id]'>) 
   const match = await matchWithSquads(matchId, user.id)
   if (match === null) notFound()
 
-  // Back to the matchday the reader came from, not to whichever one `/fixtures`
-  // opens on by default — and to the league it belongs to, since a matchday
-  // number alone would land in whichever competition sorts first. The league
-  // name is already on the match, so this costs no query; both sides derive the
-  // slug through the same pure function, so they agree by construction.
-  const matchday = roundNumber(match.round)
-  const league = leagueSlug(match.league.name)
-  const backToFixtures =
-    matchday === null ? `/fixtures?league=${league}` : `/fixtures?league=${league}&matchday=${matchday}`
+  // Back to the day this match was played on, not to whichever day `/fixtures`
+  // opens on by default. It needs no query and no fallback: the kickoff is
+  // already on the match, and every match has one. `dayKey` is the same function
+  // the fixtures page indexes by, so the two agree by construction — and unlike
+  // the matchday it replaced, it is right even for a fixture the provider moved
+  // out of its own round's weekend.
+  const backToFixtures = `/fixtures?date=${dayKey(match.kickoff)}`
 
   const home = splitSquad(match.squadEntries, match.homeTeam.id)
   const away = splitSquad(match.squadEntries, match.awayTeam.id)

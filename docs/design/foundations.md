@@ -212,7 +212,7 @@ Content stays fluid up to `--container`.
 | — | 64px | Crest mark, square — a club profile's header, beside the 64px shirt tile |
 | — | 40px | Crest mark, square — the match page's scoreline |
 | — | 20px | Badge, crest chip |
-| — | 16×12px | League flag mark, beside a pill tab's label |
+| — | 16×12px | League flag mark, beside the name it marks |
 | — | 16px | Checkbox / radio box |
 | — | 34×18px | Switch track (14px thumb, travels 16px) |
 
@@ -234,13 +234,15 @@ The table above lists both, and this is the rule that decides between them.
 
 An **underline tab** (40px, `--text-label`) changes the *view of the screen you are already on* — which of your entries the diary shows, whether a player's profile is reading his verdicts or his notes. The selected one carries a 2px underline in `--text` and nothing else; the rest are `--text-muted` going to `--text` on hover. **The underline is under the selected tab alone — no rule spans the strip**, which is what lets the strip wrap on a narrow screen without a selected tab on the first row being detached from a rule under the last.
 
-A **pill tab** (28px, `--radius-pill`) chooses the *scope the screen is drawn for* — which league. The selected one fills with `--surface-inverse`; the rest are `--text-muted` on no fill, going to `--text` on `--surface-alt` on hover, which is the same muted-to-ink move the underline tab and the pager's arrows make.
+A **pill tab** (28px, `--radius-pill`) chooses the *scope the screen is drawn for*. The selected one fills with `--surface-inverse`; the rest are `--text-muted` on no fill, going to `--text` on `--surface-alt` on hover, which is the same muted-to-ink move the underline tab and the pager's arrows make.
+
+**Nothing draws a pill tab today.** Its one instance was the league row on `/fixtures`, and that screen is now indexed by day rather than scoped to a competition — a day pager is its only scope control, and a league is a section heading under it. The specification stays because the distinction it draws is still the one to apply, and a filter over which competitions a reader follows is the obvious next thing to ask for it.
 
 Both wrap rather than scrolling sideways, because a horizontal scroller hides its own overflow.
 
 ### A pill chooses a scope; a select narrows what is already on screen
 
-The league is a pill row on `/fixtures` and a `<select>` on `/players`, and this is why that is not two vocabularies for one idea.
+The league used to be a pill row on `/fixtures` and is still a `<select>` on `/players`, and that was not two vocabularies for one idea.
 
 A **pill** names the scope the server drew the page for. It is a fact about which page you are on, it shows every option at once, and there is nothing else beside it. A **select** sits in a **filter row** — a search box, one or two dropdowns, and any control that changes how the same list is drawn — and narrows what has already been fetched. Those controls have to read as one set, and a pill among them would claim a different rank than the things beside it.
 
@@ -339,7 +341,7 @@ So a flag answers to the club-mark rule rather than to this one, and takes the s
 3. **Its fallback is nothing at all.** A country the map does not know draws no mark and no gap, and the row is exactly what it was before flags existed. This is the clause that makes the map legal against `AGENTS.md`'s first non-negotiable: a fifth league still costs one environment variable, and its flag is an afterthought rather than part of the price.
 4. **It sits beside the name it marks, never instead of it**, and is `aria-hidden`. The accessible name is the league's name, which is already there.
 
-The files are four 4:3 SVGs in `public/flags/`, vendored from flag-icons under MIT, drawn as a `background-image` at 16×12 with a 1px inset ring in `--border`. The ring is not decoration: England is a white field, so it has no edge on `--surface`, and none on a selected pill in dark either, which is a white fill. Italy needs the same along the top and bottom of its white centre band.
+The files are four 4:3 SVGs in `public/flags/`, vendored from flag-icons under MIT, drawn as a `background-image` at 16×12 with a 1px inset ring in `--border`. The ring is not decoration: England is a white field, so it has no edge on `--surface`, and none on any pale fill. Italy needs the same along the top and bottom of its white centre band.
 
 ### GitHub's mark is a second identity mark, and the only one
 

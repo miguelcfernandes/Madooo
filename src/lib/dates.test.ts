@@ -13,7 +13,19 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { dateRange, entryDate, groupByMonth, kickoffDate, kickoffTime, monthLabel } from './dates'
+import {
+  dateRange,
+  dayKey,
+  dayLabel,
+  dayRange,
+  entryDate,
+  groupByMonth,
+  isDayKey,
+  kickoffDate,
+  kickoffTime,
+  monthLabel,
+  parseDay,
+} from './dates'
 import { roundNumber } from './rounds'
 import type { ApiFootballEnvelope, RawFixture } from './api-football/types'
 
@@ -38,7 +50,7 @@ const played: Played[] = payload.response.map((entry) => ({
   kickoff: new Date(entry.fixture.date),
 }))
 
-/** Every round's span, derived the way `listRounds` derives it in Postgres. */
+/** Every round's span, which `dateRange` is still asked to render. */
 const spans = new Map<string, { first: Date; last: Date }>()
 for (const { round, kickoff } of played) {
   const span = spans.get(round)
@@ -262,5 +274,135 @@ describe('groupByMonth', () => {
       monthLabel(may.kickoff),
       monthLabel(august.kickoff),
     ])
+  })
+})
+
+describe('dayKey', () => {
+  it('is an ISO-ordered date for every fixture in the season', () => {
+    for (const { kickoff } of played) {
+      expect(dayKey(kickoff), kickoff.toISOString()).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    }
+  })
+
+  it('reads the London calendar, not UTC', () => {
+    /*
+      Constructed rather than found, for `monthLabel`'s reason: no Premier League
+      kickoff is late enough to fall on a different date in the two zones, so a
+      real fixture could not prove this. 30 September, 23:30 UTC is 1 October,
+      00:30 in London — British Summer Time is still in force that week.
+    */
+    expect(dayKey(new Date('2025-09-30T23:30:00Z'))).toBe('2025-10-01')
+  })
+})
+
+describe('dayRange', () => {
+  it('contains the kickoff of every fixture in the season, in its own day', () => {
+    /*
+      The property the whole page rests on, over a real season rather than over a
+      handful of chosen instants: a fixture is returned by the query for the day
+      it is played on, and by no other. Any mistake in the offset arithmetic puts
+      a late kickoff outside its own range and shows up here.
+    */
+    for (const { kickoff } of played) {
+      const { from, to } = dayRange(dayKey(kickoff))
+      expect(kickoff.getTime(), kickoff.toISOString()).toBeGreaterThanOrEqual(from.getTime())
+      expect(kickoff.getTime(), kickoff.toISOString()).toBeLessThan(to.getTime())
+    }
+  })
+
+  it('is half-open, so midnight belongs to the day it starts', () => {
+    // The reason the query is `gte`/`lt` where the sync's three ranges are
+    // `gte`/`lte`: a closed range would put this instant in two days at once.
+    const { to } = dayRange('2026-08-22')
+    const { from } = dayRange('2026-08-23')
+    expect(to.getTime()).toBe(from.getTime())
+    expect(dayKey(to)).toBe('2026-08-23')
+  })
+
+  it('makes the spring transition day 23 hours long', () => {
+    // The clocks go forward at 01:00 on 29 March 2026. A day is not 24 hours,
+    // which is why nothing in `dayRange` adds a fixed day's worth of
+    // milliseconds — and why `hydration.ts`' `DAY_MS` must not be borrowed here.
+    const { from, to } = dayRange('2026-03-29')
+    expect((to.getTime() - from.getTime()) / 3_600_000).toBe(23)
+  })
+
+  it('makes the autumn transition day 25 hours long', () => {
+    // The clocks go back at 02:00 on 25 October 2026.
+    const { from, to } = dayRange('2026-10-25')
+    expect((to.getTime() - from.getTime()) / 3_600_000).toBe(25)
+  })
+
+  it('starts a summer day at 23:00 UTC the evening before', () => {
+    // London is an hour ahead in August, so its midnight is not UTC's. Asserted
+    // outright because it is the case a UTC-only implementation gets wrong while
+    // looking correct all winter.
+    expect(dayRange('2026-08-23').from.toISOString()).toBe('2026-08-22T23:00:00.000Z')
+    expect(dayRange('2026-01-17').from.toISOString()).toBe('2026-01-17T00:00:00.000Z')
+  })
+
+  it('rolls over the end of a month and the end of a year', () => {
+    expect(dayKey(dayRange('2026-01-31').to)).toBe('2026-02-01')
+    expect(dayKey(dayRange('2026-12-31').to)).toBe('2027-01-01')
+    // A leap year, which 2028 is and 2026 is not.
+    expect(dayKey(dayRange('2028-02-28').to)).toBe('2028-02-29')
+  })
+})
+
+describe('isDayKey', () => {
+  it('accepts the key of every fixture in the season', () => {
+    for (const { kickoff } of played) {
+      expect(isDayKey(dayKey(kickoff)), kickoff.toISOString()).toBe(true)
+    }
+  })
+
+  it.each([
+    ['2026-13-45', 'a month and a day that do not exist'],
+    ['2026-02-30', 'a day that exists in other months'],
+    ['2026-1-1', 'unpadded parts'],
+    ['26-08-23', 'a two-digit year'],
+    ['0050-01-01', 'a year Date.UTC would silently read as 1950'],
+    ['2026-08-23T00:00:00Z', 'a whole timestamp'],
+    ['', 'nothing at all'],
+    ['../../evil', 'a traversal'],
+  ])('refuses %j — %s', (value) => {
+    expect(isDayKey(value)).toBe(false)
+  })
+})
+
+describe('parseDay', () => {
+  const fallback = '2026-08-23'
+
+  it('takes a day it recognises', () => {
+    expect(parseDay('2026-05-17', fallback)).toBe('2026-05-17')
+  })
+
+  it('takes the first of a repeated parameter', () => {
+    // `searchParams` gives an array whenever the parameter appears twice.
+    expect(parseDay(['2026-05-17', '2026-05-18'], fallback)).toBe('2026-05-17')
+  })
+
+  it.each([[undefined], [null], [''], ['tomorrow'], ['2026-13-45'], [42], [{}]])(
+    'falls back rather than refusing, for %j',
+    (value) => {
+      expect(parseDay(value, fallback)).toBe(fallback)
+    },
+  )
+})
+
+describe('dayLabel', () => {
+  it('is a weekday, a day, a three-letter month and a four-digit year', () => {
+    for (const { kickoff } of played) {
+      expect(dayLabel(kickoff), kickoff.toISOString()).toMatch(
+        /^[A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2} \d{4}$/,
+      )
+    }
+  })
+
+  it('never grows a fourth letter on the month', () => {
+    // September renders as `Sept` under `en-GB` if it is left alone, which makes
+    // one label in nine wider than the rest and shifts the pager's arrows.
+    const months = new Set(played.map(({ kickoff }) => dayLabel(kickoff).split(' ')[2]))
+    for (const month of months) expect(month.length, month).toBe(3)
   })
 })

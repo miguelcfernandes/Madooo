@@ -53,33 +53,29 @@ describe('backLink', () => {
     }
   })
 
-  it('keeps the matchday', () => {
-    expect(backLink('/fixtures?matchday=6')).toEqual({
-      href: '/fixtures?matchday=6',
+  it('keeps the day', () => {
+    expect(backLink('/fixtures?date=2026-08-23')).toEqual({
+      href: '/fixtures?date=2026-08-23',
       label: 'Back to fixtures',
     })
-    expect(backLink('/fixtures?matchday=six').href).toBe('/fixtures')
     expect(backLink('/fixtures').href).toBe('/fixtures')
   })
 
-  it('keeps the league, with or without a matchday', () => {
-    expect(backLink('/fixtures?league=primeira-liga&matchday=6').href).toBe(
-      '/fixtures?league=primeira-liga&matchday=6',
-    )
-    expect(backLink('/fixtures?league=primeira-liga').href).toBe('/fixtures?league=primeira-liga')
-    // Order is this module's, not the input's: it rebuilds both halves rather
-    // than echoing the query it was handed.
-    expect(backLink('/fixtures?matchday=6&league=premier-league').href).toBe(
-      '/fixtures?league=premier-league&matchday=6',
-    )
+  it('drops a date that does not name a real day', () => {
+    // `isDayKey` rebuilds the day and reads it back, so this rejects a date that
+    // is merely the right shape as well as one that is not. A dropped date lands
+    // on `/fixtures`, which is today.
+    expect(backLink('/fixtures?date=2026-13-45').href).toBe('/fixtures')
+    expect(backLink('/fixtures?date=saturday').href).toBe('/fixtures')
+    expect(backLink('/fixtures?date=../../evil').href).toBe('/fixtures')
+    expect(backLink('/fixtures?date=').href).toBe('/fixtures')
   })
 
-  it('drops a league that is not slug-shaped, keeping the matchday', () => {
-    // Shape alone is checkable here; whether the league exists is decided on
-    // arrival, where an unknown slug falls back to the default competition.
-    expect(backLink('/fixtures?league=../../evil&matchday=6').href).toBe('/fixtures?matchday=6')
-    expect(backLink('/fixtures?league=Premier%20League').href).toBe('/fixtures')
-    expect(backLink(`/fixtures?league=${'a'.repeat(65)}`).href).toBe('/fixtures')
+  it('drops the parameters the day replaced', () => {
+    // A link written before the fixtures page was indexed by date, or a stale
+    // bookmark. Neither parameter is recognised any more, and both fall away
+    // rather than being carried into an address that no longer means anything.
+    expect(backLink('/fixtures?league=primeira-liga&matchday=6').href).toBe('/fixtures')
   })
 
   /**
@@ -109,8 +105,7 @@ describe('backLink', () => {
       '/fixtures',
       '/matches/',
       '/diary?filter=',
-      '/fixtures?matchday=',
-      '/fixtures?league=',
+      '/fixtures?date=',
     ]
     for (const input of [
       'https://evil.com',
@@ -118,8 +113,8 @@ describe('backLink', () => {
       '/diary?filter=mvp',
       '/teams/4',
       '/players/44?view=notes',
-      '/fixtures?league=primeira-liga&matchday=3',
-      '/fixtures?league=javascript:alert(1)',
+      '/fixtures?date=2026-08-23',
+      '/fixtures?date=javascript:alert(1)',
       'nonsense',
       '',
     ]) {

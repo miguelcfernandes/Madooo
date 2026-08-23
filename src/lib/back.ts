@@ -7,7 +7,7 @@
  * `/players/44?from=/diary?filter=mvp` — and this module turns it back into a
  * link. A server component cannot call `history.back()`, and putting the origin
  * in the URL keeps the page a server component, which is the same reason the
- * matchday and the diary's filter live there.
+ * fixtures page's day and the diary's filter live there.
  *
  * **The href is rebuilt from parsed parts and the input is never echoed.** A
  * `?from` written straight into a `<Link>` is an open redirect: anyone can send
@@ -18,12 +18,12 @@
  *
  * Pure, so `back.test.ts` can assert that. `diary-filters.ts` and
  * `player-views.ts` import Prisma's *types* only and `import type` is erased at
- * compile time, so nothing here pulls the client into a test; `leagues.ts` is
- * pure for its own reasons.
+ * compile time, so nothing here pulls the client into a test; `dates.ts` imports
+ * nothing at all.
  */
 
 import { DIARY_FILTERS } from './diary-filters'
-import { isLeagueSlug } from './leagues'
+import { isDayKey } from './dates'
 import { PLAYER_VIEWS } from './player-views'
 
 export interface BackLink {
@@ -46,9 +46,6 @@ const MATCH = /^\/matches\/(\d+)$/
 /** The two profiles, which are origins for each other: a club lists players, a player names his club. */
 const PLAYER = /^\/players\/(\d+)$/
 const TEAM = /^\/teams\/(\d+)$/
-
-/** `\d` is ASCII-only in JavaScript, so this cannot be fed Eastern Arabic digits. */
-const MATCHDAY = /^\d+$/
 
 /**
  * Where the reader came from, or `fallback` if we cannot tell.
@@ -104,24 +101,19 @@ export function backLink(from: unknown, fallback: BackLink = PLAYERS): BackLink 
   }
 
   if (path === '/fixtures') {
-    // Both halves of the address, kept or dropped independently: a matchday
-    // without its league is a different weekend in the other competition, and a
-    // league without a matchday still lands in the right place because
-    // `defaultRound` chooses one.
-    const params = new URLSearchParams(query)
-    const matchday = params.get('matchday')
-    const league = params.get('league')
+    // One parameter now, where there were two: the day. A league and a matchday
+    // had to be kept or dropped independently, because a matchday means a
+    // different weekend in each competition; a date means the same day in all of
+    // them, which is the point of the screen it returns to.
+    const date = new URLSearchParams(query).get('date')
 
-    // `isLeagueSlug` checks the slug's shape and nothing more — this module is
-    // pure and cannot ask whether the league exists, which is decided on arrival
-    // by `parseLeagueScope`. Bounded rather than open-ended, and rebuilt rather
-    // than echoed, which is what keeps the open-redirect guarantee above intact.
-    const parts: string[] = []
-    if (league !== null && isLeagueSlug(league)) parts.push(`league=${league}`)
-    if (matchday !== null && MATCHDAY.test(matchday)) parts.push(`matchday=${matchday}`)
-
+    // `isDayKey` is a real check rather than a shape test — it rebuilds the day
+    // and reads it back — so an unparseable date cannot survive. Rebuilt rather
+    // than echoed either way, which is what keeps the open-redirect guarantee
+    // above intact. A dropped date lands on `/fixtures`, which is today, and a
+    // reader who came from today gets exactly where they were.
     return {
-      href: parts.length === 0 ? '/fixtures' : `/fixtures?${parts.join('&')}`,
+      href: date !== null && isDayKey(date) ? `/fixtures?date=${date}` : '/fixtures',
       label: 'Back to fixtures',
     }
   }

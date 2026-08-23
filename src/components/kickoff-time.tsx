@@ -8,8 +8,8 @@ import { kickoffTime } from '@/lib/dates'
  *
  * **This exists because the server cannot know what time it is where you are.**
  * Every other date in the app is formatted on the server in a fixed
- * `Europe/London`, which is right for them — a matchday and a month heading are
- * facts about the competition's calendar. A kickoff time is the one date that is
+ * `Europe/London`, which is right for them — the day a fixture is filed under and
+ * a diary's month heading are facts about the competition's calendar. A kickoff time is the one date that is
  * about the reader's evening rather than the season's shape, and only the
  * browser can say which evening that is. So this is a client island, and it is
  * the only one.

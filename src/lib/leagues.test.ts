@@ -21,7 +21,8 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { flagClass, isLeagueSlug, leagueSlug, parseLeagueScope } from './leagues'
+import { flagClass, groupByLeague, leagueRank, leagueSlug } from './leagues'
+import type { LeagueSection } from './leagues'
 import type { ApiFootballEnvelope, RawFixture } from './api-football/types'
 
 /** The league a captured season is played in, as the provider describes it. */
@@ -50,12 +51,16 @@ const SERIE_A = leagueName('fixtures_135_2026.json')
 
 const ALL = [PREMIER_LEAGUE, PRIMEIRA_LIGA, LA_LIGA, SERIE_A]
 
-/** What the database hands the parser: our own ids, the provider's names. */
-const LEAGUES = [
-  { id: 1, name: PREMIER_LEAGUE },
-  { id: 2, name: PRIMEIRA_LIGA },
-  { id: 3, name: LA_LIGA },
-  { id: 4, name: SERIE_A },
+/**
+ * What the page hands the grouper: our own ids, the provider's names and its
+ * countries. The ids are deliberately not in rank order, so a grouper that
+ * happened to sort by id rather than by rank would fail rather than pass.
+ */
+const SECTIONS: LeagueSection[] = [
+  { id: 1, name: PREMIER_LEAGUE, country: rawLeague('fixtures_39_2026.json').country },
+  { id: 2, name: PRIMEIRA_LIGA, country: rawLeague('fixtures_94_2026.json').country },
+  { id: 3, name: LA_LIGA, country: rawLeague('fixtures_140_2026.json').country },
+  { id: 4, name: SERIE_A, country: rawLeague('fixtures_135_2026.json').country },
 ]
 
 describe('leagueSlug', () => {
@@ -85,72 +90,106 @@ describe('leagueSlug', () => {
   })
 })
 
-describe('parseLeagueScope', () => {
-  it('finds the league a slug names', () => {
-    const slug = leagueSlug(PRIMEIRA_LIGA)
-    expect(parseLeagueScope(slug, LEAGUES)?.name).toBe(PRIMEIRA_LIGA)
+describe('leagueRank', () => {
+  it('orders the four leagues the app holds, most followed first', () => {
+    const ordered = [...ALL].sort((a, b) => leagueRank({ name: a }) - leagueRank({ name: b }))
+    expect(ordered).toEqual([PREMIER_LEAGUE, LA_LIGA, SERIE_A, PRIMEIRA_LIGA])
   })
 
-  it('falls back to the first league when the URL says nothing', () => {
-    expect(parseLeagueScope(undefined, LEAGUES)?.name).toBe(PREMIER_LEAGUE)
-  })
-
-  it('falls back rather than scoping the page to nothing', () => {
-    // A league that was synced once and has no matches this season, or simply a
-    // mistyped address. Either way the page should draw football.
-    expect(parseLeagueScope('bundesliga', LEAGUES)?.name).toBe(PREMIER_LEAGUE)
-  })
-
-  it('takes the first of a repeated parameter', () => {
-    const slug = leagueSlug(PRIMEIRA_LIGA)
-    expect(parseLeagueScope([slug, 'bundesliga'], LEAGUES)?.name).toBe(PRIMEIRA_LIGA)
-  })
-
-  it('is null only when there are no leagues at all', () => {
-    expect(parseLeagueScope('premier-league', [])).toBeNull()
-  })
-
-  it('opens on the remembered league when the URL says nothing', () => {
-    const slug = leagueSlug(PRIMEIRA_LIGA)
-    expect(parseLeagueScope(undefined, LEAGUES, slug)?.name).toBe(PRIMEIRA_LIGA)
-  })
-
-  it('lets the URL beat the cookie', () => {
-    // A link someone was sent, or a bookmark, against a habit. The address bar
-    // is the one that says what this page is.
-    expect(parseLeagueScope(leagueSlug(LA_LIGA), LEAGUES, leagueSlug(PRIMEIRA_LIGA))?.name).toBe(
-      LA_LIGA,
-    )
-  })
-
-  it('distrusts a stored slug exactly as far as a typed one', () => {
-    // A cookie outlives deploys, so it can name a league that has stopped
-    // playing. It gets no more credit than the address bar does.
-    expect(parseLeagueScope(undefined, LEAGUES, 'bundesliga')?.name).toBe(PREMIER_LEAGUE)
-  })
-
-  it('falls back past an unrecognised URL to the remembered league', () => {
-    expect(parseLeagueScope('bundesliga', LEAGUES, leagueSlug(PRIMEIRA_LIGA))?.name).toBe(
-      PRIMEIRA_LIGA,
-    )
-  })
-})
-
-describe('isLeagueSlug', () => {
-  it('accepts every slug the app can produce', () => {
+  it('reads the provider\u2019s own names, not a person\u2019s', () => {
+    // The whole point of taking the names out of the payload: the map is keyed
+    // on what API-Football sends, so a rank that only matched "Liga Portugal"
+    // or "Primera Divisi\u00f3n" would silently sort that league last forever.
     for (const name of ALL) {
-      expect(isLeagueSlug(leagueSlug(name)), name).toBe(true)
+      expect(leagueRank({ name }), name).toBeLessThan(Number.MAX_SAFE_INTEGER)
     }
   })
 
-  it.each([
-    ['', 'nothing at all'],
-    ['Premier League', 'a name rather than a slug'],
-    ['../../etc/passwd', 'a path'],
-    ['premier league', 'a space'],
-    ['x'.repeat(65), 'more than any competition is called'],
-  ])('refuses %j — %s', (value) => {
-    expect(isLeagueSlug(value)).toBe(false)
+  it('sends a league it does not name to the back rather than hiding it', () => {
+    // The clause that keeps this legal against AGENTS.md's first constraint: a
+    // fifth league costs no edit here. It ranks last and still renders.
+    expect(leagueRank({ name: 'Bundesliga' })).toBe(Number.MAX_SAFE_INTEGER)
+  })
+
+  it('is unaffected by casing or diacritics', () => {
+    expect(leagueRank({ name: 'PREMIER LEAGUE' })).toBe(leagueRank({ name: PREMIER_LEAGUE }))
+  })
+})
+
+describe('groupByLeague', () => {
+  /** A fixture list as the page hands it over: kickoff order, leagues interleaved. */
+  const fixture = (id: number, kickoff: string) => ({
+    kickoff,
+    league: SECTIONS.find((section) => section.id === id)!,
+  })
+
+  it('orders the sections by rank, whatever order the fixtures arrive in', () => {
+    const grouped = groupByLeague(
+      [fixture(2, '12:00'), fixture(4, '13:00'), fixture(1, '15:00'), fixture(3, '17:00')],
+      (item) => item.league,
+    )
+    expect(grouped.map((group) => group.league.name)).toEqual([
+      PREMIER_LEAGUE,
+      LA_LIGA,
+      SERIE_A,
+      PRIMEIRA_LIGA,
+    ])
+  })
+
+  it('keeps the order it was handed inside each section', () => {
+    /*
+      The documented split: Postgres owns kickoff order, this owns which section
+      leads. Handed three fixtures of one league in kickoff order, they come back
+      in kickoff order — so a sort here, of any kind, would show up.
+    */
+    const kickoffs = ['12:30', '15:00', '17:30']
+    const grouped = groupByLeague(
+      kickoffs.map((kickoff) => fixture(1, kickoff)),
+      (item) => item.league,
+    )
+    expect(grouped).toHaveLength(1)
+    expect(grouped[0].items.map((item) => item.kickoff)).toEqual(kickoffs)
+  })
+
+  it('puts a league in one section, not several', () => {
+    // Interleaved input is the real case — a day's fixtures come back in kickoff
+    // order, so two leagues alternate down the list.
+    const grouped = groupByLeague(
+      [fixture(1, '12:00'), fixture(2, '13:00'), fixture(1, '15:00'), fixture(2, '16:00')],
+      (item) => item.league,
+    )
+    expect(grouped).toHaveLength(2)
+    for (const group of grouped) expect(group.items).toHaveLength(2)
+  })
+
+  it('keeps every item exactly once', () => {
+    const items = [fixture(3, '12:00'), fixture(1, '15:00'), fixture(3, '17:00')]
+    const grouped = groupByLeague(items, (item) => item.league)
+    expect(grouped.flatMap((group) => group.items)).toHaveLength(items.length)
+  })
+
+  it('sorts unranked leagues after the ranked ones, alphabetically', () => {
+    const unranked = [
+      { id: 9, name: 'Eredivisie', country: 'Netherlands' },
+      { id: 8, name: 'Bundesliga', country: 'Germany' },
+    ]
+    const grouped = groupByLeague(
+      [
+        { league: unranked[0] },
+        { league: unranked[1] },
+        { league: SECTIONS[0] },
+      ],
+      (item) => item.league,
+    )
+    expect(grouped.map((group) => group.league.name)).toEqual([
+      PREMIER_LEAGUE,
+      'Bundesliga',
+      'Eredivisie',
+    ])
+  })
+
+  it('is empty for an empty list', () => {
+    expect(groupByLeague([], (item: { league: LeagueSection }) => item.league)).toEqual([])
   })
 })
 

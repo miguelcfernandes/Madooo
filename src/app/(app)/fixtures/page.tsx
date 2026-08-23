@@ -1,18 +1,11 @@
-import { cookies } from 'next/headers'
 import { requireDbUser } from '@/lib/auth'
+import { dayKey, dayRange, parseDay } from '@/lib/dates'
 import { season } from '@/lib/env'
-import {
-  defaultRound,
-  fixturesForRound,
-  leaguesWithMatches,
-  listRounds,
-  seasonTotals,
-} from '@/lib/fixtures'
-import { LEAGUE_COOKIE, leagueSlug, parseLeagueScope } from '@/lib/leagues'
-import { roundNumber } from '@/lib/rounds'
+import { fixturesOnDay, neighbouringDays, seasonTotals } from '@/lib/fixtures'
+import { groupByLeague } from '@/lib/leagues'
+import { DayPager } from '@/components/day-pager'
 import { FixtureCard } from '@/components/fixture-card'
-import { LeagueTabs } from '@/components/league-tabs'
-import { MatchdayPager } from '@/components/matchday-pager'
+import { LeagueFlag } from '@/components/league-flag'
 import { PageHeader } from '@/components/page-header'
 import { FIXTURE_TILES, StatTiles } from '@/components/stat-tiles'
 
@@ -20,24 +13,35 @@ import { FIXTURE_TILES, StatTiles } from '@/components/stat-tiles'
  * Render on every request rather than once during `next build`.
  *
  * Next prerenders pages at build time by default, which here would freeze
- * whatever the database held the moment the deployment was built. It would also
- * prove the wrong thing: that the build container could reach Neon, not that the
- * running server can.
+ * whatever the database held the moment the deployment was built — and would
+ * freeze *today* along with it, on a page whose whole subject is what day it is.
+ * It would also prove the wrong thing: that the build container could reach
+ * Neon, not that the running server can.
  */
 export const dynamic = 'force-dynamic'
 
 /**
- * The selected league and matchday live in the URL —
- * `/fixtures?league=premier-league&matchday=6` — rather than in React state, and
- * that one choice is what keeps this whole page a server component. The pager
- * and the league row are `<Link>`s, no JavaScript ships, and a matchday can be
- * linked to, bookmarked and reached with the back button.
+ * A day of football, every competition at once.
  *
- * What the URL does not say, the cookie does: an address with no `?league=`
- * opens on the competition last chosen rather than on whichever is first
- * alphabetically. The proxy writes it, this reads it, and the URL still wins
- * wherever it speaks — see `LEAGUE_COOKIE` in `leagues.ts` for why a cookie is
- * the only store that can serve this without a client island.
+ * **Why a day rather than a matchday.** A round is not atomic in time and is not
+ * stable in it either: the provider moves fixtures out of their round's weekend
+ * and the label stays put, so a match postponed from Matchday 1 and played five
+ * weeks later was reachable only by a reader who knew which round to page back
+ * to. A day is what somebody actually remembers about a match they watched. It
+ * is also the only unit every competition shares — a round means something
+ * different in each, and a knockout tie has no number at all — which is what
+ * lets a cup join this screen without a second kind of pager.
+ *
+ * The day lives in the URL — `/fixtures?date=2026-08-23` — rather than in React
+ * state, and that one choice is what keeps this whole page a server component.
+ * The pager is three `<Link>`s, no JavaScript ships, and a day can be linked to,
+ * bookmarked and reached with the back button.
+ *
+ * **A bare `/fixtures` is always today**, even when today has no football on it.
+ * That was chosen over falling forward to the next fixture or back to the last:
+ * an app that silently showed you a different day than the one you asked for
+ * would be lying about what it is showing, and the arrows make the nearest real
+ * day one click away in either direction.
  *
  * Two Next specifics. `searchParams` is a **Promise** and has to be awaited:
  * Next 15 made request-time inputs async so rendering can start before the
@@ -47,114 +51,108 @@ export const dynamic = 'force-dynamic'
  */
 export default async function Fixtures({ searchParams }: PageProps<'/fixtures'>) {
   const currentSeason = season()
-  const { league, matchday } = await searchParams
+  const { date } = await searchParams
 
-  // The tallies below belong to one user, so the page needs our own `User.id`
-  // for the first time. The upsert behind this is memoised per request and the
-  // shell layout already calls it, so it costs one indexed lookup.
+  // Today in London, which is the zone `dates.ts` owns and the one every date on
+  // this screen is measured in. It is both the default day and what tells the
+  // pager whether to offer its "Today" link.
+  const today = dayKey(new Date())
+  const day = parseDay(date, today)
+  const { from, to } = dayRange(day)
+
+  // The tallies below belong to one user, so the page needs our own `User.id`.
+  // The upsert behind this is memoised per request, so it costs one indexed
+  // lookup.
   const user = await requireDbUser()
 
-  // Sequential rather than folded into the `Promise.all` below, and it has to
-  // stay that way: `listRounds` needs the league before it can group, and
-  // grouping without one collapses every competition's "Regular Season - 1"
-  // into a single matchday. One extra round trip to Neon buys that.
-  const leagues = await leaguesWithMatches(currentSeason)
-
-  // The league last opened, which is what a bare `/fixtures` falls back to
-  // before it falls back to the alphabet. `cookies()` is async for
-  // `searchParams`' reason — request-time inputs are awaited so rendering can
-  // start before the request is fully parsed — and it costs this page no
-  // dynamism it did not already have.
-  const remembered = (await cookies()).get(LEAGUE_COOKIE)?.value ?? null
-  const current = parseLeagueScope(league, leagues, remembered)
-
-  const [rounds, totals] = await Promise.all([
-    // `current` is null only when no league has a match this season, which the
-    // branch below draws. Nothing is queried for a null scope.
-    current === null ? [] : listRounds(currentSeason, current.id),
+  /*
+    One round trip's worth of waiting for all three, because none of them
+    depends on the others — the day was decided before any of them ran. This
+    page used to ask Neon six times in sequence, each answer deciding the next
+    question, because a league had to be chosen before its rounds could be
+    grouped and a round chosen before its fixtures could be read. Indexing by
+    day removes the chain rather than optimising it: a date needs no lookup to
+    resolve.
+  */
+  const [fixtures, neighbours, totals] = await Promise.all([
+    fixturesOnDay(currentSeason, from, to, user.id),
+    neighbouringDays(currentSeason, from, to),
     seasonTotals(currentSeason, user.id),
   ])
 
-  if (current === null || rounds.length === 0) {
-    return (
-      <>
-        <PageHeader title="Fixtures">
-          Pick a league and matchday, then open any fixture to rate the players.
-        </PageHeader>
-        {/* The tiles are drawn on this branch too. A page that hid its tallies
-            while saying the database is empty would be hiding two different
-            failures behind one message. */}
-        <StatTiles tiles={FIXTURE_TILES} totals={totals} />
-        {/* Said out loud rather than rendered as an empty list: a deployment
-            pointed at the wrong database should look broken, not merely quiet. */}
-        <p className="text-body text-muted">No fixtures in the database for this season.</p>
-      </>
-    )
-  }
+  // Kickoff order within a competition is Postgres', in the query's `ORDER BY`;
+  // which competition leads the page is `groupByLeague`'s, and no `ORDER BY`
+  // could answer it. See `LEAGUE_ORDER` in `leagues.ts` for why.
+  const sections = groupByLeague(fixtures, (match) => match.league)
 
-  // A repeated `?matchday=` gives an array; take the first rather than refusing,
-  // since a malformed parameter falls through to the default anyway.
-  const requested = Number(Array.isArray(matchday) ? matchday[0] : matchday)
-  let index = rounds.findIndex((round) => roundNumber(round.round) === requested)
-
-  if (index === -1) {
-    // Only asked when the URL says nothing usable, so paging through the season
-    // does not pay for it on every click. Asked per league: the competitions
-    // are at different points of their seasons, so they take different branches
-    // of it.
-    const fallback = await defaultRound(currentSeason, current.id)
-    index = Math.max(
-      0,
-      rounds.findIndex((round) => round.round === fallback),
-    )
-  }
-
-  const currentRound = rounds[index]
-  const fixtures = await fixturesForRound(
-    currentSeason,
-    current.id,
-    currentRound.round,
-    user.id,
-  )
+  // Nothing anywhere this season, rather than nothing on this day. Said out loud
+  // rather than rendered as an empty list: a deployment pointed at the wrong
+  // database should look broken, not merely quiet. The two are distinguishable
+  // precisely because the arrows know whether football exists on either side.
+  const seasonIsEmpty =
+    fixtures.length === 0 && neighbours.previous === null && neighbours.next === null
 
   return (
     <>
       <PageHeader title="Fixtures">
-        Pick a league and matchday, then open any fixture to rate the players.
+        Every competition, day by day. Open any fixture to rate the players.
       </PageHeader>
 
+      {/* Drawn on every branch. A page that hid its tallies while saying it had
+          no fixtures would be hiding two different facts behind one message. */}
       <StatTiles tiles={FIXTURE_TILES} totals={totals} />
 
-      {/* Stacked below `md` — the tabs and the pager together need more width
-          than a phone has, and wrapping them keeps both at full size rather than
-          squeezing either. */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        {/* A pill carries no matchday. Round 6 of one competition is not round 6
-            of another — different weekends, and the Primeira Liga has 34 rounds
-            to the Premier League's 38, so carrying the number across can also
-            land out of range. Dropping it lets `defaultRound` choose for the
-            league just switched to, which is what a scope link should do. */}
-        <LeagueTabs
-          tabs={leagues.map((option) => ({
-            href: `/fixtures?league=${leagueSlug(option.name)}`,
-            label: option.name,
-            country: option.country,
-            current: option.id === current.id,
-          }))}
+      <div className="mb-6 flex justify-center sm:justify-start">
+        <DayPager
+          day={day}
+          previous={neighbours.previous}
+          next={neighbours.next}
+          count={fixtures.length}
+          today={today}
         />
-        <MatchdayPager rounds={rounds} index={index} league={leagueSlug(current.name)} />
       </div>
 
       {fixtures.length === 0 ? (
-        <p className="text-body text-muted">No fixtures on this matchday.</p>
+        <p className="text-body text-muted">
+          {seasonIsEmpty
+            ? 'No fixtures in the database for this season.'
+            : 'No fixtures on this day.'}
+        </p>
       ) : (
-        <ul className="flex flex-col gap-4">
-          {fixtures.map((match) => (
-            <li key={match.id}>
-              <FixtureCard match={match} />
-            </li>
-          ))}
-        </ul>
+        sections.map((section) => (
+          <section key={section.league.id} className="mb-8 last:mb-0">
+            {/*
+              The heading row: the competition, a rule taking whatever width is
+              left, and the count of what is under it. `/diary`'s month heading
+              is the pattern, followed rather than reinvented — foundations names
+              COMPETITION as its own example of `--text-caps`, so this needs no
+              new token.
+            */}
+            <div className="mb-3 flex items-center gap-3">
+              <h2 className="flex items-center gap-2 text-caps text-muted">
+                {/* Beside the name and never instead of it, and `aria-hidden`
+                    inside the component — foundations' fourth flag clause. The
+                    mark reads `League.country` and nothing here chooses it. */}
+                <LeagueFlag league={section.league} />
+                {section.league.name}
+              </h2>
+              {/* Decorative, so a bare span rather than an <hr>, which would
+                  announce a thematic break between things that are one thing. */}
+              <span className="flex-1 border-t border-border" />
+              <span className="rounded-sm bg-surface-sunken px-1.5 py-0.5 text-data text-muted">
+                {section.items.length}
+              </span>
+            </div>
+
+            <ul className="flex flex-col gap-4">
+              {section.items.map((match) => (
+                <li key={match.id}>
+                  <FixtureCard match={match} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))
       )}
     </>
   )

@@ -13,7 +13,7 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { compareRounds, roundDisplay, roundLabel, roundNumber } from './rounds'
+import { roundDisplay, roundLabel, roundNumber } from './rounds'
 import type { ApiFootballEnvelope, RawFixture } from './api-football/types'
 
 const path = join(process.cwd(), 'scratch', 'fixtures_39_2024.json')
@@ -68,18 +68,5 @@ describe('roundDisplay', () => {
 
   it('falls back to the raw label when there is no number to show', () => {
     expect(roundDisplay('Final')).toBe('Final')
-  })
-})
-
-describe('compareRounds', () => {
-  it('orders the season the way it is played', () => {
-    const shuffled = [...rounds].sort(() => Math.random() - 0.5)
-    expect(shuffled.sort(compareRounds).map(roundNumber)).toEqual(
-      rounds.map(roundNumber).sort((a, b) => a! - b!),
-    )
-  })
-
-  it('sorts an unnumbered round last rather than dropping it', () => {
-    expect(['Final', rounds[0]].sort(compareRounds)).toEqual([rounds[0], 'Final'])
   })
 })

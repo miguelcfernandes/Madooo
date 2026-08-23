@@ -34,8 +34,8 @@ import type { IndexTeam } from '@/lib/players'
  *
  * **One of the two screens in the app whose state is not in the URL**, the other
  * being [`teams-browser.tsx`](./teams-browser.tsx), which this one is the
- * template for. Everywhere else — the matchday, the diary's filter, a profile's
- * tab — the choice is a *location*, so it lives in the address bar and the page
+ * template for. Everywhere else — the fixtures page's day, the diary's filter, a
+ * profile's tab — the choice is a *location*, so it lives in the address bar and the page
  * stays a server component. The three controls here are *preferences*: "how do I
  * like this drawn" rather than "what am I looking at". Nobody bookmarks Grid. So
  * they live in `localStorage`, which is also the only store that survives

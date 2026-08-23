@@ -8,7 +8,7 @@ How the system *works* is not here. That is
 [`architecture.md`](architecture.md), organised by subsystem: read the section
 you are about to touch before writing code in it.
 
-**Last updated:** 2026-08-22 (step 19 — the suggestion box)
+**Last updated:** 2026-08-23 (step 20 — fixtures by day)
 
 ---
 
@@ -38,9 +38,11 @@ from the database rather than from this paragraph.
 
 **A fixture the provider has called off says so.** A postponed or cancelled match
 draws POSTPONED or CANCELLED where its kickoff time would go, on the fixture card
-and on the match page, and keeps its place in its own matchday — the calendar pass
-already follows the provider's new date and hour once one is published. SC Braga
-vs GIL Vicente, postponed on 16 August, is the fixture that found it.
+and on the match page. The calendar pass already follows the provider's new date
+and hour once one is published, so a called-off fixture reappears on the day it
+is eventually played. SC Braga vs GIL Vicente, postponed on 16 August, is the
+fixture that found it — and the one that later argued for step 20, because under
+the matchday pager it went on sitting in Matchday 1 where nobody would look.
 
 **And users can now ask for things.** The top bar carries a labelled "Suggest a
 feature" button, opening a dialog with one message box; what is typed there is
@@ -52,20 +54,20 @@ moderate.
 The 2024 judgements are still in the database and no longer on any screen, since
 every read filters by season; they were the author's own test data.
 
-What was built against 2024 is unchanged and still true of the frame: `/fixtures`
-drawn as the design asks — a card per
-fixture with venue, crest chips, score and date, under a league row and a
-matchday pager, server-rendered out of Neon on every request. The league row is
-a working control now rather than the drawing of one: each pill scopes the whole
-page to a competition, carries the national flag of the country that competition
-is played in, and the matchday travels beside it in the URL. The flags are four
-4:3 SVGs in `public/flags/`, the first thing in the app to use that directory,
-and a league whose country has no file draws the pill exactly as before. **The
-page also remembers which pill was last pressed**: an address with no `?league=`
-opens on that competition rather than on whichever is first alphabetically, which
-had made La Liga everyone's landing page. It is the app's first cookie and its
-third store, written by the proxy and read by the page — the URL still wins
-wherever it speaks. A fixture with a
+**`/fixtures` is a day, not a matchday.** The page shows one calendar day at a
+time — every competition at once, cut into a section per league in a stated
+popularity order, Premier League first and the Primeira Liga last — under a pager
+whose arrows step to the previous and next day that actually have football in
+them. A bare address is always today, even when today is empty. A card carries
+its matchday where its date used to be, which is what keeps a fixture postponed
+out of round 1 and played five weeks later from reading as an orphan on the day
+it was finally played.
+
+That retired the league row, the matchday pager and the `madooo-league` cookie
+with them, so the app is back to two stores. The national flags survive the
+change and now mark the section headings: four 4:3 SVGs in `public/flags/`, and a
+league whose country has no file draws the heading exactly as before. A fixture
+with a
 squad opens onto both matchday squads — each club's starting eleven above its
 bench, goalkeeper first, with shirt numbers and positions, each panel headed by
 its club's crest — and one without says so instead. The match opens with a card
@@ -107,8 +109,8 @@ nothing else on it.
 this season, standouts, flops, notes — and every fixture card carries a footer
 counting the verdicts and the notes on that match. A match is *watched* once
 anything has been recorded against it. Every tally is the signed-in user's own,
-so a second account sees four zeroes and a page of empty footers. The fixtures
-page is now the screen the design draws.
+so a second account sees four zeroes and a page of empty footers. The tiles are
+season-wide and stay put as the day changes, which is what makes them tallies.
 
 **And it can be read back.** `/diary` is no longer a placeholder: every
 judgement of the season, newest first, cut into calendar months with a count
@@ -157,7 +159,7 @@ strip. *Watched* means matches where something was recorded and he was in the
 squad, which is what makes the bar's fourth segment read as "watched him and said
 nothing". A profile has no single parent, so the way back travels in the URL and
 is rebuilt from it rather than echoed. The diary's filters moved onto the same
-tab strip; the league row keeps its pill.
+tab strip.
 
 Every screen renders in light or dark. Light is the default for everyone — the
 app no longer follows the operating system — and the top bar's toggle switches
@@ -165,9 +167,12 @@ it, remembered across visits. Clerk's own modals follow it too. The chrome is
 complete: the last gap in it was the filled button, which had no hover in either
 theme and now has one, along with the token the design system was missing for it.
 
-**Every screen in the design is built.** That claim was made once before the
-landing page had a drawing; two arrived afterwards and 8.4 built it. What remains
-between here and launch is data, scheduling and a checklist.
+**Every screen in the design is built**, and one has since been rebuilt past it.
+That claim was made once before the landing page had a drawing; two arrived
+afterwards and 8.4 built it. `/fixtures` is now the one screen that deliberately
+departs from its reference images — the drawings show a league row and a matchday
+pager, and 20 replaced both. The screenshots are kept as drawn rather than
+annotated; this paragraph is the record that they are behind on that screen.
 
 **And the sync now knows what to read without being told.** `npm run sync --
 --due` refreshes all four calendars and then asks our own table which finished
@@ -203,9 +208,9 @@ fixtures page, which they were not.
 **And a kickoff time now says when *you* sit down.** The time a fixture card
 draws in place of a score, and the one the match page draws under the same
 condition, are formatted in the reader's own timezone rather than in English
-football's. Nothing else moved: the date on the card, the matchday's span and the
-diary's month headings are all still the competition's calendar, which has one
-right answer for everybody. No zone label beside the number and no setting to
+football's. Nothing else moved: the day a fixture is filed under and the diary's
+month headings are still the competition's calendar, which has one right answer
+for everybody. No zone label beside the number and no setting to
 turn it off — it is simply the reader's clock.
 
 Auth is no longer provisional. `madooo.app` runs Clerk's production instance,
@@ -223,8 +228,9 @@ by hand, when a preview needs current football.
 
 **And a click now answers.** Three things were taking a second or two out of
 every navigation, none of them the queries. The functions ran in `iad1` while the
-database sits in `eu-west-2`, so six sequential round trips crossed the Atlantic
-on every page; they run in `lhr1` now. `requireDbUser()` asked Clerk's Backend
+database sits in `eu-west-2`, so the six sequential round trips `/fixtures` then
+made crossed the Atlantic on every page; they run in `lhr1` now, and step 20 has
+since cut that chain to two. `requireDbUser()` asked Clerk's Backend
 API for the signed-in user on every render and wrote the row back — it reads the
 row instead, and only asks Clerk when there is no row to read. And no route had a
 `loading.tsx`, so a click left the previous page on screen until the server
@@ -325,10 +331,13 @@ than a build.
         written against are now a `### Responsive` section in `foundations.md`,
         which had none.
   - [x] **6.2 — The fixtures page.** Done. Fixture cards with venue, score and
-        crest chips; the league row; the matchday pager, with the matchday in the
-        URL so the page stays a server component. A match with no squad rows says
-        "No squad yet" and does not navigate. The stat tiles and the per-card
-        verdict counts are not here — they are 6.6, deliberately last.
+        crest chips. A match with no squad rows says "No squad yet" and does not
+        navigate. The stat tiles and the per-card verdict counts are not here —
+        they are 6.6, deliberately last. This entry used to describe a league row
+        and a matchday pager, with the matchday in the URL so the page stays a
+        server component; **20 replaced both with a day pager** and the URL now
+        carries a date. What survives unchanged is the reason the state is in the
+        URL at all.
   - [x] **6.3 — Match page.** Done. Both squads, read-only: each club's starting
         eleven above its bench, ordered goalkeeper-first by a pure helper rather
         than by the database, with shirt numbers and positions. The header
@@ -889,7 +898,9 @@ than a build.
 
       Deliberately not done: anything to what `--due` prints, so a postponement
       still passes through a run silently; and the matchday pager's date range,
-      which this found and which is now an open decision.
+      which this found and which became an open decision. **20 settled that one
+      by deleting the pager** — a rescheduled fixture now moves to the day it is
+      played on, which is the answer the question was looking for.
 
 - [x] **18 — A fourth league, Serie A.** Done. `LEAGUES=39,94,140,135`, a probe,
       a sync run, and no product code — the read sides discover leagues from the
@@ -961,6 +972,64 @@ than a build.
       it is the first insert with no unique constraint behind a control anyone
       signed in is invited to press.
 
+- [x] **20 — Fixtures by day.** Done. `/fixtures` shows one calendar day at a
+      time across every competition, grouped into a section per league, with a
+      pager stepping to the previous and next day that have fixtures. The league
+      pill row and the matchday pager are gone, and the URL carries `?date=`.
+
+      **Three reasons, in increasing order of what they cost to ignore.** A
+      rescheduled fixture was unfindable: the provider keeps the round label and
+      moves only the date, so SC Braga vs Gil Vicente sat under Matchday 1 for
+      five weeks after it was played. A diary is indexed by the day you lived
+      rather than by the competition's bookkeeping, so "today" is the entry point
+      and a matchday never was. And **a round-based pager cannot represent a cup
+      at all** — rounds there are two-legged and played across weeks — which is
+      what would have forced this eventually regardless.
+
+      **No schema change and no migration.** `Match.kickoff` was already indexed,
+      which is the whole reason this was a query and rendering change.
+
+      **The day boundary was the only hard part.** `dayRange` in `dates.ts` turns
+      a date into the half-open span of UTC instants making up that London day,
+      reading the offset twice because on a transition day the reading at UTC
+      midnight and the reading at the answer disagree. Nothing adds 24 hours to
+      anything: two days a year are 23 and 25 hours long, and `hydration.ts`'
+      `DAY_MS` is correct for its rolling fortnight and wrong for this. It is the
+      first `gte`/`lt` range in the app — a closed one would put midnight in two
+      days at once — and `isDayKey` validates by round trip rather than by
+      regexp, since any regexp loose enough to accept a real date accepts
+      `2026-13-45` too.
+
+      **The section order is a written-down list, and that was the decision.**
+      Every derivable order is wrong: alphabetical opens on La Liga forever, and
+      ordering by kickoff or fixture count promotes whichever league plays at
+      lunchtime and reshuffles the page daily. Which competitions people follow
+      is a fact about people and no column holds it. `LEAGUE_ORDER` is therefore
+      a hand-written map beside `FLAGS`, legal on the same terms — an unranked
+      league renders identically and sorts last, so a fifth costs no edit. A
+      `League.rank` column was the alternative and was rejected for its
+      migration, its seed script and the risk of the league upsert overwriting
+      it; the fallback is already what an unset column would need, so promoting
+      it later is contained.
+
+      **A bare `/fixtures` is today even when today is empty**, chosen over
+      falling forward or back: a page that silently showed a different day than
+      the one asked for would be lying about what it is showing, and the arrows
+      put the nearest real day one click away. They skip empty days rather than
+      stepping one date at a time, or an international break would be eight
+      clicks wide.
+
+      It made the page faster as a side effect rather than as a goal. The chain
+      of six sequential Neon round trips is two steps now — a date needs no
+      lookup to resolve, so nothing has to be answered before the queries can be
+      written.
+
+      Deliberately not built: the league filter, which is the obvious next thing
+      and is what will make the page survive fifteen competitions; any way to see
+      a whole matchday, which nothing has asked for since the card started naming
+      one; and any annotation of the design screenshots, which still draw the
+      league row.
+
 ## Long-term remarks
 
 Standing constraints that were agreed explicitly, cannot be read off the code,
@@ -1019,12 +1088,13 @@ must stay out of the Vercel build, are in
 
 ## Open decisions
 
-- **What is left of the delay is the sequential chain, and `use cache` is the
-  answer nobody has taken yet.** `/fixtures` still asks Neon six times in a row
-  because each answer decides the next question, and two of the six —
-  `leaguesWithMatches` and `listRounds` — do not depend on the reader at all and
-  change only when the sync runs. Caching those would collapse most of what
-  remains. The cost is not the caching: it is that `cacheComponents` is a
+- **`use cache` is still untaken, and step 20 removed most of the reason to
+  want it.** This used to say `/fixtures` asked Neon six times in a row because
+  each answer decided the next question. Indexing by day deleted the chain rather
+  than caching around it: a date resolves without a lookup, so the day's
+  fixtures, its neighbouring days and the season tallies go out together and the
+  page is two steps. What is left to cache is reader-independent work on the
+  other screens. The cost is not the caching: it is that `cacheComponents` is a
   different rendering model, so every page loses `force-dynamic`, every uncached
   read needs a `<Suspense>` boundary placed by hand, and `unstable_instant`
   exists to check the placement because getting it wrong silently blocks
@@ -1041,9 +1111,9 @@ must stay out of the Vercel build, are in
   and timing a first click after an hour of silence.*
 
 - **The league flag is on `/fixtures` only, and cannot be on the two indexes as
-  they are built.** The pill row carries a flag; `/players` and `/teams` scope
-  their leagues with a `<select>`, and a native `<option>` holds text and no
-  markup. No styling changes that — it is an HTML limit, not a design one. If
+  they are built.** Each section heading carries one; `/players` and `/teams`
+  scope their leagues with a `<select>`, and a native `<option>` holds text and
+  no markup. No styling changes that — it is an HTML limit, not a design one. If
   those screens want the same distinction the answer is `foundations.md`'s own
   ("use a word"): `"England · Premier League"` in the option label. Deliberately
   not done, because it changes what a filter control says, and the two indexes
@@ -1051,7 +1121,7 @@ must stay out of the Vercel build, are in
 
 - **The app now has two conventions for screen state, and the older one may be
   the wrong default. High priority — a refactor the author may want.** Every
-  screen before 7.3 keeps its state in the URL: `/fixtures?matchday=6`,
+  screen before 7.3 keeps its state in the URL: `/fixtures?date=2026-08-23`,
   `/diary?filter=mvp`, `/players/44?view=notes`. Both indexes keep their three
   controls in `localStorage` instead, on the argument that they are
   *preferences* — how the reader likes a list drawn — where the others are
@@ -1074,14 +1144,18 @@ must stay out of the Vercel build, are in
   diary's filter and the profile's view tab together, since they are the same
   question twice.
 
-  **The `madooo-league` cookie is a third option neither of the two offers, and
-  it may be the answer for all of them.** `/fixtures` keeps the league in the URL
-  *and* remembers the last one chosen, so the address bar still says what the
-  page is while a bare visit lands where the reader left off — the URL's cost
-  removed without giving up its advantage or the server render. The diary's
-  filter is the same shape of problem and could take the same shape of answer.
-  What it does not settle is which store the *state* lives in, only what happens
-  when the URL is silent.
+  **A cookie is a third option neither of the two offers, and the app no longer
+  has one to point at.** This used to argue that `madooo-league` might be the
+  answer for all of them: the league stayed in the URL *and* the last one chosen
+  was remembered, so the address bar still said what the page was while a bare
+  visit landed where the reader left off. Step 20 removed that cookie, because
+  the fixtures page stopped having a reader-specific default to remember — a bare
+  address is today, which is a fact about the world.
+
+  The shape of the answer survives the instance and is still worth having for the
+  diary's filter: a cookie read on the server fills the URL's silence without
+  giving up the server render. What it would not settle is which store the
+  *state* lives in, only what happens when the URL says nothing.
 
 - **Search is in the browser's memory, and that stops being right somewhere past
   five leagues.** `/players` ships the season's whole roster — ~15 kB compressed
@@ -1191,16 +1265,6 @@ must stay out of the Vercel build, are in
   because a job whose purpose is to keep another job running is worth choosing on
   purpose rather than adding by reflex. *Resolved by deciding either way once the
   first quiet month has actually happened.*
-
-- **A matchday's printed date range is stretched by one rescheduled fixture.**
-  `listRounds` derives it from `_min`/`_max` over `kickoff` and `MatchdayPager`
-  prints it under the matchday number, so a single moved fixture drags the whole
-  span. Primeira Liga Matchday 3 reads "22 Aug – 10 Sep" while Matchday 4 reads
-  "28–31 Aug", so the ranges also run backwards against one another. It is live
-  today and rescheduling is what causes it, not calling off — step 17 only found
-  it. *Resolved by deciding what a matchday's dates mean when one of its fixtures
-  is a month from the rest: the honest span, the weekend the rest of the round is
-  played, or no range at all.*
 
 The paid API tier and the Clerk production instance used to sit here. Neither was
 a decision — nothing about them was unsettled but the date — so both moved into

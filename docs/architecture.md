@@ -166,7 +166,7 @@ after any sync that introduces a club.
 
 ### A relation can be counted whole and read filtered in one query
 
-`fixturesForRound` asks for `_count.squadEntries` — the openable test, "does this
+`fixturesOnDay` asks for `_count.squadEntries` — the openable test, "does this
 match have a squad at all" — and beside it, in the same query, the squad rows this
 user has judged. **The two do not interfere.** A `_count` entry takes its own
 optional `where` and has none here, so it counts the whole relation however its
@@ -174,6 +174,11 @@ sibling selection is filtered. That was verified against the database rather tha
 assumed, because the failure mode is silent: a `_count` that inherited the filter
 would report no squad for every unjudged match, and every card would quietly stop
 opening.
+
+That query takes no `leagueId`, which is what makes a day cost one round trip
+however many competitions are configured. The page asks for the day and groups
+what comes back; it never asks per competition, so the fifth league and the
+fifteenth are free here.
 
 One relation carries only one `_count`, so a query cannot ask Postgres for two
 different tallies over the same rows. That is why a fixture card's verdicts and
@@ -305,9 +310,7 @@ to break at once.
 **Development cannot show you any of this.** With five rounds hydrated a player
 has at most five squad rows, so all three forms return 2,000 rows and only the
 emitted SQL tells them apart; a full season is ~15,200 rows fetched to keep ~600,
-on every request of a `force-dynamic` page. `defaultRound`'s `distinct: ['round']`
-in [`fixtures.ts`](../src/lib/fixtures.ts) is the same in-memory dedupe and is
-harmless at 380 tiny rows — it is not a precedent to copy at scale.
+on every request of a `force-dynamic` page.
 
 **The counterpart is that a judgement cannot be grouped by its player at all.**
 `Judgement` points at a `MatchSquad`, so `playerId` is a column on the relation
@@ -565,15 +568,20 @@ against:
   so this is cheap; what it is not is optional.
 - **A round is a poor unit of work.** It is not atomic in time — a selected round
   spans several days — and beyond round 5 its dates are not even the real ones.
-- **Anything that groups or orders by date is standing on provisional data.** The
-  matchday pager's *grouping* is safe, since it groups by the round label, which
-  does not move. **The date range it prints under the matchday number is not**:
-  that is `_min`/`_max` over `kickoff` in `listRounds`, so one rescheduled fixture
-  drags the whole range. Primeira Liga Matchday 3 reads "22 Aug – 10 Sep" today
-  because one of its fixtures was moved to September, while Matchday 4 reads
-  "28–31 Aug" — the ranges run backwards against each other. What a matchday's
-  dates should mean in that case is an open decision in the roadmap. A screen that
-  grouped by week or by date would reshuffle itself outright as selections land.
+- **`/fixtures` groups by date, so the page reshuffles itself as selections
+  land — and that is the behaviour, not a defect.** This entry used to warn
+  against a date-grouped screen on exactly that ground. The warning had it
+  backwards: a fixture whose kickoff the provider moves *should* move to the day
+  it will actually be played on, because that is the day a reader will look for
+  it. What the old matchday pager did instead was keep a rescheduled fixture
+  under a round label whose other nine fixtures were played weeks earlier, which
+  is how SC Braga vs Gil Vicente became unfindable.
+
+  The cost is that a placeholder date is a real answer to "what is on that day",
+  and from round 6 on the placeholders are all one Saturday at 14:00. So a day
+  deep in the future shows an implausibly full card of fixtures that will not all
+  be played then. It corrects itself as selections are published, on the calendar
+  pass, with no commit.
 
 ### What is deliberately unmapped
 
@@ -604,8 +612,8 @@ which no captured fixture reaches, so nothing would catch it in passing.
 
 ### Anything a page needs from a round string lives in `src/lib/rounds.ts`
 
-`Match.round` holds API-Football's own label, `"Regular Season - 1"`, and the
-fixtures page has to order and display it. It may not get that from
+`Match.round` holds API-Football's own label, `"Regular Season - 1"`, and a
+fixture card has to display it. It may not get that from
 [`sync.ts`](../src/lib/sync.ts), which imports the provider client — constraint
 #2 is about the import graph, not about intent. So `roundLabel` moved out to
 [`rounds.ts`](../src/lib/rounds.ts) and the sync re-exports it for the CLI.
@@ -614,8 +622,10 @@ The general shape: **when a page and the sync need the same pure function, it
 moves to a third module and both import it.** Dependencies point into the shared
 module; nothing ever points out of the sync.
 
-The provider's vocabulary still stops at the boundary in the place that counts —
-URLs carry `?matchday=6`, not the label.
+The provider's vocabulary never reaches a URL: addresses carry `?date=`, and the
+label is parsed into "Matchday 6" only where a card prints it. `roundDisplay`
+returns an unnumbered label — `"Round of 16"`, `"Final"` — unchanged rather than
+dropping it, which is what lets a cup say which stage a fixture belongs to.
 
 [`match-status.ts`](../src/lib/match-status.ts) is the second module of that
 shape, and it carries a wrinkle `rounds.ts` does not: **one of its groups is the
@@ -799,15 +809,6 @@ would make `/` dynamic, and it is [the one route that
 prerenders](#build-and-deploy). It is also an exact path test rather than a
 matcher entry, since it must not reach anything below `/`.
 
-Its third job is to write the `madooo-league` cookie when a request names a
-league on `/fixtures`, which is the [only kind of state the proxy
-holds](#a-location-goes-in-the-url-a-preference-goes-in-localstorage). It runs
-after both redirects, so a request about to be bounced never leaves a cookie
-behind, and it returns `undefined` for everything else — the cookie is only ever
-added to a navigation that was happening anyway. Soft navigations are covered
-without special handling: a `<Link>` click fetches the RSC payload over the same
-request path, through the same proxy.
-
 Both redirects are optimistic checks. The check that guards data is
 `requireDbUser()` itself, because Next's own guidance is that a proxy may run
 separately from the render, and because a check placed in a layout would not
@@ -822,9 +823,9 @@ is reached only from a fixture card — so "did I add the nav item?" is not the
 question to check it against.
 
 **Screen state that survives a reload belongs in the URL, not in React state.**
-`/fixtures?matchday=6` is why that page is still a server component: the pager is
-two `<Link>`s, no JavaScript ships, and the matchday can be linked to and reached
-with the back button. `searchParams` is a Promise in Next 16 and has to be
+`/fixtures?date=2026-08-23` is why that page is still a server component: the
+pager is three `<Link>`s, no JavaScript ships, and a day can be linked to and
+reached with the back button. `searchParams` is a Promise in Next 16 and has to be
 awaited; `PageProps<'/fixtures'>` derives the prop types from the route literal,
 so a path and its types cannot drift apart. `PageProps` is generated into
 `.next/types` — after adding, renaming or moving a route, `tsc` cannot resolve
@@ -838,7 +839,7 @@ string. [`back.ts`](../src/lib/back.ts) parses it against a handful of our own
 shapes and **reconstructs the href from the parsed parts**, so a value that is
 not one of them cannot survive: `?from=https://…` written straight into a
 `<Link>` is an open redirect, and reconstruction is a stronger guarantee than a
-list of things to reject. The filter, the matchday or the profile's tab travels
+list of things to reject. The filter, the day or the profile's tab travels
 with it, so Back returns to the screen the reader actually left rather than to an
 unparameterised one. `playerHref` and `teamHref` do the `encodeURIComponent`,
 once each, because a `from` carrying `?filter=mvp` has to survive being a value
@@ -896,8 +897,8 @@ The two indexes, `/players` and `/teams`, are the screens whose state is not in
 the URL, and the distinction that admits them is the one to apply to anything
 later.
 
-A **location** answers *what am I looking at* — `?matchday=6`, `?filter=mvp`,
-`?view=notes`. It belongs in the URL, which is what keeps those pages server
+A **location** answers *what am I looking at* — `?date=2026-08-23`,
+`?filter=mvp`, `?view=notes`. It belongs in the URL, which is what keeps those pages server
 components and makes them linkable and reachable with the back button.
 
 A **preference** answers *how do I like this drawn* — rows or cards, which sort,
@@ -907,23 +908,14 @@ between visits and clutters a link that was never about it. Each index keeps its
 three in `localStorage` and its search box in React state, since a search term is
 neither: it is worth nothing on the next visit.
 
-**A third store, and the narrow rule that admits it: a preference the server must
-know *before* it renders lives in a cookie.** `/fixtures` has exactly one —
-`madooo-league`, holding the slug of the competition last opened, which is what a
-bare `/fixtures` falls back to. It cannot be a `localStorage` preference, because
-what it defaults is a *location*: the league decides what the server queried, so
-a client-side answer would arrive after the query it was meant to scope, painting
-the wrong competition first and then replacing it. A cookie travels on the
-request, so the first paint is already right and the page ships no JavaScript.
-The write is [`src/proxy.ts`](../src/proxy.ts)'s, and it has to be — a league pill
-is a plain `<Link>`, so there is no click handler, and a Server Component cannot
-set a cookie at all. Next allows that only in a Server Action or a Route Handler.
-The cost is the mirror of `localStorage`'s: a cookie is per browser, so a phone
-and a laptop remember separately.
-
-Reach for it only under that rule. A cookie rides on every matched request
-whether or not anything reads it, which is a cost the two indexes' preferences
-would pay for nothing — the server has no use for a sort order.
+**There were briefly three stores, and the third is gone.** `/fixtures` kept a
+`madooo-league` cookie holding the competition last opened, on the rule that a
+preference the server must know *before* it renders cannot live in
+`localStorage` — the page would paint the wrong league first and then replace it.
+The rule is sound and would admit a cookie again. What removed this one is that
+the page stopped having a default to remember: it is indexed by day, a bare
+address means today, and today needs no store. A screen whose default is a fact
+about the world rather than about the reader does not need remembering.
 
 **Each screen owns its own keys** — `madooo-players-*` and `madooo-teams-*` —
 rather than sharing one trio. The two lists are narrowed and sorted
@@ -964,68 +956,60 @@ deploys, it is editable in devtools, and it can name a league that no longer has
 squads. So every one of them goes through a `parse*` that falls back, in the same
 table-plus-parser shape `diary-filters.ts` established for the URL.
 
-### The league is a slug in the URL, and is neither our id nor the provider's
+### League identity is a name flattened, never an id
 
-`/fixtures?league=primeira-liga&matchday=6`. Three candidates were available and
-the existing conventions ruled out two:
+`League.name` is the only handle the app has on a competition above the sync, and
+two things derive from it: `leagueSlug`, and the order competitions are listed
+in. Three candidates were available for a handle and the existing conventions
+ruled two out:
 
 - **`League.id`** is our own autoincrement, assigned in sync order, so it is not
-  stable across Neon branches — one bookmarked URL could name different
+  stable across Neon branches — a value stored against one could name different
   competitions on a laptop and in production.
-- **`apiFootballId`** is the provider's vocabulary, and the pager already keeps
-  that out of our addresses deliberately: the same boundary the sync draws,
-  applied to the address bar. It is also meaningless to a reader.
+- **`apiFootballId`** is the provider's vocabulary, and the app keeps that out of
+  everything above the sync deliberately. It is also meaningless to a reader.
 
-The slug is derived from `League.name` and never written down, which is the rule
-`leaguesInSeason` and `parseLeague` already state for league identity. It is
-built on `searchKey`, the app's one name-flattening rule, so a competition with
-diacritics comes out typeable. A provider rename degrades to the default league
-rather than to an error, exactly as `parseFilter` and `backLink` treat
-unrecognised input.
+Both derivations go through `searchKey`, the app's one name-flattening rule, so
+a competition with diacritics is handled the same way everywhere and a provider
+recasing a name costs nothing.
 
-**Two leagues sharing a name is the risk that does not degrade, and it is no
-longer hypothetical.** `serie-a` is Serie A's slug, and the provider's id 71 is
-Brazil's Serie A: configure both and `parseLeagueScope` returns whichever the
-query yielded first — the wrong competition, silently, rather than a fallback.
-Nothing is wrong today because 71 is not configured. What would fix it is a
-tiebreak the slug does not currently carry, most obviously the country; what
-would force it is adding a league whose name another configured league already
-holds. `api-football-findings.md` records the collision as a fact about the
-provider's catalogue.
+**Two leagues sharing a name is the risk that does not degrade.** `serie-a` is
+Serie A's slug, and the provider's id 71 is Brazil's Serie A. Nothing is wrong
+today because 71 is not configured, and the exposure is smaller than it was —
+`/fixtures` no longer takes a league in its URL at all — but `LEAGUE_ORDER` is
+keyed on the flattened name, so configuring both would give Brazil's Serie A
+Italy's position. What would fix it is a tiebreak the name does not carry, most
+obviously the country. `api-football-findings.md` records the collision as a fact
+about the provider's catalogue.
 
-`src/lib/leagues.ts` owns league identity beyond the URL: `flagClass` sits beside
-the slug there and maps `League.country` onto a flag class, on the same
-`searchKey` and with the same degrade-to-nothing posture. `leaguesWithMatches`
-selects `country` for it, which is the only thing that reads that column.
+**The order competitions appear in is written down, and it has to be.** A day's
+fixtures are grouped into a section per competition, and every *derivable* order
+is wrong: alphabetical opens on La Liga forever, and ordering by earliest kickoff
+or by fixture count promotes whichever league happens to play at lunchtime and
+reshuffles the page from one day to the next. Which competitions people follow is
+a fact about people, and no column holds it. So `LEAGUE_ORDER` in
+[`leagues.ts`](../src/lib/leagues.ts) is a hand-written map, sitting beside
+`FLAGS` and legal on exactly the same terms: it names no season and no id, it is
+indexed by a value that came out of the `League` table, and **an unranked league
+renders identically and sorts last**. A fifth league costs no edit here. The
+moment an unranked one were hidden or held a reserved gap, this would be part of
+the price of a league and `AGENTS.md`'s first constraint would be broken.
 
-**A league is a location here and a preference on the two indexes, and that is
-not two answers to one question.** On `/fixtures` a pill decides what the server
-queried; on `/players` a select narrows rows already shipped. `foundations.md`
-draws that line and its test is what the control changes, not what it names.
+A `League.rank` column was the alternative and was not taken: it costs a
+migration, a seed script and the standing risk of the league upsert overwriting
+it, to buy reordering without a deploy. Promoting the map to a column later is
+contained — the fallback is already what an unset column would need.
 
-**`parseLeagueScope` has three answers in order: the slug the URL named, the slug
-in the `madooo-league` cookie, then the first league the database returned.** The
-URL wins wherever it speaks, so a link or a bookmark still means what it says;
-the cookie only fills the silence. Neither input is trusted further than the
-other — a cookie outlives deploys and can name a competition that has stopped
-playing, so both are matched against the leagues actually found and both fall
-through when they miss. Before this, the silence fell to the alphabet, which is
-how everyone came to open on La Liga.
+`flagClass` sits beside both and maps `League.country` onto a flag class, on the
+same `searchKey` and with the same degrade-to-nothing posture.
+`leaguesWithMatches` selects `country` for it, which is the only thing that reads
+that column.
 
-Validation of a slug splits in two: **shape without the database, existence with
-it.** `isLeagueSlug` in [`leagues.ts`](../src/lib/leagues.ts) is the first half,
-and it is there rather than in either caller because both need it —
-[`back.ts`](../src/lib/back.ts) to rebuild a "Back to fixtures" href without
-echoing its input, and the proxy to refuse copying an arbitrary query parameter
-into a cookie. The second half is `parseLeagueScope` falling back on arrival.
-`back.ts` rebuilds the query rather than echoing it, which is what keeps the
-open-redirect guarantee intact; both files are pure, and the proxy's import is a
-third reason `leagues.ts` must stay so.
-
-**A league pill carries no matchday.** Round 6 is a different weekend in each
-competition and the two do not have the same number of rounds, so carrying the
-number across is a false equivalence that can also land out of range. Dropping it
-lets `defaultRound` choose for the league just switched to.
+**A league is a section heading on `/fixtures` and a preference on the two
+indexes.** It used to be a *location* there — a pill row deciding what the server
+queried — and that is the entry that changed: nothing scopes the fixtures page to
+a competition now, so the only scope control left in the app is the day. On
+`/players` a select still narrows rows already shipped.
 
 **`src/app/(app)/layout.tsx` reads nothing.** It used to call `requireDbUser()`
 to provision the row for everything below it; that call is gone, because a
@@ -1475,17 +1459,21 @@ profile and joins the bundle inside `players-browser`.
 `--control-h-lg` tab and a 28px pill tab as separate controls; the rule between
 them is that an **underline tab changes the view of the screen you are on** —
 the diary's filters, a player's Diary and Notes — while a **pill chooses the
-scope the screen is drawn for**, which so far is only the league row.
-[`tab-strip.tsx`](../src/components/tab-strip.tsx) is the first;
-[`league-tabs.tsx`](../src/components/league-tabs.tsx) is the second.
+scope the screen is drawn for**. Only the first is drawn.
+[`tab-strip.tsx`](../src/components/tab-strip.tsx) is it; the pill's one instance
+was the league row on `/fixtures`, retired when that page became a day rather
+than a league and a matchday. The control stays specified in foundations with
+nothing drawing it, which is the right state for a vocabulary the next scope
+control will want.
 
-They share `TabStrip`'s `Tab` type, because the two differ in rendering rule
-rather than in what a tab is, and both take `current` as a prop for the same
-reason: the page has already parsed the parameter to run its query, and asking
-again in a client hook would give the answer two sources. Only the unselected
+`current` arrives as a prop rather than being read from the location: the page
+has already parsed the parameter to run its query, and asking again in a client
+hook would give the answer two sources. Only the unselected
 state differs — foundations draws the pill selected and disabled but never
-unselected, so `league-tabs.tsx` sets that itself, borrowing the muted-to-ink
-treatment the pager's arrows and the inactive underline tab already use.
+unselected, so the pill's own component set that itself, borrowing the
+muted-to-ink treatment the pager's arrows and the inactive underline tab already
+use. That is recorded because the next scope control will need it and foundations
+still does not draw the state.
 
 The underline sits under the selected tab alone, with **no rule spanning the
 strip**. That is how the design draws it and it is also what lets the strip wrap:
@@ -1644,7 +1632,7 @@ The players index added the other two — a text input and a `<select>`, in
   like the source, which is worth knowing before debugging a colour in devtools.
 - **The base stylesheet styles every `<a>`**, so chrome links need `no-underline`
   and an explicit colour or they render as blue underlined prose links. `NavItem`,
-  `FixtureCard` and the matchday pager all do this. One class is enough despite
+  `FixtureCard` and the day pager all do this. One class is enough despite
   `a:hover` having the higher specificity, because the utilities layer is
   declared after `base` and layer order beats specificity.
 - **Club colour is the only colour in product code that is not a token**, and
@@ -1661,11 +1649,30 @@ formatter renders one kickoff as two different times and, late enough, two
 different dates. It builds its output from `formatToParts` rather than `format`
 so the month can be cut to three letters — see the `Sept` finding above.
 
+**The pin decides a query boundary now, not only a rendering.** `dayRange` turns
+a `YYYY-MM-DD` into the half-open span of UTC instants that make up that London
+day, which is what `/fixtures` filters `kickoff` on. It reads the offset twice —
+once at UTC midnight, once at the candidate that produces — because on a
+transition day the two readings differ and the second is the one taken at the
+instant being solved for. **Nothing adds a fixed day's worth of milliseconds**:
+London days are 23 and 25 hours long twice a year, and `DAY_MS` in
+[`hydration.ts`](../src/lib/hydration.ts) must not be borrowed for this. It is
+correct there, where a rolling fortnight does not care about an hour.
+
+The range is `gte`/`lt` where the sync's three kickoff ranges are `gte`/`lte`. A
+closed range would put a kickoff at exactly midnight in two days at once.
+
+`isDayKey` validates by **round trip** rather than by regexp — a key is real when
+building the day and reading it back returns the same string. That is what
+rejects `2026-13-45`, which any regexp loose enough to accept a real date will
+also accept, and it disposes of `Date.UTC`'s two-digit-year trap, where a year
+below 100 is silently read as 19xx.
+
 **One date escapes the pin, and the line that admits it is the thing to apply to
-anything later.** A fixture's date, a matchday's span and a diary's month heading
+anything later.** The day a fixture is filed under and a diary's month heading
 answer *where in the season am I* — a question about the competition's calendar,
 with one right answer for every reader, and moving them would put a fixture on
-the wrong matchday for somebody. A kickoff **time** answers *when do I sit down*,
+the wrong day for somebody. A kickoff **time** answers *when do I sit down*,
 which is a question about the reader. So `kickoffTime` takes an optional zone and
 nothing else does, and [`KickoffTime`](../src/components/kickoff-time.tsx) is the
 client island that hands it `Intl.DateTimeFormat().resolvedOptions().timeZone`.
@@ -1937,15 +1944,20 @@ applies; the newer `use cache` model does not.
 **The functions run in `lhr1`, and [`vercel.json`](../vercel.json) exists solely
 to say so.** Vercel's default is `iad1` — Washington DC — and the deployment sat
 there from step 4 until it was measured, while both Neon branches are in
-`eu-west-2`. `/fixtures` issues about six sequential round trips, each needing the
-previous one's answer, so every page load crossed the Atlantic six times at
-roughly 80ms a crossing; the same trip from a laptop in Europe is 15–17ms, which
+`eu-west-2`. `/fixtures` then issued about six sequential round trips, each
+needing the previous one's answer, so every page load crossed the Atlantic six
+times at roughly 80ms a crossing; the same trip from a laptop in Europe is 15–17ms, which
 is why production was slower than development and looked like an app problem
 rather than a map problem. `lhr1` is London, the same AWS region as the database.
 
+That chain is now two steps rather than six, and indexing by day is what removed
+it rather than any optimisation: a date needs no lookup to resolve, so the day's
+fixtures, its neighbouring days and the season tallies all go out together under
+one `Promise.all`. The region still matters — it is simply worth less than it was.
+
 **The region is chosen against the database's, not against the reader's**, and
-that is the whole rule. Six trips per page are the function's to Neon and one is
-the reader's to the function, so proximity to Postgres is worth six times
+that is the whole rule. Several trips per page are the function's to Neon and one
+is the reader's to the function, so proximity to Postgres is worth more
 proximity to anybody. Frankfurt is the near miss worth recording: `fra1` was
 briefly deployed and is a European hop rather than an ocean, but it is 10–15ms a
 round trip against same-region's 1–3ms, which is 60–90ms a page given back for

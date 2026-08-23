@@ -3,14 +3,14 @@ import { Badge, CALLED_OFF_BADGE, LIVE_BADGE } from './badge'
 import { CrestChip } from './crest-chip'
 import { Icon } from './icon'
 import { KickoffTime } from './kickoff-time'
-import { kickoffDate } from '@/lib/dates'
 import { calledOffLabel, isInProgress } from '@/lib/match-status'
+import { roundDisplay } from '@/lib/rounds'
 import { plural } from '@/lib/text'
 import { countNotes, countVerdicts } from '@/lib/verdicts'
 import type { Fixture } from '@/lib/fixtures'
 
 /**
- * One fixture: a header strip carrying the venue and the date, then the match
+ * One fixture: a header strip carrying the venue and the matchday, then the match
  * itself — both clubs' crest chips, their names, and the score between them,
  * over a footer strip counting what this user has said about it.
  *
@@ -43,9 +43,9 @@ function Score({ match }: { match: Fixture }) {
 
   // Null goals means no result recorded, not a goalless draw — so the kickoff
   // time stands in, which is the thing a reader of an unplayed fixture wants.
-  // On the reader's own clock, and the only date on this card that is: the
-  // header's is the matchday, which is the competition's calendar rather than
-  // theirs. `KickoffTime` is the whole element, so there is no span around it.
+  // On the reader's own clock: the day the page is drawn for is the
+  // competition's calendar, and what time to sit down is the reader's.
+  // `KickoffTime` is the whole element, so there is no span around it.
   if (match.homeGoals === null || match.awayGoals === null) {
     return <KickoffTime kickoff={match.kickoff} className="text-data text-muted" />
   }
@@ -103,8 +103,21 @@ function Card({ match, openable }: { match: Fixture; openable: boolean }) {
             <span className="shrink-0 text-caps text-faint">No squad yet</span>
           )}
         </div>
-        {/* A date is counted, not spoken, so it is monospaced. */}
-        <span className="shrink-0 text-data uppercase">{kickoffDate(match.kickoff)}</span>
+        {/*
+          The matchday, where the date used to be. The page is one calendar day,
+          so a date on every card would repeat the pager forty times over; what a
+          card cannot otherwise say is which round of its own competition it
+          belongs to. That matters most for the fixture this slot was changed
+          for: a match postponed out of Matchday 1 and played a month later now
+          appears on the day it was actually played, and would read as an orphan
+          without this.
+
+          `text-caps`, matching the venue opposite, rather than the `text-data`
+          the date had. foundations monospaces a number you can add up; the
+          ordinal in "Matchday 6" is a label, and a knockout round has no number
+          at all.
+        */}
+        <span className="shrink-0 text-caps text-muted">{roundDisplay(match.round)}</span>
       </header>
 
       {/*

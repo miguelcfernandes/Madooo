@@ -3,12 +3,14 @@ import Link from 'next/link'
 /**
  * The app's tab strip: switching the view of the screen you are already on.
  *
- * **Two tab vocabularies, and this is one of them.** `foundations.md` lists a
- * 40px `--control-h-lg` "tab" and a 28px "pill tab" as separate controls; the
- * rule between them is what this component and [`league-tabs.tsx`](./league-tabs.tsx)
- * now divide up. An underline tab changes the *view* of the current screen — the
- * diary's filter, a player's Diary or Notes. A pill chooses the *scope* the
- * screen is drawn for, which so far is only the league row.
+ * **Two tab vocabularies, and this is the one the app currently draws.**
+ * `foundations.md` lists a 40px `--control-h-lg` "tab" and a 28px "pill tab" as
+ * separate controls. An underline tab changes the *view* of the current screen —
+ * the diary's filter, a player's Diary or Notes — and that is this. A pill
+ * chooses the *scope* the screen is drawn for; the league row was its only
+ * instance, and `/fixtures` retired it when the page became a day rather than a
+ * league and a matchday. The control stays defined in foundations, with nothing
+ * drawing it.
  *
  * **The underline sits under the selected tab alone, with no rule spanning the
  * strip.** That is how the reference screenshot draws it, and it is also what

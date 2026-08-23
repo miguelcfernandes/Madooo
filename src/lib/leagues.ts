@@ -1,37 +1,30 @@
 /**
- * A league's identity outside the database: the slug that names it in the URL —
- * `/fixtures?league=primeira-liga` — the cookie that remembers which one was
- * last chosen, and the flag that marks it on screen. The only place any of those
- * vocabularies is written down.
+ * A league's identity outside the database: the slug that names it, the order
+ * competitions are shown in, and the flag that marks one on screen. The only
+ * place any of those vocabularies is written down.
  *
  * Pure, like [`diary-filters.ts`](./diary-filters.ts) and
- * [`verdicts.ts`](./verdicts.ts), and for the same reason: `parseLeagueScope`
- * reads an untrusted URL parameter, which is exactly the sort of decision worth
- * a test, and a test must be able to import this without Prisma in the loop.
- * Purity is load-bearing a second way now — [`proxy.ts`](../proxy.ts) imports
- * from here, and the proxy runs before any rendering does.
+ * [`verdicts.ts`](./verdicts.ts), and for the same reason: what is decided here
+ * is worth a test, and a test must be able to import this without Prisma in the
+ * loop.
  *
  * **Why a slug rather than an id.** Three candidates, and the existing
  * conventions rule out two of them:
  *
  *   - `League.id` is our own autoincrement, assigned in sync order. It is not
- *     stable across Neon branches, so a bookmarked URL could name one
- *     competition on a laptop and another in production. (`parseLeague` in
+ *     stable across Neon branches, so a value stored against one could name a
+ *     different competition on a laptop and in production. (`parseLeague` in
  *     [`rankings.ts`](./rankings.ts) does use the id — but in `localStorage`,
  *     which never crosses a machine.)
- *   - `apiFootballId` is the provider's vocabulary, and
- *     [`matchday-pager.tsx`](../components/matchday-pager.tsx) keeps that out of
- *     our addresses deliberately — the same boundary the sync draws, applied to
- *     the address bar. It is also meaningless to a reader.
+ *   - `apiFootballId` is the provider's vocabulary, and the app keeps that out
+ *     of everything above the sync deliberately — the same boundary the sync
+ *     draws. It is also meaningless to a reader.
  *
  * The slug is derived from the name and never written down, which is the rule
- * `leaguesInSeason` and `parseLeague` already state for league identity. Its two
- * risks are cheap: a provider rename, or two leagues sharing a name, both
- * degrade to "the parser does not recognise it, so the page opens on the default
- * league" — how `parseFilter` and `backLink` already treat unrecognised input.
+ * `leaguesInSeason` and `parseLeague` already state for league identity.
  */
 
-import { searchKey, type LeagueOption } from './rankings'
+import { searchKey } from './rankings'
 
 /**
  * "Primeira Liga" → `primeira-liga`.
@@ -48,77 +41,6 @@ export function leagueSlug(name: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
-/**
- * A slug's *shape*, which is all anything can check without the database.
- *
- * Validation of a league splits in two, and this is the half that is pure:
- * shape here, existence on arrival, where `parseLeagueScope` falls back to a
- * real league for a slug it does not recognise. `back.ts` needs the first half
- * to rebuild a "Back to fixtures" href without echoing its input, and `proxy.ts`
- * needs it to refuse writing an arbitrary query parameter into a cookie. It
- * lives here rather than in either of them because this file owns league
- * identity, and because a third copy of one regexp is exactly the drift a shared
- * vocabulary exists to prevent.
- *
- * Bounded as well as charset-checked: `leagueSlug` can only ever produce this
- * alphabet, and 64 characters is far beyond any competition's name.
- */
-const SLUG = /^[a-z0-9-]{1,64}$/
-
-export function isLeagueSlug(value: string): boolean {
-  return SLUG.test(value)
-}
-
-/**
- * The cookie holding the league last chosen on `/fixtures`.
- *
- * **The app's third store, and the rule that admits it: a preference the server
- * must know *before* it renders lives in a cookie.** A league is a location on
- * this screen — it decides what the server queried — so its *default* cannot be
- * a `localStorage` preference like the two indexes' sorts: the page would have
- * to become a client island and would paint the wrong competition first. A
- * cookie travels on the request, so the first paint is already right and the
- * page stays a server component with no JavaScript at all.
- *
- * It holds the **slug**, not an id, so there is one league vocabulary rather
- * than two — which is also what lets `parseLeagueScope` read it with no second
- * parser. Named for the `madooo-players-*` convention the `localStorage` keys
- * already follow.
- *
- * Per browser rather than per account, which is the stated cost: a phone and a
- * laptop remember separately, exactly as the sort and layout preferences do.
- */
-export const LEAGUE_COOKIE = 'madooo-league'
-
-/**
- * Which league to draw: the one the URL asked for, else the one last chosen,
- * else the first offered.
- *
- * `unknown` rather than `string` for `value`, because this is handed the raw
- * value out of `searchParams` — which is `string | string[] | undefined`, an
- * array whenever the parameter is repeated. `remembered` is a plain string
- * because a cookie has exactly one value.
- *
- * **Both are validated against the leagues the database actually returned**,
- * not merely parsed, for `parseLeague`'s reason: a slug naming a league with no
- * matches this season must fall back to a real one rather than scoping the page
- * to nothing. A stored value is as untrusted as a URL parameter and outlives
- * deploys, so the cookie gets no more credit than the address bar does — it is
- * simply consulted second. `null` only when there are no leagues at all, which
- * is the caller's empty state rather than this function's problem.
- */
-export function parseLeagueScope(
-  value: unknown,
-  leagues: readonly LeagueOption[],
-  remembered: string | null = null,
-): LeagueOption | null {
-  if (leagues.length === 0) return null
-  const slug = Array.isArray(value) ? value[0] : value
-  const named = (wanted: unknown) =>
-    leagues.find((league) => leagueSlug(league.name) === wanted)
-  return named(slug) ?? named(remembered) ?? leagues[0]
-}
-
 /* ------------------------------------------------------------------ flags -- */
 
 /**
@@ -127,8 +49,8 @@ export function parseLeagueScope(
  * An interface rather than a bare `country: string` parameter, because a
  * league's two strings are interchangeable to the compiler: `flagClass(
  * league.name)` would type-check and then return null forever. Structural
- * typing means a `League` row, or a `LeagueTab`, satisfies this without saying
- * so.
+ * typing means a `League` row, or a `LeagueSection`, satisfies this without
+ * saying so.
  */
 export interface LeagueIdentity {
   /**
@@ -175,4 +97,97 @@ const FLAGS = new Map([
  */
 export function flagClass(league: LeagueIdentity): string | null {
   return FLAGS.get(searchKey(league.country)) ?? null
+}
+
+/* ------------------------------------------------------------------ order -- */
+
+/**
+ * The order competitions are shown in, most followed first.
+ *
+ * **This is a map for exactly the reason `FLAGS` above is one, and it passes
+ * the same test.** It names no season and no league id; it is indexed by a value
+ * that came out of the `League` table, so it cannot be consulted without a row.
+ * A fifth league needs no edit here to work — it renders exactly as a ranked one
+ * does and sorts after them, which is what keeps this decoration on a league
+ * rather than part of the price of one. The moment an unranked league were
+ * hidden, or held a reserved gap, `AGENTS.md`'s first constraint would be broken.
+ *
+ * **Why an order has to be stated at all.** Every derivable order is wrong here.
+ * Alphabetical opens on La Liga forever. Earliest kickoff or most fixtures would
+ * put whichever league happens to play at lunchtime above the one most readers
+ * came for, and would reshuffle the page from day to day. Which competitions
+ * people follow is a fact about people, and no column in this database holds it.
+ *
+ * A hand-written map rather than a `League.rank` column because reordering is
+ * rare and a column costs a migration, a seed script, and the standing risk of
+ * the sync's league upsert overwriting it. If reordering ever becomes frequent,
+ * promoting this to a column is a contained change: the fallback below is
+ * already the behaviour an unset column would need.
+ */
+const LEAGUE_ORDER = new Map([
+  ['premier league', 1],
+  ['la liga', 2],
+  ['serie a', 3],
+  ['primeira liga', 4],
+])
+
+/**
+ * Where a league sorts. Unranked competitions come last, in one another's
+ * alphabetical order — see `groupByLeague`, which applies the tiebreak.
+ */
+export function leagueRank(league: { name: string }): number {
+  return LEAGUE_ORDER.get(searchKey(league.name)) ?? Number.MAX_SAFE_INTEGER
+}
+
+/** What a section heading needs of a league: a key, a name, and its flag's country. */
+export interface LeagueSection extends LeagueIdentity {
+  id: number
+  name: string
+}
+
+/** A run of items belonging to one competition, headed by it. */
+export interface LeagueGroup<T> {
+  league: LeagueSection
+  items: T[]
+}
+
+/**
+ * Cut a list into one group per competition, most followed first.
+ *
+ * **Unlike `groupByMonth` in [`dates.ts`](./dates.ts), this sorts** — and the
+ * difference is worth stating, because that function makes never sorting its
+ * whole design. It can, because a month heading's order *is* the order of the
+ * rows under it, which Postgres already decided. A league heading's is not: the
+ * query orders fixtures by kickoff, and which competition leads the page is a
+ * separate question that no `ORDER BY` can answer, for `LEAGUE_ORDER`'s reason.
+ *
+ * So the two orders are split cleanly. **Within** a group, order is preserved
+ * exactly as handed over, which keeps Postgres in charge of kickoff order the
+ * way `groupByMonth` does. **Between** groups, this sorts, and it is the only
+ * opinion about that.
+ *
+ * Generic over `T` with a `(item: T) => LeagueSection` accessor rather than
+ * requiring a `league` property, so it groups anything without knowing what a
+ * fixture is — `groupByMonth`'s shape, for `groupByMonth`'s reason.
+ */
+export function groupByLeague<T>(
+  items: readonly T[],
+  leagueOf: (item: T) => LeagueSection,
+): LeagueGroup<T>[] {
+  const groups = new Map<number, LeagueGroup<T>>()
+
+  for (const item of items) {
+    const league = leagueOf(item)
+    const open = groups.get(league.id)
+    if (open === undefined) groups.set(league.id, { league, items: [item] })
+    else open.items.push(item)
+  }
+
+  return [...groups.values()].sort((a, b) => {
+    const order = leagueRank(a.league) - leagueRank(b.league)
+    // The alphabet only ever decides between two leagues this map does not
+    // name. `localeCompare` rather than `<` so a competition with diacritics
+    // sorts where a reader would look for it.
+    return order !== 0 ? order : a.league.name.localeCompare(b.league.name)
+  })
 }

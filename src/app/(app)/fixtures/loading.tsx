@@ -3,16 +3,17 @@ import { Skeleton, SkeletonBox, SkeletonHeader, SkeletonLine, SkeletonTiles } fr
 /**
  * `/fixtures` while its queries run.
  *
- * The screen this stands in for is a header, the four season tiles, the league
- * row beside the matchday pager, and a card per fixture — so this is the same
- * four things, drawn as blocks in the same containers.
+ * The screen this stands in for is a header, the four season tiles, the day
+ * pager, and a card per fixture under a heading per competition — so this is the
+ * same four things, drawn as blocks in the same containers.
  *
- * **Six cards, and the number is a guess that cannot be got right.** A matchday
- * is ten fixtures in the Premier League and nine in the Primeira Liga, but a
- * skeleton is rendered before anything has been asked, so the count is not
- * knowable here. Six fills a first screen at desktop height without running so
- * far past a short matchday that the list visibly shortens when the real cards
- * arrive.
+ * **One league section, and six cards under it.** Both numbers are drawings
+ * rather than predictions, and neither is knowable: a skeleton renders before
+ * anything has been asked, and how many competitions play on a given day is
+ * exactly what the query is for — a Saturday has four and a Tuesday in June has
+ * none. `/diary` draws one month group for the same reason. Six cards fills a
+ * first screen at desktop height without running so far past a quiet day that
+ * the list visibly shortens when the real cards arrive.
  */
 export default function Loading() {
   return (
@@ -20,15 +21,21 @@ export default function Loading() {
       <SkeletonHeader />
       <SkeletonTiles />
 
-      {/* The league row and the pager, in the wrapper `page.tsx` gives them —
-          stacked below `sm`, apart on one line from there up. */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex gap-2">
-          <SkeletonBox className="h-8 w-32 rounded-full" />
-          <SkeletonBox className="h-8 w-28 rounded-full" />
-          <SkeletonBox className="h-8 w-24 rounded-full" />
-        </div>
-        <SkeletonBox className="h-8 w-44" />
+      {/* The day pager, in the wrapper `page.tsx` gives it — centred below
+          `sm`, hard left from there up. One block for the whole control rather
+          than three for its arrows and label: the arrows are chrome and the
+          reader is not waiting to read them. */}
+      <div className="mb-6 flex justify-center sm:justify-start">
+        <SkeletonBox className="h-11 w-64" />
+      </div>
+
+      {/* The league heading: the competition, a rule taking whatever width is
+          left, and the count in its own sunken chip. The rule is drawn for real
+          rather than as a grey block — it is chrome, not content. */}
+      <div className="mb-3 flex items-center gap-3">
+        <SkeletonLine className="text-caps w-36" />
+        <span className="flex-1 border-t border-border" />
+        <SkeletonBox className="h-5 w-6 rounded-sm" />
       </div>
 
       <ul className="flex flex-col gap-4">
@@ -41,7 +48,7 @@ export default function Loading() {
             <article className="overflow-hidden rounded-md border border-border bg-surface">
               <div className="flex items-center justify-between gap-4 bg-surface-header px-4 py-2">
                 <SkeletonLine className="text-caps w-40" />
-                <SkeletonLine className="text-data w-16" />
+                <SkeletonLine className="text-caps w-20" />
               </div>
 
               <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-4">
