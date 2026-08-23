@@ -228,7 +228,7 @@ export function PlayersBrowser({
 
       {visible.length === 0 ? (
         // Its own sentence, so "nothing matches what you typed" never reads as
-        // "there are no players" — the distinction `DIARY_FILTERS` established.
+        // "there are no players" — the distinction `DIARY_VIEWS` established.
         <p className="text-body text-muted">No players match your search.</p>
       ) : (
         <>

@@ -8,7 +8,7 @@
  *
  * Nothing here reads `scratch/`, unlike the sync mapper's tests: the fold is our
  * own invention, not the provider's, so a captured payload has nothing to say
- * about it. The same footing as `diary-filters.test.ts`.
+ * about it. The same footing as `diary-views.test.ts`.
  */
 
 import { describe, expect, it } from 'vitest'

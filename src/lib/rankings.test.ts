@@ -4,7 +4,7 @@
  * Nothing here reads `scratch/`, unlike the sync mapper's tests: sorts, layouts
  * and storage keys are our own invention, not the provider's, so a captured
  * payload has nothing to say about them. The same footing as
- * `diary-filters.test.ts`.
+ * `diary-views.test.ts`.
  *
  * These tests moved out of `players-index.test.ts` when the teams index wanted
  * the same five sorts. They are written over `Ranking` rather than over a player,

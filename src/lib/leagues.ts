@@ -3,7 +3,7 @@
  * competitions are shown in, and the flag that marks one on screen. The only
  * place any of those vocabularies is written down.
  *
- * Pure, like [`diary-filters.ts`](./diary-filters.ts) and
+ * Pure, like [`diary-views.ts`](./diary-views.ts) and
  * [`verdicts.ts`](./verdicts.ts), and for the same reason: what is decided here
  * is worth a test, and a test must be able to import this without Prisma in the
  * loop.

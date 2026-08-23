@@ -22,6 +22,7 @@ import {
   countVerdicts,
   isJudgementTag,
   noteOf,
+  summariseMatch,
   summariseVerdicts,
   verdictOf,
 } from './verdicts'
@@ -66,6 +67,16 @@ function judged<T>(entry: T, tag: JudgementTag | null) {
 /** The same, for the other half of a judgement. */
 function annotated<T>(entry: T, note: string | null) {
   return { ...entry, judgements: note === null ? [] : [{ note }] }
+}
+
+/**
+ * A whole judgement — both halves on one row, which is what `diaryMatches`
+ * selects and what `summariseMatch` reads. The schema's CHECK requires at least
+ * one of the two, so a row with neither is not a state the database can hold and
+ * is not tested for.
+ */
+function recorded<T>(entry: T, tag: JudgementTag | null, note: string | null) {
+  return { ...entry, judgements: [{ tag, note }] }
 }
 
 describe('isJudgementTag', () => {
@@ -186,5 +197,57 @@ describe('summariseVerdicts', () => {
 
   it('is empty for a match nobody has judged', () => {
     expect(summariseVerdicts(starters.map((entry) => judged(entry, null)))).toEqual([])
+  })
+})
+
+describe('summariseMatch', () => {
+  it('has nothing to say about a match with no judgements', () => {
+    expect(summariseMatch([])).toEqual({ mvp: null, standouts: 0, flops: 0, notes: 0 })
+  })
+
+  it('names the MVP and counts the rest', () => {
+    const summary = summariseMatch([
+      recorded(starters[0], 'MVP', null),
+      recorded(starters[1], 'STANDOUT', null),
+      recorded(starters[2], 'STANDOUT', null),
+      recorded(starters[3], 'FLOP', null),
+    ])
+
+    expect(summary.mvp?.player.name).toBe(starters[0].player.name)
+    expect(summary.standouts).toBe(2)
+    expect(summary.flops).toBe(1)
+    expect(summary.notes).toBe(0)
+  })
+
+  it('counts a row that carries both a tag and a note in both tallies', () => {
+    // The three numbers deliberately do not partition the entries, which is why
+    // the row draws no proportional bar: one judgement here is a flop *and* a
+    // note, and 1 + 1 over one entry is the right answer rather than a bug.
+    const summary = summariseMatch([recorded(starters[0], 'FLOP', 'anonymous')])
+
+    expect(summary.flops).toBe(1)
+    expect(summary.notes).toBe(1)
+  })
+
+  it('counts a note with no tag, which is an entry too', () => {
+    const summary = summariseMatch([recorded(starters[0], null, 'quiet game')])
+
+    expect(summary).toMatchObject({ mvp: null, standouts: 0, flops: 0, notes: 1 })
+  })
+
+  it('leaves the MVP unset when nobody was given one', () => {
+    expect(summariseMatch([recorded(starters[0], 'STANDOUT', null)]).mvp).toBeNull()
+  })
+
+  it('keeps the first MVP if the data ever holds two', () => {
+    // A match has one MVP across both squads and awarding it again takes it off
+    // the first, so this cannot arise from the app. Asserted anyway: the row
+    // should name someone rather than silently redraw itself.
+    const summary = summariseMatch([
+      recorded(starters[0], 'MVP', null),
+      recorded(starters[1], 'MVP', null),
+    ])
+
+    expect(summary.mvp?.player.name).toBe(starters[0].player.name)
   })
 })

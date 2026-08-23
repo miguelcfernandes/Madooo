@@ -3,11 +3,10 @@ import { Skeleton, SkeletonBox, SkeletonHeader, SkeletonLine, SkeletonTiles } fr
 /**
  * `/diary` while its two queries run.
  *
- * The screen is a header, the four season tiles, the filter tabs, then the
- * entries grouped under a month rule. One month's worth is drawn: the grouping
- * is by when each entry was *written*, so how many months a diary spans is not
- * knowable before it has been read, and a second rule under a fallback would
- * assert a shape the data may not have.
+ * The screen is a header, the four season tiles, the view tabs, then the rows
+ * grouped under a month rule. One month's worth is drawn: how many months a
+ * diary spans is not knowable before it has been read, and a second rule under a
+ * fallback would assert a shape the data may not have.
  */
 export default function Loading() {
   return (
@@ -15,24 +14,22 @@ export default function Loading() {
       <SkeletonHeader />
       <SkeletonTiles />
 
-      {/* `TabStrip`'s row: the filter names on one line, each the height of a
+      {/* `TabStrip`'s row: the view names on one line, each the height of a
           large control and sitting on the underline that marks the current one.
 
-          Four tabs written out rather than mapped over a list of widths, for the
-          reason `skeleton.tsx` gives about `className`: a width assembled into a
-          template literal is a name Tailwind may never see as text. */}
+          Three tabs — All, Matches, With notes — written out rather than mapped
+          over a list of widths, for the reason `skeleton.tsx` gives about
+          `className`: a width assembled into a template literal is a name
+          Tailwind may never see as text. */}
       <div className="mb-6 flex flex-wrap items-center gap-x-6">
+        <span className="inline-flex h-(--control-h-lg) items-center">
+          <SkeletonBox className="h-3 w-8" />
+        </span>
         <span className="inline-flex h-(--control-h-lg) items-center">
           <SkeletonBox className="h-3 w-16" />
         </span>
         <span className="inline-flex h-(--control-h-lg) items-center">
-          <SkeletonBox className="h-3 w-14" />
-        </span>
-        <span className="inline-flex h-(--control-h-lg) items-center">
-          <SkeletonBox className="h-3 w-12" />
-        </span>
-        <span className="inline-flex h-(--control-h-lg) items-center">
-          <SkeletonBox className="h-3 w-14" />
+          <SkeletonBox className="h-3 w-20" />
         </span>
       </div>
 

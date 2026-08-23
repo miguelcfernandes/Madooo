@@ -154,7 +154,7 @@ export function TeamsBrowser({
 
       {visible.length === 0 ? (
         // Its own sentence, so "nothing matches what you typed" never reads as
-        // "there are no teams" — the distinction `DIARY_FILTERS` established.
+        // "there are no teams" — the distinction `DIARY_VIEWS` established.
         <p className="text-body text-muted">No teams match your search.</p>
       ) : layout === 'list' ? (
         // The `SquadPanel` card, so every list in the app reads as one system.

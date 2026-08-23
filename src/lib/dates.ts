@@ -313,7 +313,7 @@ export function isDayKey(value: string): boolean {
 /**
  * The day a request is asking for, falling back rather than refusing.
  *
- * `unknown` rather than `string` for the same reason `parseFilter` takes it:
+ * `unknown` rather than `string` for the same reason `parseView` takes it:
  * this is handed the raw value out of `searchParams`,
  * which is `string | string[] | undefined` and an array whenever the parameter is
  * repeated. A mistyped query string should show a day of football, not an error

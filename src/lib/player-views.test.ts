@@ -26,7 +26,7 @@ describe('PLAYER_VIEWS', () => {
   })
 
   it('asks for a missing note by null alone', () => {
-    // The same reading `DIARY_FILTERS` takes: a cleared note is never stored as
+    // The same reading `DIARY_VIEWS` takes: a cleared note is never stored as
     // an empty string, so `{ not: null }` is the whole of the test.
     const notes = PLAYER_VIEWS.find((view) => view.slug === 'notes')
     expect(notes?.where).toEqual({ note: { not: null } })

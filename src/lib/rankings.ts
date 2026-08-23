@@ -2,7 +2,7 @@
  * The vocabulary both indexes are drawn from: their sorts, their layouts, the
  * search normaliser and the league parser.
  *
- * The same table-plus-parser shape as [`diary-filters.ts`](./diary-filters.ts)
+ * The same table-plus-parser shape as [`diary-views.ts`](./diary-views.ts)
  * and [`player-views.ts`](./player-views.ts) — one list read by the control, the
  * empty state *and* the sort, so a slug cannot exist in storage that nothing
  * knows how to apply. Pure and Prisma-free, which is what lets

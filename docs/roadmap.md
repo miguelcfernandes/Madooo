@@ -8,7 +8,7 @@ How the system *works* is not here. That is
 [`architecture.md`](architecture.md), organised by subsystem: read the section
 you are about to touch before writing code in it.
 
-**Last updated:** 2026-08-23 (step 20 — fixtures by day)
+**Last updated:** 2026-08-23 (step 21 — the diary by match)
 
 ---
 
@@ -112,13 +112,20 @@ anything has been recorded against it. Every tally is the signed-in user's own,
 so a second account sees four zeroes and a page of empty footers. The tiles are
 season-wide and stay put as the day changes, which is what makes them tallies.
 
-**And it can be read back.** `/diary` is no longer a placeholder: every
-judgement of the season, newest first, cut into calendar months with a count
-against each, over four tiles and a row of filter pills that live in the URL.
-An entry is dated by **when it was written**, not by when the match was played —
-agreed explicitly, and the reason the fixture is named on every row. A note with
-no tag is an entry too, drawn with a fourth badge in the informational blue that
-exists nowhere in the database. Its scoreline links back to the match.
+**And it can be read back, two ways.** `/diary` is no longer a placeholder. Over
+four tiles sits a row of three tabs that live in the URL as `?view=`: **All** and
+**With notes** list judgements, newest first, dated by **when they were
+written** — agreed explicitly, and the reason the fixture is named on every row.
+A note with no tag is an entry too, drawn with a fourth badge in the
+informational blue that exists nowhere in the database.
+
+**Matches** lists one row per match instead, dated by kickoff, naming whoever was
+made MVP and tallying the standouts, flops and notes beside it. It is the only
+list in the app ordered by when a thing happened rather than by when the reader
+wrote about it, and it exists because one list of judgements could not be
+searched by match: eight verdicts on one game are eight rows that all say the
+same fixture. Every list is cut into calendar months with a count against each,
+and every row links back to the match.
 
 **And there is a way in to all of them.** `/players` is the season's whole
 matchday-squad roster — every player, not only the judged ones — over four tallies
@@ -1030,6 +1037,50 @@ than a build.
       one; and any annotation of the design screenshots, which still draw the
       league row.
 
+- [x] **21 — The diary by match.** Done. `/diary` has three tabs where it had
+      five: **All**, **Matches** and **With notes**. The new one lists a row per
+      match the reader recorded anything in, ordered by kickoff, naming the MVP
+      and tallying the standouts, flops and notes.
+
+      **It came from a user, and the complaint was "I cannot find things".** The
+      diagnosis was structural rather than cosmetic: the diary lists judgements,
+      so judging eight players in one match produces eight rows that all name the
+      same fixture, and scanning it means reading past repetition. The list of
+      matches was also the one list the app counted but never showed — the
+      *Watched* tile on `/fixtures` has always counted exactly this set, and the
+      new tab runs the same predicate so the number and the list cannot disagree.
+
+      **Three tabs went, and only one of them was a loss.** Standouts and Flops
+      each held a large fraction of a diary, so filtering to one returned a list
+      the same size and shape as the one the reader was already failing to read —
+      a filter that narrows nothing cannot help anyone find anything. MVPs was
+      genuinely selective, and it is on the match row instead: a match has at most
+      one MVP across both squads, so an MVP is a fact about a match rather than a
+      slice of the diary. The stat tiles were never navigation and are unchanged —
+      `/fixtures` draws the same four with no tabs at all — so dropping tag tabs
+      orphaned nothing.
+
+      **`?filter=` became `?view=`**, which is what the player profile already
+      called the same control and what `foundations.md` calls it. The word had
+      stopped being true: Matches does not filter the entries, it replaces them.
+      The table behind it is a discriminated union now, so handing the matches
+      view to `diaryEntries` — which has no query for it — is a compile error
+      rather than a diary returned unfiltered.
+
+      **No schema change and no migration**, which is the whole reason this was a
+      query and a component. `Judgement` carries no `matchId`, so the tallies come
+      from one `Match` query whose nested squad rows are filtered to the reader's
+      own judgements and folded in JavaScript, the same shape `/players` uses for
+      the same reason.
+
+      Deliberately not built: any change to the four stat tiles, which still count
+      entries written rather than matches watched — that is a different screen's
+      question; a `?from=` on the match link, so arriving at a match from the
+      diary still offers "Back to fixtures", exactly as the entry rows have always
+      done; a `(season, kickoff)` index, since the semi-join is selective and a
+      speculative index is a migration with no measurement behind it; and any
+      redrawing of the design screenshots, which still show five pill filters.
+
 ## Long-term remarks
 
 Standing constraints that were agreed explicitly, cannot be read off the code,
@@ -1122,7 +1173,7 @@ must stay out of the Vercel build, are in
 - **The app now has two conventions for screen state, and the older one may be
   the wrong default. High priority — a refactor the author may want.** Every
   screen before 7.3 keeps its state in the URL: `/fixtures?date=2026-08-23`,
-  `/diary?filter=mvp`, `/players/44?view=notes`. Both indexes keep their three
+  `/diary?view=matches`, `/players/44?view=notes`. Both indexes keep their three
   controls in `localStorage` instead, on the argument that they are
   *preferences* — how the reader likes a list drawn — where the others are
   *locations*. That distinction is written up in
@@ -1132,17 +1183,17 @@ must stay out of the Vercel build, are in
 
   The reason to look again: **nothing in the app is shareable.** Diaries are
   private, single-user, no public profiles — so the URL's main advantage buys
-  nothing today, while its main cost is real, because a filter in the URL is
-  forgotten the moment the tab closes. A reader who always wants MVPs gets the
-  unfiltered diary on every visit. Against moving them: the back button stops
-  undoing a filter change, the pages stop being server components, and a future
-  share feature would want them back in the URL.
+  nothing today, while its main cost is real, because a view in the URL is
+  forgotten the moment the tab closes. A reader who opens the diary for the
+  matches gets the list of judgements on every visit. Against moving them: the
+  back button stops undoing a tab change, the pages stop being server
+  components, and a future share feature would want them back in the URL.
 
-  Deliberately not touched in 7.3 or 7.5, both scoped to one screen — though 7.5
-  choosing `localStorage` again makes the newer convention the app's default in
-  practice rather than its exception. Whoever settles it should decide for the
-  diary's filter and the profile's view tab together, since they are the same
-  question twice.
+  Deliberately not touched in 7.3, 7.5 or 21, all scoped to one screen — though
+  7.5 choosing `localStorage` again makes the newer convention the app's default
+  in practice rather than its exception. Whoever settles it should decide for the
+  diary's view and the profile's view tab together, which step 21 made plainly
+  one question rather than two by giving them the same parameter name.
 
   **A cookie is a third option neither of the two offers, and the app no longer
   has one to point at.** This used to argue that `madooo-league` might be the
@@ -1153,7 +1204,7 @@ must stay out of the Vercel build, are in
   address is today, which is a fact about the world.
 
   The shape of the answer survives the instance and is still worth having for the
-  diary's filter: a cookie read on the server fills the URL's silence without
+  diary's view: a cookie read on the server fills the URL's silence without
   giving up the server render. What it would not settle is which store the
   *state* lives in, only what happens when the URL says nothing.
 

@@ -16,13 +16,13 @@
  * value that is not one of them cannot survive at all, which is a stronger
  * guarantee than a list of things to reject.
  *
- * Pure, so `back.test.ts` can assert that. `diary-filters.ts` and
+ * Pure, so `back.test.ts` can assert that. `diary-views.ts` and
  * `player-views.ts` import Prisma's *types* only and `import type` is erased at
  * compile time, so nothing here pulls the client into a test; `dates.ts` imports
  * nothing at all.
  */
 
-import { DIARY_FILTERS } from './diary-filters'
+import { DIARY_VIEWS } from './diary-views'
 import { isDayKey } from './dates'
 import { PLAYER_VIEWS } from './player-views'
 
@@ -52,7 +52,7 @@ const TEAM = /^\/teams\/(\d+)$/
  *
  * `unknown` rather than `string` because this is handed the raw value out of
  * `searchParams`, which is `string | string[] | undefined` and an array whenever
- * the parameter is repeated — the same signature `parseFilter` takes.
+ * the parameter is repeated — the same signature `parseView` takes.
  */
 export function backLink(from: unknown, fallback: BackLink = PLAYERS): BackLink {
   const value = Array.isArray(from) ? from[0] : from
@@ -90,12 +90,13 @@ export function backLink(from: unknown, fallback: BackLink = PLAYERS): BackLink 
   }
 
   if (path === '/diary') {
-    // One list of slugs, in `diary-filters.ts`. An unknown one drops to the
-    // unfiltered diary rather than being carried through.
-    const filter = new URLSearchParams(query).get('filter')
-    const known = DIARY_FILTERS.find((candidate) => candidate.slug === filter)
+    // One list of slugs, in `diary-views.ts`. An unknown one drops to the
+    // default diary rather than being carried through — which is what an old
+    // `?view=mvp` bookmark now does, since that view no longer exists.
+    const view = new URLSearchParams(query).get('view')
+    const known = DIARY_VIEWS.find((candidate) => candidate.slug === view)
     return {
-      href: known === undefined || known === DIARY_FILTERS[0] ? '/diary' : `/diary?filter=${known.slug}`,
+      href: known === undefined || known === DIARY_VIEWS[0] ? '/diary' : `/diary?view=${known.slug}`,
       label: 'Back to Diary',
     }
   }
@@ -124,9 +125,9 @@ export function backLink(from: unknown, fallback: BackLink = PLAYERS): BackLink 
 /**
  * A link to a profile that remembers where it was clicked.
  *
- * The encoding happens here, once, because a `from` carrying `?filter=mvp` has
+ * The encoding happens here, once, because a `from` carrying `?view=notes` has
  * to survive being a value inside another query string — and a call site that
- * forgot would lose the filter silently rather than visibly.
+ * forgot would lose the view silently rather than visibly.
  */
 export function playerHref(playerId: number, from: string): string {
   return `/players/${playerId}?from=${encodeURIComponent(from)}`

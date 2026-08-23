@@ -4,7 +4,7 @@
  */
 
 import { prisma } from './prisma'
-import type { DiaryFilter } from './diary-filters'
+import type { EntriesView } from './diary-views'
 
 /**
  * Every judgement this user has recorded in one season, newest first.
@@ -27,9 +27,9 @@ import type { DiaryFilter } from './diary-filters'
  * the design draws no pager; if that ever stops being true the fix is a `take`
  * here rather than a different shape.
  */
-export async function diaryEntries(season: number, userId: number, filter: DiaryFilter) {
+export async function diaryEntries(season: number, userId: number, view: EntriesView) {
   return prisma.judgement.findMany({
-    where: { userId, matchSquad: { match: { season } }, ...filter.where },
+    where: { userId, matchSquad: { match: { season } }, ...view.where },
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     select: {
       id: true,
@@ -96,3 +96,64 @@ export async function diaryTotals(season: number, userId: number): Promise<Diary
  * interface would be a second copy free to drift.
  */
 export type DiaryEntry = Awaited<ReturnType<typeof diaryEntries>>[number]
+
+/**
+ * Every match this user recorded anything in, one row each, newest kickoff
+ * first — the diary's Matches tab.
+ *
+ * **Ordered by kickoff, which is the one place in the diary that is not ordered
+ * by when you wrote.** The rest of the screen is dated by the act of writing,
+ * deliberately; this tab exists because a reader could not find a match in that
+ * list, and a match is remembered by the day it was played. Grouping it by the
+ * month written would have reproduced the problem it was added to solve.
+ *
+ * The `where` is the same predicate as `seasonTotals`' first count in
+ * [`fixtures.ts`](./fixtures.ts): *watched* is a match this user recorded
+ * anything against, tag or note, and it is a query over `Match` because nothing
+ * marks a match as watched. The two agreeing is what makes the Watched tile a
+ * count of exactly this list.
+ *
+ * **One query rather than a `groupBy` and a fold.** `Judgement` carries no
+ * `matchId` — it points at a `MatchSquad` — so Postgres cannot group judgements
+ * by match any more than it can group them by player, which is the constraint
+ * `/players` runs into. The nested `where` filters each match's squad down to
+ * the rows this user judged, so what comes back per match is bounded by how many
+ * players they had something to say about, and the summary is folded in
+ * JavaScript by `summariseMatch`.
+ *
+ * No `take`, for `diaryEntries`' reason: a season is bounded by how much one
+ * person watched, and the design draws no pager.
+ */
+export async function diaryMatches(season: number, userId: number) {
+  return prisma.match.findMany({
+    where: { season, squadEntries: { some: { judgements: { some: { userId } } } } },
+    // `id` breaks ties, because two matches kicking off at the same minute is
+    // the normal case rather than the rare one.
+    orderBy: [{ kickoff: 'desc' }, { id: 'desc' }],
+    select: {
+      id: true,
+      kickoff: true,
+      // Both goal columns and both team names, which is exactly `Scored` in
+      // `text.ts` — so `scoreline` accepts this row structurally, with no cast
+      // and without that file knowing this query exists.
+      homeGoals: true,
+      awayGoals: true,
+      homeTeam: { select: { name: true } },
+      awayTeam: { select: { name: true } },
+      league: { select: { name: true } },
+      squadEntries: {
+        where: { judgements: { some: { userId } } },
+        select: {
+          player: { select: { name: true } },
+          // Filtered to this user, the same way `matchWithSquads` does it: a
+          // diary is private, and an unfiltered relation would read other
+          // people's rows.
+          judgements: { where: { userId }, select: { tag: true, note: true } },
+        },
+      },
+    },
+  })
+}
+
+/** The element type of what `diaryMatches` resolves to. `DiaryEntry`'s reasoning. */
+export type DiaryMatch = Awaited<ReturnType<typeof diaryMatches>>[number]

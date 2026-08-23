@@ -2,7 +2,7 @@
  * The two tabs on a player profile — Diary and Notes — and the only place they
  * are written down.
  *
- * The same table as [`diary-filters.ts`](./diary-filters.ts), for the same
+ * The same table as [`diary-views.ts`](./diary-views.ts), for the same
  * reasons: one list read by the tab strip, the empty state and the query, so a
  * slug cannot exist in the URL that nothing knows how to query. Pure, so
  * `parseView` — which reads an untrusted URL parameter — is testable without

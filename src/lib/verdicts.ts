@@ -133,3 +133,60 @@ export function summariseVerdicts<T extends Judgeable>(entries: readonly T[]): V
     })
     .sort((a, b) => SUMMARY_RANK[a.tag] - SUMMARY_RANK[b.tag])
 }
+
+/**
+ * What one match looks like on the diary's Matches tab.
+ *
+ * `mvp` is the entry rather than a name, which is what keeps this generic: the
+ * caller reads whatever it selected off it — a player's name here — and the
+ * function never has to know that a squad entry has a player on it.
+ * `summariseVerdicts` above returns entries for the same reason.
+ */
+export interface MatchSummary<T> {
+  mvp: T | null
+  standouts: number
+  flops: number
+  notes: number
+}
+
+/**
+ * Fold one match's judged squad entries into the four things its diary row says.
+ *
+ * A separate pass from `countVerdicts`, which counts entries carrying *any* tag
+ * and cannot answer "how many flops". A row needs the split, and one function
+ * that walked the list once is cheaper to read than three that each walk it.
+ *
+ * **`notes` overlaps the tag counts on purpose.** One judgement can be a flop
+ * *and* carry a note, so the three numbers do not partition the entries and must
+ * never be presented as if they did — no `unrated` remainder, no proportional
+ * bar. [`verdict-split.ts`](./verdict-split.ts) makes the same argument for a
+ * club, where one match contributes many players.
+ *
+ * There is at most one MVP: the app's rule is that a match has one across both
+ * squads, and awarding it again takes it off the first player. The `??=` holds
+ * that line rather than trusting it — if the data ever disagreed, the row would
+ * name the first and not silently redraw itself.
+ */
+export function summariseMatch<T extends Judgeable & Annotated>(
+  entries: readonly T[],
+): MatchSummary<T> {
+  const summary: MatchSummary<T> = { mvp: null, standouts: 0, flops: 0, notes: 0 }
+
+  for (const entry of entries) {
+    switch (verdictOf(entry)) {
+      case 'MVP':
+        summary.mvp ??= entry
+        break
+      case 'STANDOUT':
+        summary.standouts += 1
+        break
+      case 'FLOP':
+        summary.flops += 1
+        break
+    }
+
+    if (noteOf(entry) !== null) summary.notes += 1
+  }
+
+  return summary
+}

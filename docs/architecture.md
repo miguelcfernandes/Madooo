@@ -319,13 +319,34 @@ would be six hundred queries, so `/players` reads the user's own judgements as
 rows and folds them in JavaScript — bounded by how much one person typed, the
 same bound the diary accepts for having no pager.
 
-### The diary is ordered by when an entry was written
+### The diary is ordered by when an entry was written, except by match
 
 `diaryEntries` sorts on `Judgement.createdAt` descending, not on the kickoff of
 the match being judged, and that is a product decision rather than a convenience:
 a diary entry is dated by the act of writing it. The consequence to hold onto is
 that two verdicts on one match recorded a fortnight apart sit a fortnight apart
 in the list, which is why every row names its fixture.
+
+**`diaryMatches` is the one exception, and it is the reason the tab exists.** It
+sorts on `Match.kickoff`, because it was added for a reader who could not find a
+match in a list where one match is eight rows, and a match is remembered by the
+day it was played. Filing it by the month written would have reproduced the
+problem it was added to solve. `Match.kickoff` is already indexed; the `where` is
+a semi-join, and there is no `(season, kickoff)` index because the selectivity
+has not been measured to want one.
+
+Its `where` is **the same predicate as `seasonTotals`' first count** — a match
+this user recorded anything against — so `/fixtures`' *Watched* tile counts
+exactly the rows this tab lists, and the two cannot drift into disagreeing.
+
+The per-match tallies are folded in JavaScript by `summariseMatch`, not grouped
+by Postgres, for the reason above: `Judgement` points at a `MatchSquad`, so
+`matchId` is no more reachable from a judgement than `playerId` is. One `Match`
+query whose nested squad rows are filtered to this user's own judgements returns
+everything the rows need, bounded by how many players one person had something to
+say about. **The three tallies deliberately do not partition the entries** — one
+judgement can be a flop *and* carry a note — which is why the row draws counts
+and never a proportional bar.
 
 `@@index([userId, createdAt])` on `Judgement` is exactly that query's index. It
 has been in the schema since step 2 and had no reader until the diary; anything
@@ -839,11 +860,13 @@ string. [`back.ts`](../src/lib/back.ts) parses it against a handful of our own
 shapes and **reconstructs the href from the parsed parts**, so a value that is
 not one of them cannot survive: `?from=https://…` written straight into a
 `<Link>` is an open redirect, and reconstruction is a stronger guarantee than a
-list of things to reject. The filter, the day or the profile's tab travels
+list of things to reject. The view, the day or the profile's tab travels
 with it, so Back returns to the screen the reader actually left rather than to an
 unparameterised one. `playerHref` and `teamHref` do the `encodeURIComponent`,
-once each, because a `from` carrying `?filter=mvp` has to survive being a value
-inside another query string.
+once each, because a `from` carrying `?view=notes` has to survive being a value
+inside another query string. Reconstruction also means a slug that has since been
+retired drops silently: a `?from=/diary?view=mvp` saved before step 21 lands on
+the diary rather than on a view nothing can draw.
 
 **The two profiles are origins for each other, and the fallback belongs to the
 screen rather than to the value.** A club lists its players and a player names
@@ -898,7 +921,7 @@ the URL, and the distinction that admits them is the one to apply to anything
 later.
 
 A **location** answers *what am I looking at* — `?date=2026-08-23`,
-`?filter=mvp`, `?view=notes`. It belongs in the URL, which is what keeps those pages server
+`?view=matches`, `?view=notes`. It belongs in the URL, which is what keeps those pages server
 components and makes them linkable and reachable with the back button.
 
 A **preference** answers *how do I like this drawn* — rows or cards, which sort,
@@ -954,7 +977,7 @@ entry](#the-seasons-calendar-is-pinned-to-london-a-kickoff-time-is-the-readers).
 A stored value is **exactly as untrusted as a URL parameter** — it outlives
 deploys, it is editable in devtools, and it can name a league that no longer has
 squads. So every one of them goes through a `parse*` that falls back, in the same
-table-plus-parser shape `diary-filters.ts` established for the URL.
+table-plus-parser shape `diary-views.ts` established for the URL.
 
 ### League identity is a name flattened, never an id
 
@@ -1458,7 +1481,7 @@ profile and joins the bundle inside `players-browser`.
 **Two tab vocabularies, and which is which.** `foundations.md` lists a 40px
 `--control-h-lg` tab and a 28px pill tab as separate controls; the rule between
 them is that an **underline tab changes the view of the screen you are on** —
-the diary's filters, a player's Diary and Notes — while a **pill chooses the
+the diary's three views, a player's Diary and Notes — while a **pill chooses the
 scope the screen is drawn for**. Only the first is drawn.
 [`tab-strip.tsx`](../src/components/tab-strip.tsx) is it; the pill's one instance
 was the league row on `/fixtures`, retired when that page became a day rather

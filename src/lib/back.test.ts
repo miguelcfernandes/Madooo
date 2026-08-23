@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { backLink, playerHref, teamHref, TEAMS } from './back'
-import { DIARY_FILTERS } from './diary-filters'
+import { DIARY_VIEWS } from './diary-views'
 import { PLAYER_VIEWS } from './player-views'
 
 describe('backLink', () => {
@@ -8,25 +8,29 @@ describe('backLink', () => {
     expect(backLink('/matches/12')).toEqual({ href: '/matches/12', label: 'Back to the match' })
   })
 
-  it('keeps the diary filter that was on when the profile was opened', () => {
-    expect(backLink('/diary?filter=flop')).toEqual({
-      href: '/diary?filter=flop',
+  it('keeps the diary view that was on when the profile was opened', () => {
+    expect(backLink('/diary?view=notes')).toEqual({
+      href: '/diary?view=notes',
       label: 'Back to Diary',
     })
   })
 
-  it('drops the filter when it is the default, so the URL stays clean', () => {
-    expect(backLink('/diary?filter=all').href).toBe('/diary')
+  it('drops the view when it is the default, so the URL stays clean', () => {
+    expect(backLink('/diary?view=all').href).toBe('/diary')
     expect(backLink('/diary').href).toBe('/diary')
   })
 
-  it('drops a filter slug nothing knows how to query', () => {
-    expect(backLink('/diary?filter=nonsense').href).toBe('/diary')
+  it('drops a view slug nothing knows how to query', () => {
+    expect(backLink('/diary?view=nonsense').href).toBe('/diary')
+
+    // `mvp` was a real slug until the five views became three. A `?from=` saved
+    // before that lands on the diary rather than on a view that cannot be drawn.
+    expect(backLink('/diary?view=mvp').href).toBe('/diary')
   })
 
   it('accepts every slug the diary actually offers', () => {
-    for (const filter of DIARY_FILTERS) {
-      expect(backLink(`/diary?filter=${filter.slug}`).label).toBe('Back to Diary')
+    for (const view of DIARY_VIEWS) {
+      expect(backLink(`/diary?view=${view.slug}`).label).toBe('Back to Diary')
     }
   })
 
@@ -104,13 +108,13 @@ describe('backLink', () => {
       '/diary',
       '/fixtures',
       '/matches/',
-      '/diary?filter=',
+      '/diary?view=',
       '/fixtures?date=',
     ]
     for (const input of [
       'https://evil.com',
       '/matches/12',
-      '/diary?filter=mvp',
+      '/diary?view=matches',
       '/teams/4',
       '/players/44?view=notes',
       '/fixtures?date=2026-08-23',
@@ -136,7 +140,7 @@ describe('backLink', () => {
   it('takes the fallback the caller supplies when it cannot tell', () => {
     expect(backLink(undefined, TEAMS)).toEqual({ href: '/teams', label: 'Back to Teams' })
     expect(backLink('https://evil.com', TEAMS).href).toBe('/teams')
-    expect(backLink('/diary?filter=mvp', TEAMS).href).toBe('/diary?filter=mvp')
+    expect(backLink('/diary?view=matches', TEAMS).href).toBe('/diary?view=matches')
   })
 
   it('takes the first value when the parameter is repeated', () => {
@@ -151,13 +155,13 @@ describe('backLink', () => {
 })
 
 describe('playerHref', () => {
-  it('encodes the origin, so a filter survives being a value inside a query string', () => {
-    const href = playerHref(44, '/diary?filter=mvp')
-    expect(href).toBe('/players/44?from=%2Fdiary%3Ffilter%3Dmvp')
+  it('encodes the origin, so a view survives being a value inside a query string', () => {
+    const href = playerHref(44, '/diary?view=notes')
+    expect(href).toBe('/players/44?from=%2Fdiary%3Fview%3Dnotes')
 
     // The round trip is the point: what `playerHref` writes, `backLink` reads.
     const from = new URL(href, 'https://example.test').searchParams.get('from')
-    expect(backLink(from).href).toBe('/diary?filter=mvp')
+    expect(backLink(from).href).toBe('/diary?view=notes')
   })
 
   it('round-trips a match', () => {
