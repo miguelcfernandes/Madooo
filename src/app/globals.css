@@ -132,6 +132,13 @@
      coincidence to be tidied away later. */
   --live: light-dark(var(--red-ink), var(--red-dark));
   --live-bg: light-dark(var(--red-bg), var(--red-dark-bg));
+  /* The third red, and the same argument --live already makes: a write that did
+     not save is not a verdict, and borrowing --flop for it would put the name of
+     a judgement on a failure — on the very row where a real FLOP chip sits
+     inches away. Named for what it reports, so retuning FLOP's red never
+     silently retunes an error message. See foundations.md. */
+  --alert: light-dark(var(--red-ink), var(--red-dark));
+  --alert-bg: light-dark(var(--red-bg), var(--red-dark-bg));
 
   --standout-mark: var(--accent-green);
   --flop-mark: var(--accent-red);
@@ -232,6 +239,8 @@
   --color-info-bg: var(--info-bg);
   --color-live: var(--live);
   --color-live-bg: var(--live-bg);
+  --color-alert: var(--alert);
+  --color-alert-bg: var(--alert-bg);
 
   --color-standout-mark: var(--standout-mark);
   --color-flop-mark: var(--flop-mark);

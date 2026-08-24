@@ -1,6 +1,6 @@
 'use client'
 
-import { startTransition, useOptimistic } from 'react'
+import { useOptimistic, useState, useTransition } from 'react'
 
 import { Icon } from './icon'
 import { setVerdict } from '@/lib/actions'
@@ -86,51 +86,149 @@ export function VerdictControls({ matchSquadId, playerName, tag }: Props) {
   */
   const [shown, setShown] = useOptimistic(tag)
 
-  function choose(next: JudgementTag) {
-    // Tapping the active verdict clears it. The decision is made here rather
-    // than in the action because this is what knows the current state, which is
-    // what lets the action be a plain idempotent "set it to this".
-    const value = shown === next ? null : next
+  /*
+    `useTransition` rather than the module-level `startTransition`, for the one
+    thing it adds: `saving` is true for exactly as long as this row's round trip
+    is in the air. Nothing else about the transition changes.
+  */
+  const [saving, startTransition] = useTransition()
+
+  /*
+    The verdict whose write failed, kept so the retry can re-send it, and how it
+    failed, because the two failures want different words.
+
+    A `useState` and not a `useOptimistic`, and the distinction is the point:
+    every other piece of state here is a guess about what the server will say and
+    is thrown away when it answers. This is a record of what the server *did*
+    say, so it has to survive the re-render that discards the guess.
+  */
+  const [failed, setFailed] = useState<{ value: JudgementTag | null; offline: boolean } | null>(
+    null,
+  )
+
+  function write(value: JudgementTag | null) {
+    // Clear the previous complaint before making a new attempt, or a retry that
+    // works would leave its own error message sitting under a chip that saved.
+    setFailed(null)
 
     // Both calls have to be inside the transition: `setShown` because an
     // optimistic update outside one has nothing to be discarded against, and the
     // action because that is how React knows the transition is still pending.
     startTransition(async () => {
       setShown(value)
-      await setVerdict(matchSquadId, value)
+      try {
+        await setVerdict(matchSquadId, value)
+      } catch (error) {
+        /*
+          **Nothing caught this before, and that was the bug worth finding.** An
+          uncaught rejection here ends the transition, `useOptimistic` drops the
+          tag it was holding, and the chip returns to how it was — which is
+          indistinguishable from a verdict that saved and was then removed. Every
+          failure the app can have looked identical, said nothing, and reached no
+          log, because a request that never arrives cannot be counted by the
+          server that never saw it.
+
+          `TypeError` is what `fetch` itself rejects with when the request never
+          completed — "Failed to fetch", or "Load failed" in Safari. Anything
+          else travelled to the server and came back, so the server is what
+          refused it. That is the only split worth drawing here: one of them is
+          the reader's connection and the other one is ours.
+        */
+        setFailed({ value, offline: error instanceof TypeError })
+
+        // The last place the real reason survives. The message above is written
+        // for whoever is holding the phone; this is for whoever is reading a
+        // console, and the two want completely different things.
+        console.error('[madooo] verdict did not save', {
+          matchSquadId,
+          playerName,
+          tag: value,
+          error,
+        })
+      }
     })
   }
 
-  return (
-    // `role="group"` with a name, so a screen reader reaching three identically
-    // shaped buttons is told whose they are before hearing them.
-    <div role="group" aria-label={`Verdict for ${playerName}`} className="flex gap-1">
-      {CHIPS.map((chip) => {
-        const selected = shown === chip.tag
+  function choose(next: JudgementTag) {
+    /*
+      **A repeat tap on the chip that is already lit is ignored while the write
+      is in the air.** A lit chip does not say whether it is saved or still
+      saving, so during that window a second tap on it is as likely to mean "did
+      that register?" as "undo that" — and read as the second, it silently
+      deletes what the first tap just wrote. Tapping a *different* chip is not
+      ambiguous and is left alone.
+    */
+    if (saving && shown === next) return
 
-        return (
+    // Tapping the active verdict clears it. The decision is made here rather
+    // than in the action because this is what knows the current state, which is
+    // what lets the action be a plain idempotent "set it to this".
+    write(shown === next ? null : next)
+  }
+
+  return (
+    /*
+      A column rather than the bare chip row it used to be, so the failure can
+      speak underneath the chips it belongs to. With nothing to say it collapses
+      to exactly the old markup plus one wrapper, and `items-start` keeps that
+      wrapper sized to the chips instead of stretching across the cell it sits
+      in.
+    */
+    <div className="flex flex-col items-start gap-1 md:items-end">
+      {/* `role="group"` with a name, so a screen reader reaching three
+          identically shaped buttons is told whose they are before hearing them. */}
+      <div role="group" aria-label={`Verdict for ${playerName}`} className="flex gap-1">
+        {CHIPS.map((chip) => {
+          const selected = shown === chip.tag
+
+          return (
+            <button
+              key={chip.tag}
+              type="button"
+              onClick={() => choose(chip.tag)}
+              // A toggle, not a radio: a radio group cannot be un-chosen, and
+              // clearing a verdict is the requirement.
+              aria-pressed={selected}
+              className={[
+                // 40px for a thumb, 32px from `md` up as drawn — the same
+                // arrangement-not-scaling move the rows themselves make.
+                'flex size-(--control-h-lg) items-center justify-center rounded-md border',
+                'active:translate-y-px focus-visible:focus-ring md:size-(--control-h)',
+                selected ? chip.selected : RESTING,
+              ].join(' ')}
+            >
+              {/* FILL 1 means "on", and an applied verdict is the example
+                  foundations gives for it. */}
+              <Icon name={chip.icon} size="md" filled={selected} />
+              <span className="sr-only">{chip.label}</span>
+            </button>
+          )
+        })}
+      </div>
+
+      {failed === null ? null : (
+        /*
+          `role="status"` announces this without stealing focus, which is what a
+          reader tapping down a team sheet needs — `alert` would interrupt them
+          mid-row. It also has to be the element that *appears*, not one that was
+          already here holding an empty string, or nothing is announced at all.
+
+          `text-alert`, not `text-flop`. They resolve to the same red, and
+          foundations is explicit that this is not a reason to share a token: a
+          verdict and a failure are different facts, and the two are side by side
+          on this very row, where a shared name would be read as a FLOP.
+        */
+        <p role="status" className="text-caption text-alert">
+          {failed.offline ? 'Not saved — check your connection.' : 'Not saved — something went wrong.'}{' '}
           <button
-            key={chip.tag}
             type="button"
-            onClick={() => choose(chip.tag)}
-            // A toggle, not a radio: a radio group cannot be un-chosen, and
-            // clearing a verdict is the requirement.
-            aria-pressed={selected}
-            className={[
-              // 40px for a thumb, 32px from `md` up as drawn — the same
-              // arrangement-not-scaling move the rows themselves make.
-              'flex size-(--control-h-lg) items-center justify-center rounded-md border',
-              'active:translate-y-px focus-visible:focus-ring md:size-(--control-h)',
-              selected ? chip.selected : RESTING,
-            ].join(' ')}
+            onClick={() => write(failed.value)}
+            className="t-hover cursor-pointer rounded-sm underline underline-offset-2 hover:text-text focus-visible:focus-ring"
           >
-            {/* FILL 1 means "on", and an applied verdict is the example
-                foundations gives for it. */}
-            <Icon name={chip.icon} size="md" filled={selected} />
-            <span className="sr-only">{chip.label}</span>
+            Try again
           </button>
-        )
-      })}
+        </p>
+      )}
     </div>
   )
 }

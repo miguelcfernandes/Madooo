@@ -8,7 +8,7 @@ How the system *works* is not here. That is
 [`architecture.md`](architecture.md), organised by subsystem: read the section
 you are about to touch before writing code in it.
 
-**Last updated:** 2026-08-23 (step 21 — the diary by match)
+**Last updated:** 2026-08-24 (a verdict that fails to save says so)
 
 ---
 
@@ -97,6 +97,19 @@ awarding it again moves it. Each panel header counts its own
 verdicts, and a "Your verdicts" panel under both benches lists what the match was
 judged to be, MVP first. Nothing is shared: the read is filtered to the signed-in
 user, so a second account opening the same match sees an unjudged team sheet.
+
+**And a tap that does not save now says so.** The chip used to be the only
+feedback there was, which made every possible failure produce one symptom — it
+lights, it goes back, nothing is written down anywhere. That was reported from
+outside as "it might be a little bit bugged", which is the most a reader could
+say, and it was invisible in the logs because a request that never arrives is not
+one the server can count. A failed write now draws a "Not saved" line under the
+row with a retry, saying whether the request never left or the server refused it,
+and logs the real reason to the console. The same window had a second fault: a
+repeat tap on a chip that was already lit read as "clear it", so an impatient
+second tap during a slow round trip deleted what the first one had just written
+and left no row at all. That gesture is ignored until the write lands; changing
+to a different chip, and clearing once it has, both still work.
 
 **A judgement can also be words.** A fourth control on every row opens a dialog —
 the app's first form, and its first `<dialog>` — and what is typed there is saved

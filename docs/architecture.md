@@ -1213,6 +1213,35 @@ Both the optimistic update and the action call have to sit inside the same
 `startTransition` — outside one, the optimistic value has nothing to be discarded
 against.
 
+The rule is about **the server's own value**, and the same file holds a
+`useState` that does not break it: which write failed, and how. That is a record
+of what the server *did* say rather than a guess at what it will say, so it has
+to survive the re-render that throws the guess away — the opposite requirement,
+and the reason the two hooks sit side by side.
+
+**A failed write has to be caught, because dropping the optimistic value is
+indistinguishable from succeeding.** When the action rejected and nothing caught
+it, the transition ended, `useOptimistic` discarded the tag, and the chip
+returned to how it had been — which looks exactly like a verdict that saved and
+was then removed. Every failure the app could have therefore produced one
+symptom, said nothing, and reached no log: a request that never arrives cannot be
+counted by the server that never saw it. `verdict-controls.tsx` now catches,
+draws a "Not saved" line with a retry, and `console.error`s the real reason. It
+splits the two cases on `error instanceof TypeError`, which is what `fetch`
+rejects with when the request never completed — that separates the reader's
+connection from our server, which is the only distinction the message can
+usefully draw.
+
+**A repeat tap on a chip that is already lit is ignored while its write is in
+flight.** The chip is the only feedback, and a lit chip does not say whether it
+is saved or still saving, so in that window a second tap on it is as likely to
+mean "did that register?" as "undo that" — and read as the second it silently
+deletes what the first tap wrote, leaving no row at all. Only the ambiguous
+gesture is dropped: tapping a *different* chip mid-flight still changes the
+verdict, and clearing still works once the write has landed. `useTransition`
+rather than the module-level `startTransition` is what supplies the flag; nothing
+else about the transition changes.
+
 **The write reaches the client through a small island, not a client page.** A
 squad row stays a server component and mounts its controls inside itself; the
 match page ships nothing else to the browser. The same move as the shell's

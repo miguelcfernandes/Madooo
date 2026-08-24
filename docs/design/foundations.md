@@ -69,6 +69,7 @@ The inks are darkened versions of the raw accents so the label passes contrast o
 | `--mvp` / `--mvp-bg` | `#a17400` / `#fdf3d9` | `#fdd663` / `#3a2f0d` |
 | `--info` / `--info-bg` | `#1155cc` / `#e6effd` | `#8ab4f8` / `#16243d` |
 | `--live` / `--live-bg` | `#c5372c` / `#fbe6e4` | `#f28b82` / `#3a1c19` |
+| `--alert` / `--alert-bg` | `#c5372c` / `#fbe6e4` | `#f28b82` / `#3a1c19` |
 
 `--standout-mark #0f9d58`, `--flop-mark #db4437`, `--mvp-mark #f4b400` are the same in both themes.
 
@@ -78,8 +79,23 @@ verdicts would be lying about why the colour is there — the next person to
 retune FLOP's red would silently retune the live badge with it. Red for a match
 in play is the broadcast convention rather than a borrowing from the verdict
 vocabulary, and the two never appear side by side: verdict words live on player
-rows, `LIVE` on a scoreline. This is the only pair in the table that duplicates
-another's values, and the duplication is the point.
+rows, `LIVE` on a scoreline. The duplication is the point, and it is now the
+rule rather than the exception: `--alert` below is the third token holding this
+red for a third reason.
+
+**`--alert` is that red again, for a write that did not save.** It draws the
+"Not saved" line under a squad row's verdict chips when the round trip fails,
+and it is emphatically not `--flop` — a judgement and a failure are different
+facts, and unlike `LIVE` these two *do* appear side by side, on the same row,
+inches apart. A shared token would leave a red line under a red chip with no way
+to tell which red meant what, and would hand whoever next retunes FLOP the power
+to restyle every error in the app. It takes no `-bg` in product code yet; the
+pair is declared together because the table's tinted pairs always are.
+
+**Failure is text, not an icon.** Material Symbols' `error` and `warning` glyphs
+are not in the subset font, and the answer to a missing glyph here is the same as
+it is for a called-off fixture and an unrated chip: a word. "Not saved" plus the
+reason, in `text-caption`, with an inline "Try again".
 
 **A match that was called off takes no token at all.** POSTPONED and CANCELLED are
 drawn as the resting chip — `--border` and `--text-muted` on `--surface`, the
