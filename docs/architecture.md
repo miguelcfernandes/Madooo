@@ -4,7 +4,8 @@ How the system works, by subsystem. This file answers "I am about to touch X —
 what do I need to know first?", so read the section you are about to work in.
 
 Everything here states what *is* true of the code as it stands. What is built,
-what is next, and what is still undecided is in [`roadmap.md`](roadmap.md); the
+what was deliberately not built, and what is still undecided is in
+[`roadmap.md`](roadmap.md); the
 binding rules are in [`AGENTS.md`](../AGENTS.md) and, for anything that renders,
 [`design/foundations.md`](design/foundations.md).
 
@@ -338,6 +339,13 @@ has not been measured to want one.
 Its `where` is **the same predicate as `seasonTotals`' first count** — a match
 this user recorded anything against — so `/fixtures`' *Watched* tile counts
 exactly the rows this tab lists, and the two cannot drift into disagreeing.
+
+**The table behind the tabs is a discriminated union**, which is what stops the
+two shapes being confused at the type level: handing `?view=matches` to
+`diaryEntries`, which has no query for it, is a compile error rather than a diary
+returned unfiltered. The parameter is `?view=` rather than `?filter=` because the
+player profile already called the same control that, and because the word had
+stopped being true — Matches does not filter the entries, it replaces them.
 
 The per-match tallies are folded in JavaScript by `summariseMatch`, not grouped
 by Postgres, for the reason above: `Judgement` points at a `MatchSquad`, so

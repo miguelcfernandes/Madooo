@@ -1,6 +1,6 @@
 ---
 name: slice
-description: Run one vertical build slice end to end. `/slice start` branches, implements a plan already agreed in plan mode, self-reviews the diff and updates the docs; `/slice finish` squash-merges into main, pushes main and deletes the branch. Use when working through a step in docs/roadmap.md.
+description: Run one vertical build slice end to end. `/slice start` branches, implements, self-reviews the diff and updates the docs; `/slice finish` squash-merges into main, pushes main and deletes the branch — and since Vercel builds from main, that deploys, so the author runs it. Use when building a feature the author has asked for.
 ---
 
 # Slice
@@ -28,9 +28,11 @@ this slice touches before implementing.
 
 Check all of these before touching anything. If any fails, stop and say why.
 
-1. **A plan has been agreed in this conversation**, in plan mode. This phase
-   executes a plan; it does not invent one. If there is no agreed plan, stop and
-   propose entering plan mode instead.
+1. **A feature has been asked for.** It does not need a plan agreed in advance —
+   scope it yourself. Enter plan mode instead when the shape of the work is
+   genuinely open, or when it turns on a decision that is the author's: an
+   unsettled product rule, a schema change or migration, anything touching the
+   non-negotiables in `AGENTS.md`, or a change to what a screen promises a user.
 2. Working tree is clean.
 3. On `main`, and `main` is up to date with `origin/main`.
 
@@ -127,6 +129,12 @@ Last deliberately: the docs describe the slice as built, which is only known
 once the diff has been read. They commit on this branch, so they land with the
 slice rather than as a stray commit on `main` afterwards.
 
+**The slice's reasoning goes in the squash commit message, not in the roadmap.**
+Write that message as the account of the work — what it does, what it cost, and
+what was deliberately left out. It is the only record that cannot drift from the
+diff it describes, which is why the roadmap holds one line per step rather than
+an essay per step. It grew to 1,300 lines once by holding the essays.
+
 Two files, and the split between them is what keeps either readable. **The
 roadmap holds what is true about the *project's progress*; the architecture file
 holds what is true about the *system*.** A fact that will still be true after
@@ -134,13 +142,24 @@ this slice ships is not roadmap material.
 
 In [`docs/roadmap.md`](../../../docs/roadmap.md), update all of these that moved:
 
-- **Current state** — what now exists that did not before. Do not restate the
-  Build order entry in prose; one of the two is enough.
-- The **Build order** checkbox for this step.
+- **Current state** — only if the slice changed what the app *is*: a screen
+  gained, a screen's job changed, a line of the inventory moved. Never a
+  paragraph narrating the slice.
+- **Built** — one line. Leave the commit hash blank; `finish` is what creates it,
+  and the author runs that.
+- **Not built, and why** — the entries the slice's "deliberately absent" list
+  would have held: one sentence of what was left out, one of why. Delete any
+  entry this slice built, or settled against for good.
+- **Launch checklist**, if a box moved.
 - **Long-term remarks** — see below. Most slices add nothing here.
 - **Open decisions** — move anything this slice settled out of the list, and add
   anything it opened.
 - **Last updated** date.
+
+**Nothing else goes in the roadmap.** Not what was learned, not why an approach
+was chosen, not what went wrong on the way. All of that is either a fact about
+the system — which belongs in `architecture.md`, under its subsystem — or the
+story of the work, which belongs in the commit message.
 
 **In [`docs/architecture.md`](../../../docs/architecture.md), prune before you
 add.** In that order, always — the pruning pass is what stops the file growing
@@ -197,9 +216,11 @@ the code can never tell you.
 own right; if it was not discussed with the author, it does not go in.
 
 **Do not plan the next slice in either file.** No task lists, no ordering, no
-"first do X then Y". Planning happens in plan mode, with the author, at the
-start of the next slice — a plan written now would be written blind and would
-quietly become the plan by default.
+"first do X then Y". The next slice is scoped when it is asked for, against the
+app as it stands then — a plan written now would be written blind and would
+quietly become the plan by default. "Not built, and why" is the exception that
+proves it: it records what was *declined* and the argument for declining, which
+is the opposite of an instruction to build something.
 
 The tell is grammatical: a remark states what *is* true, so it survives being
 read a month later. A plan uses imperatives — "add X", "set up Y", "fetch Z" —
@@ -209,8 +230,11 @@ slices.
 
 **9. Stop.**
 
-Do not push. Do not run `/slice finish` — that is the author's call, made once
-they have seen the slice work in the browser.
+Do not push. **Do not run `/slice finish` — it is the author's, always.** Vercel
+builds from `main`, so the `git push` inside that phase *is* the production
+deploy; running it would be deploying, which is the one thing this project does
+not do unattended. It is also the author's only chance to see the slice work in
+the browser first.
 
 Print exactly what the author should check in the browser: the URL, and what
 should be on screen if the slice worked. Then wait.
@@ -226,6 +250,11 @@ Do not treat the questions as an approval signal or as a cue to run `finish`.
 ## Phase: finish
 
 Merge, push, delete. Nothing else — the slice was finished in `start`.
+
+**Run only when the author asks for it by name.** It pushes `main`, and Vercel
+builds from `main`, so this phase deploys to production. Their questions about
+the diff are not a request to run it, and neither is their saying the slice looks
+right.
 
 ### Preconditions
 

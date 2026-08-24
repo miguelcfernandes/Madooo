@@ -77,8 +77,11 @@ league as well as per season, so check a new id with
 `python3 scripts/verify_api.py --league <id>` before adding it.
 
 **Start here:** [`docs/roadmap.md`](docs/roadmap.md) records what is built, what
-is next, and which decisions are still open. Read it before proposing work, and
-update it when something lands.
+was deliberately **not** built and the argument that kept it out, and which
+decisions are still open. Read it before proposing work, and update it when
+something lands. It is a record, not a queue: it holds no ordering and no plan
+for the next slice, because a plan written in advance becomes the plan by
+default. Why a given slice was built the way it was is in its squash commit.
 
 **Before writing code:** [`docs/architecture.md`](docs/architecture.md) records
 how the system works, by subsystem — database, sync, auth and routing, design
@@ -115,7 +118,19 @@ Decided:
 - Commit at every working state; each commit should run.
 - Build in vertical slices — one thin feature end to end, verified in the
   browser, then the next. Do not build whole layers speculatively.
-- Use plan mode for anything non-trivial: agree the approach before writing code.
+- **A feature can be proposed in a sentence and built without a plan agreed
+  first.** That was not always so, and the two things that made it safe are worth
+  naming, because they are also what would make it unsafe again: the gate
+  (`tsc --noEmit`, lint, test, build) runs on every slice, and the docs are kept
+  true so the next session starts where this one finished. Plan mode is still the
+  right move when the shape of the work is genuinely open.
+- **Stop and ask when the decision is the author's rather than a judgement
+  call**: an unsettled product rule, a schema change or migration, anything that
+  touches the non-negotiables above, and any change to what a screen promises a
+  user. Two failed attempts at the same failure is also a stop, not a third try.
+- **Never deploy.** Vercel builds from `main`, so pushing `main` *is* the
+  production deploy — it is the author's to run, along with `/slice finish`,
+  which is what pushes it. Work stops at a branch that is ready to land.
 - Secrets live in `.env.local`, which is gitignored. Never echo their values.
 - **A doc correction is never local.** When a claim in one document turns out to
   be wrong, grep the other docs — `AGENTS.md`, `docs/*.md`, `docs/design/`,
