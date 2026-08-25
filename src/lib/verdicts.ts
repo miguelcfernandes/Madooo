@@ -84,22 +84,20 @@ export function noteOf(entry: Annotated): string | null {
   return entry.judgements[0]?.note ?? null
 }
 
-/** The number beside a panel's micro-label. Zero is a real answer and is shown. */
+/**
+ * The number beside a panel's micro-label. Zero is a real answer and is shown.
+ *
+ * **There was a `countNotes` beside this until the fixture row stopped drawing
+ * one.** It counted the annotated entries the same way, for the other half of a
+ * fixture card's footer; that footer became `7 verdicts · 1 note` in a row's
+ * right margin and then became a single "Watched" mark, which is a yes-or-no
+ * question a `length` answers. Nothing else ever asked how many notes a match
+ * carried, so the function went with its only caller rather than staying as a
+ * tested export nothing renders. `summariseMatch` below still counts notes,
+ * over a whole diary row's worth of entries.
+ */
 export function countVerdicts(entries: readonly Judgeable[]): number {
   return entries.filter((entry) => verdictOf(entry) !== null).length
-}
-
-/**
- * The other half of a fixture card's footer.
- *
- * Deliberately not folded into `countVerdicts` as one function returning a pair:
- * the panel header on the match page wants verdicts alone, and a helper that
- * always computed both would make every caller of the common case pay for the
- * other and then throw it away. Two functions over the two structural interfaces
- * also means each one asks for exactly the half of a row it reads.
- */
-export function countNotes(entries: readonly Annotated[]): number {
-  return entries.filter((entry) => noteOf(entry) !== null).length
 }
 
 /**

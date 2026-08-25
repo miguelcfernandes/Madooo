@@ -11,7 +11,7 @@ commit message is the account of the slice — written once, at the moment the
 reasoning was fresh, and better placed there than restated in a file every
 session reads.
 
-**Last updated:** 2026-08-25 (the dark ramp is retuned)
+**Last updated:** 2026-08-25 (a fixture row is marked rather than counted)
 
 > **The rebrand is built.** **"Field Notes"** — Schibsted Grotesk and DM Mono on
 > a marine brand colour, zero radius everywhere, one shadow, and thirty-four
@@ -58,9 +58,10 @@ rebuilt past its drawing:
 - `/fixtures` — one calendar day at a time across every competition, cut into a
   section per league in a written-down popularity order, under a pager that steps
   to the previous and next day with football in it. A bare address is always
-  today. Four season tiles above it; a verdict-and-note footer on every card. A
-  match called off draws POSTPONED or CANCELLED where its kickoff would go; one
-  in play draws LIVE; one with no squad says so and does not navigate.
+  today. Four season tiles above it; a 2px marine rule down the leading edge of
+  every row the reader has written in, and nothing on the rest. A match called off
+  draws POSTPONED or CANCELLED where its kickoff would go; one in play draws
+  LIVE; one with no squad says so and does not navigate.
 - `/matches/[id]` — a scoreline card over both matchday squads, each club's
   eleven above its bench. Every player row carries three verdict chips and a note
   button, and a "Your verdicts" panel sits under both benches. A failed write
@@ -270,6 +271,55 @@ the squash-one-commit-per-slice flow, which is why they name several.
   claims "most followed", and deepened twelve reds by 3–5% so their chips draw
   white — the crossover in `crestInk` sits almost exactly on WCAG AA, so the two
   were the same decision.
+
+- **A fixture row marks what you have written in, instead of counting it.** The
+  right margin drew `7 verdicts · 1 note` — two glyphs, two counts and two nouns
+  on a line that already carries a kickoff, two clubs, two crests and a score.
+  Neither number is a fact about the fixture; both are facts about how much the
+  reader typed, and nothing on a page of fixtures is decided by whether it was
+  seven verdicts or two. It is a **2px marine rule down the row's leading edge**
+  now, on the rows with at least one verdict or one note, and nothing at all on
+  the rest.
+
+  **A word in the right margin was built first and rejected, which is the part
+  worth recording.** WATCHED, in the `visibility` glyph and full ink, agreed with
+  the season tile at the top of the page exactly — same word, same glyph, same
+  ink, the tile counting the marks — and that agreement was real: the tile's
+  `count` and the row's test are the same predicate, since `judgement_has_content`
+  is a CHECK constraint and a judgement row therefore *is* a verdict or a note.
+  It was still wrong twice over. It cost 96px of every row, because a margin that
+  appears and disappears walks the centred score sideways and the width has to be
+  held whether the mark is drawn or not; and **a bold capitalised word is not what
+  a private note in the margin of a fixture list should sound like**. The mark is
+  the reader's, not the app's, so it should read as a mark rather than as a label
+  — the pencil line beside the paragraph you came back for.
+
+  The rule is out of flow rather than a `border-l-2`, which would have pushed
+  every row 2px off the block header above it to buy a mark two rows in three do
+  not draw. **Its colour took three passes**: `--border-strong`, the grey
+  foundations keeps for a rule meant to be noticed, which at 2px read as the
+  card's own border having thickened rather than as anything deliberate; then
+  ink, which read clearly and said nothing, being the voice the row already
+  speaks in; then marine. Widening the pale bar to 4px was tried in between and
+  is the worst of the three — a line becomes a soft block, and this design has
+  two rule weights rather than three. **A mark gets a colour, not a width.** The
+  word rides along `sr-only`, since colour alone is never the whole of a fact.
+
+  **Marine cost `foundations.md` a clause, and turned up an older mistake while
+  it was there.** Marine's second category, "where you are", is now "where you
+  are, and where you have been": the selected tab's 2px underline and this are
+  the same object turned on its side — under that tab alone, against this row
+  alone — separated only by tense. The older mistake is that the brand-as-an-edge
+  section closed by saying a marine line must be "the bottom of a block header"
+  or it is wrong, **which the tab underline had been contradicting since the day
+  it was drawn**. The rule had been stated from inside the section about the
+  brand as a label and quietly overruled a category it was never arguing with.
+  It now reads: a rule is grey unless it is the brand naming a block or the app
+  locating the reader.
+
+  The query stopped carrying every judged row of the day with its tag and its
+  note text — `take: 1` and a `length` answer a yes-or-no question — and
+  `countNotes` went with its only caller.
 
 ## Not built, and why
 

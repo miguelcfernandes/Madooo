@@ -96,17 +96,25 @@ const teamFields = {
  * the point: asking whether *any* squad row exists must not mean loading forty
  * of them per match to find out.
  *
- * `squadEntries` beside it is the card's footer — the user's verdicts and notes
- * on this match. **The two do not interfere.** A `_count` entry takes its own
- * optional `where` and has none here, so it stays a count of the whole squad
- * however the sibling selection is filtered; if it did inherit that filter, every
- * card on the day would quietly stop opening.
+ * `squadEntries` beside it is the row's watched mark — whether this user has
+ * written anything about this match. **The two do not interfere.** A `_count`
+ * entry takes its own optional `where` and has none here, so it stays a count of
+ * the whole squad however the sibling selection is filtered; if it did inherit
+ * that filter, every card on the day would quietly stop opening.
  *
- * The filter keeps the selection to the rows this user has judged, which is a
- * handful per match rather than forty, and `countVerdicts` and `countNotes` in
- * [`verdicts.ts`](./verdicts.ts) fold it into the two numbers. Counting in JS
- * here rather than in Postgres because one relation can carry only one `_count`,
- * and this needs two different tallies out of the same rows.
+ * **`take: 1`, because the row asks a yes-or-no question.** It used to ask two
+ * numbers — how many verdicts, how many notes — which meant carrying every
+ * judged row of every match on the day, with its tag and its note text, to
+ * produce a pair of counts the row no longer draws. One row is proof, and one id
+ * is the smallest thing that proves it. What the row says now is "watched", and
+ * that is exactly `squadEntries.length > 0`: a `Judgement` cannot
+ * exist without content — `judgement_has_content` is a CHECK constraint on the
+ * table — so a judgement row *is* a verdict or a note. It is also the predicate
+ * `seasonTotals` counts below, which is what makes the Watched tile the number
+ * of marks down the page.
+ *
+ * Prisma compiles a relation `take` into a lateral join, so this is still one
+ * round trip rather than one per match.
  */
 export async function fixturesOnDay(season: number, from: Date, to: Date, userId: number) {
   return prisma.match.findMany({
@@ -121,13 +129,13 @@ export async function fixturesOnDay(season: number, from: Date, to: Date, userId
       _count: { select: { squadEntries: true } },
       squadEntries: {
         where: { judgements: { some: { userId } } },
-        select: {
-          // The same `where` again, and it is not redundant: the outer one picks
-          // the squad rows, this one picks which judgements come back on them.
-          // Without it a second account's judgement would arrive attached to a
-          // row this user judged, and the tallies would count it.
-          judgements: { where: { userId }, select: { tag: true, note: true } },
-        },
+        // No nested `judgements` select any more, and with it goes the trap that
+        // selection carried: the inner `where: { userId }` was load-bearing,
+        // because without it a second account's judgement arrived attached to a
+        // row this user had judged and was counted. Asking only whether such a
+        // row exists removes the question rather than answering it again.
+        select: { id: true },
+        take: 1,
       },
     },
   })

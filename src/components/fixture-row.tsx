@@ -1,12 +1,10 @@
 import Link from 'next/link'
 import { Badge, CALLED_OFF_BADGE, LINEUPS_BADGE, LIVE_BADGE } from './badge'
 import { CrestChip } from './crest-chip'
-import { Icon } from './icon'
 import { KickoffTime } from './kickoff-time'
+import { WatchedMark } from './watched-mark'
 import { calledOffLabel, isInProgress } from '@/lib/match-status'
 import { roundDisplay } from '@/lib/rounds'
-import { plural } from '@/lib/text'
-import { countNotes, countVerdicts } from '@/lib/verdicts'
 import type { Fixture } from '@/lib/fixtures'
 
 /**
@@ -76,29 +74,6 @@ function Outcome({ match, openable }: { match: Fixture; openable: boolean }) {
   )
 }
 
-type TallyProps = {
-  /** Narrower than `IconName`: this margin draws these two and nothing else. */
-  icon: 'how_to_reg' | 'edit_note'
-  count: number
-  noun: string
-}
-
-/** One icon and its count. Drawn only when the count is not zero — see below. */
-function Tally({ icon, count, noun }: TallyProps) {
-  return (
-    <span className="flex items-center gap-1.5">
-      <Icon name={icon} size="xs" />
-      {/* Two flex children, not three: the numeral and its noun are one span, or
-          the bare word would become an anonymous flex item and take the gap.
-          `font-mono` overrides only the family `text-caption` sets, so a count
-          you can add up is monospaced without changing size beside its word. */}
-      <span>
-        <span className="font-mono">{count}</span> {plural(count, noun)}
-      </span>
-    </span>
-  )
-}
-
 type Props = {
   match: Fixture
   /**
@@ -116,8 +91,14 @@ type Props = {
 }
 
 function Row({ match, showRound }: Props) {
-  const verdicts = countVerdicts(match.squadEntries)
-  const notes = countNotes(match.squadEntries)
+  // One judged squad row is the whole test, and the query takes exactly one.
+  // A `Judgement` cannot exist empty — `judgement_has_content` is a CHECK
+  // constraint in the initial migration requiring a tag or a note — so "this
+  // user has a judgement on this match" *is* "at least one verdict or one note",
+  // with no second condition to keep in step. It is also the predicate behind
+  // the Watched tile at the top of the page, which is what makes that number
+  // the count of these marks.
+  const watched = match.squadEntries.length > 0
   const openable = match._count.squadEntries > 0
 
   return (
@@ -128,7 +109,11 @@ function Row({ match, showRound }: Props) {
       needs no second set of classes. Press is one step darker again plus a 1px
       drop, exactly as foundations states it.
     */
-    <div className="t-hover flex min-h-(--row-h-lg) items-center gap-4 px-4 py-2 group-hover:bg-surface-alt group-active:translate-y-px group-active:bg-surface-sunken">
+    <div className="t-hover relative flex min-h-(--row-h-lg) items-center gap-4 px-4 py-2 group-hover:bg-surface-alt group-active:translate-y-px group-active:bg-surface-sunken">
+      {/* `relative` above is this and only this: the mark is out of flow, so it
+          needs a row to be positioned against and costs the row nothing. */}
+      {watched ? <WatchedMark /> : null}
+
       <KickoffTime kickoff={match.kickoff} className="w-12 shrink-0 text-data text-muted" />
 
       {/* Three columns with the middle one sized to its content, so the score
@@ -153,24 +138,23 @@ function Row({ match, showRound }: Props) {
       </div>
 
       {/*
-        The right margin, and the only part of the row that is often empty.
+        The right margin, and it now holds one thing at most.
 
         **Zero is not drawn here, and it is the departure worth arguing.** The
         card stated `0 verdicts · 0 notes` on every fixture, on the principle
         that this app shows zero rather than hiding it. That principle earns its
         keep where zero is a *result* — a player with no MVPs — but on a fixture
         that has not kicked off, zero is not a finding, it is the only value the
-        field can hold. Fifty-six of them on one Saturday say nothing and cost a
-        band per card. What the reader is scanning for is the row that is not
-        empty.
+        field can hold. Fifty-six of them on one Saturday say nothing.
+
+        The counts are gone from here entirely now, not merely hidden at zero.
+        What is left is the round, which is a fact about the fixture; what the
+        reader has written is a fact about the reader, and it is a rule down the
+        leading edge where it takes no width from the row at all.
       */}
-      <div className="flex shrink-0 items-center gap-4 text-caption text-muted">
-        {showRound ? (
-          <span className="text-caps text-faint">{roundDisplay(match.round)}</span>
-        ) : null}
-        {verdicts > 0 ? <Tally icon="how_to_reg" count={verdicts} noun="verdict" /> : null}
-        {notes > 0 ? <Tally icon="edit_note" count={notes} noun="note" /> : null}
-      </div>
+      {showRound ? (
+        <span className="shrink-0 text-caps text-faint">{roundDisplay(match.round)}</span>
+      ) : null}
     </div>
   )
 }

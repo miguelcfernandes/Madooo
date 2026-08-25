@@ -261,10 +261,16 @@ what comes back; it never asks per competition, so the fifth league and the
 fifteenth are free here.
 
 One relation carries only one `_count`, so a query cannot ask Postgres for two
-different tallies over the same rows. That is why a fixture row's verdicts and
-notes are folded in JavaScript, by `countVerdicts` and `countNotes` in
-[`verdicts.ts`](../src/lib/verdicts.ts) — the rows are already in hand and bounded
-by how much one user judged one match.
+different tallies over the same rows. That constraint used to decide this query's
+shape: a fixture row drew `7 verdicts · 1 note`, and the two numbers were folded
+in JavaScript from every judged row on the day. **The row asks a yes-or-no
+question now** — whether this user has written anything about the match — so the
+sibling selection is `select: { id: true }, take: 1` and the answer is
+`squadEntries.length > 0`. A `Judgement` cannot exist without content, since
+`judgement_has_content` is a CHECK constraint on the table, so one such row *is*
+"a verdict or a note" with no second condition to keep in step. It is also
+exactly the predicate `seasonTotals` counts, so the Watched tile is a count of
+the marked rows down the page.
 
 **Season totals go the other way**: `seasonTotals` and `diaryTotals` are each
 four `count`s under a `Promise.all`, because a season's judgements are unbounded

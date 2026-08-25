@@ -25,9 +25,10 @@ recognisably the quiet one is a position a reader can feel in ten seconds.
 2. **If it is a number you can add up, it is monospaced.**
 3. **Colour means something**: a verdict, a club, the brand, or interactive
    state. Nothing is coloured to be liked.
-4. **Marine marks what you can act on, where you are, or where the brand is
-   speaking — and nothing else.** Never to fill space, never to decorate. It
-   never signals a verdict, and a verdict colour never signals the brand.
+4. **Marine marks what you can act on, where you are or have been, or where the
+   brand is speaking — and nothing else.** Never to fill space, never to
+   decorate. It never signals a verdict, and a verdict colour never signals the
+   brand.
 5. **Borders separate. Radius is zero.** Shadow means "this floats" — dialogs and
    toasts only.
 6. **Micro-labels and the three verdict words are the only uppercase.**
@@ -63,9 +64,20 @@ and is therefore the one you can open and judge — the badge appears on exactly
 the rows that are links, so the mark and the affordance say the same thing. It
 is an outline, not a fill; see the clause on the scoreline below.
 
-**Two — where you are.** The active navigation item, as marine text at 600 on
-`--surface-alt`. The 2px underline under a selected tab, which sits under that
-tab alone and never spans the strip.
+**Two — where you are, and where you have been.** The active navigation item, as
+marine text at 600 on `--surface-alt`. The 2px underline under a selected tab,
+which sits under that tab alone and never spans the strip. **The 2px rule down
+the leading edge of a watched fixture row**, which sits against that row alone
+and never spans the block — structurally the tab's underline turned on its side,
+and marked out from it only by tense: an underline says *here*, and this says
+*you have been here*.
+
+The category was called "where you are" until the watched mark joined it, and the
+widening is real rather than a relabelling. Both halves are still the app
+locating the reader in their own diary, which is what keeps them apart from
+category three: a block header's rule is the brand naming a thing, and these
+name where somebody stands in it. A mark for something the reader *might* do
+belongs in category one; a mark for what the app itself is belongs in three.
 
 **Three — where the brand is speaking.** The wordmark. The app icon. **A block
 header's bottom rule** — the strip that names a card keeps its grey fill and
@@ -127,10 +139,18 @@ is what it was tuned for — so there is no second fill to keep legible in two
 themes, no ink that has to be fixed across them, and no skeleton variant. The
 marine ramp's 900 and 200 survive only inside `--brand-action-hover`.
 
-**A rule that belongs to a block header is the header speaking; every other rule
-in the app stays grey.** Not the card's own outline, not the divider between two
-rows, not the rule under a note. If a marine line cannot be pointed at and called
-"the bottom of a block header", it is wrong.
+**A rule is grey unless it is the brand naming a block or the app locating the
+reader.** Not the card's own outline, not the divider between two rows, not the
+rule under a note. So: a block header's bottom rule; a selected tab's underline;
+a watched row's leading edge. Anything else marine and linear is wrong.
+
+**This sentence used to say a marine line must be "the bottom of a block header"
+or it is wrong, and that was already false when it was written** — the selected
+tab's 2px underline is marine, is not a block header's bottom, and is listed two
+sections up under "where you are". The rule was stated from the section it sits
+in, which is about the brand as a *label*, and it quietly overruled a category it
+was never arguing with. Marking a watched row is what made the contradiction
+matter, but it did not create it.
 
 ### The brand as an action
 
