@@ -63,7 +63,7 @@ const CHIP: Record<SegmentKey, string> = {
  */
 export function SplitBar({ segments }: { segments: readonly Segment[] }) {
   return (
-    <div aria-hidden className="flex h-2 overflow-hidden rounded-sm bg-surface-sunken">
+    <div aria-hidden className="flex h-2 overflow-hidden bg-surface-sunken">
       {segments.map((segment) => {
         const fill = SEGMENT[segment.key]
         if (fill === undefined || segment.count === 0) return null
@@ -107,7 +107,7 @@ export function SplitLegend({
           key={segment.key}
           // 20px, foundations' badge — the same object as the one in
           // `VerdictSummary`, with a count in front of the word.
-          className={`inline-flex h-5 items-center gap-1.5 rounded-sm px-2 text-caps ${CHIP[segment.key]}`}
+          className={`inline-flex h-5 items-center gap-1.5 px-2 text-caps ${CHIP[segment.key]}`}
         >
           {/* `font-mono` overrides only the family `text-caps` sets, so the size,
               weight and tracking of the micro-label survive. */}

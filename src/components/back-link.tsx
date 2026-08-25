@@ -31,7 +31,7 @@ export function BackLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="t-hover mb-3 -ml-1 inline-flex items-center gap-1 rounded-md text-label text-muted no-underline hover:text-text hover:no-underline focus-visible:focus-ring"
+      className="t-hover mb-3 -ml-1 inline-flex items-center gap-1 text-label text-muted no-underline hover:text-text hover:no-underline focus-visible:focus-ring"
     >
       <Icon name="chevron_left" size="md" />
       {label}

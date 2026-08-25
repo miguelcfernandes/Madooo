@@ -18,57 +18,93 @@
    ========================================================================== */
 
 :root {
-  /* --- Neutral ramp ------------------------------------------------------ */
+  /* --- Marine ------------------------------------------------------------
+     The one colour the brand owns, and it has a job rather than a look: it
+     marks what you can act on and where you are. Links, the active navigation
+     item, the underline under a selected tab, the focus ring, the wordmark, the
+     app icon and a block header's own bottom rule — and nowhere else. Never to
+     fill space, never to decorate. A block header is the third of those
+     categories, the brand naming something: it carries the brand as a 2px edge
+     rather than as a fill, which was tried first and was too loud to live with
+     on a screen holding ten cards.
+
+     All four steps of the board's ramp are declared and all four are spent. 700
+     and 400 are --brand itself, the colour as a mark; 900 and 200 are the two
+     ends of --brand-action-hover, which is the one place the brand is a fill. */
+  --marine-900: #0a3c42;
+  --marine-700: #0f5257;
+  --marine-400: #5fc0bb;
+  --marine-200: #a9deda;
+
+  /* --- Neutral ramp, light ----------------------------------------------
+     Greys with a cool cast, lightest to darkest. Not a pure grey anywhere: the
+     tint is what keeps a page of them from reading as a spreadsheet. */
   --gray-0: #ffffff;
-  --gray-1: #f8f8f8;
-  --gray-2: #eeeeee;
-  --gray-3: #dddddd;
-  --gray-4: #cccccc;
-  --gray-5: #b0b0b0;
-  --gray-6: #999999;
-  --gray-7: #595959;
-  --gray-8: #333333;
-  --gray-85: #2b2b2b;
-  --gray-90: #212121;
-  --gray-9: #000000;
+  --gray-1: #f3f5f6;
+  --gray-2: #eceff0;
+  --gray-3: #e3e7e8;
+  --gray-4: #dde2e3;
+  --gray-5: #b4bdbe;
+  --gray-6: #8b9596;
+  --gray-7: #5f6a6b;
+  --gray-9: #101516;
 
-  /* Values foundations gives only inside the dark column of its semantic
-     table, named here so every semantic below resolves token-to-token rather
-     than dropping a bare hex into the middle of a light-dark() call. */
-  --gray-d-sunken: #191919;
-  --gray-d-border: #3d3d3d;
-  --gray-d-border-strong: #5c5c5c;
+  /* --- Neutral ramp, dark ------------------------------------------------
+     A separate ramp rather than the one above read backwards, because it is not
+     the same ramp — and since the retune, not even the same cast. The light ramp
+     keeps its cool teal tint; this one is a neutral blue-grey. That is the
+     plainest statement the palette makes of the rule both ramps have always
+     followed: a dark theme built by inverting a light one looks inverted, so
+     both families are written out and neither is derived.
 
-  /* --- Accents ----------------------------------------------------------- */
-  --accent-blue: #4285f4;
-  --accent-red: #db4437;
-  --accent-yellow: #f4b400;
-  --accent-green: #0f9d58;
-  --accent-purple: #ab47bc;
-  --accent-cyan: #00acc1;
-  --link-blue: #1155cc;
+     **Retuned wholesale, and the numbers are the argument.** The first dark ramp
+     put ink at 15.7:1 against the page, a card at 1.08 against that page, and a
+     border at 1.23 against the card. That is the contrast budget spent exactly
+     backwards — the one ratio nobody needs turned up until near-white on
+     near-black glares, and the two that carry the layout, surface against page
+     and border against surface, spent down to nothing. Ten cards read as one
+     flat slab. This ramp trades them the other way: ink lands at 11.7:1, still
+     better than twice AA's 4.5:1, while the card rises to 1.17 against the page
+     and the border to 1.37 against the card.
 
-  /* --- Tinted pairs ------------------------------------------------------
-     Inks are darkened accents, so the label passes contrast on white. The raw
-     accent survives as --*-mark, used only for a glyph on an inverse surface. */
-  --green-bg: #e3f3ea;
+     Which is why the ground is #1C222B rather than something nearer black. A
+     dark theme is not a competition to be dark. It is a page meant to be read at
+     night, and this one is legible without being lit. */
+  --gray-d-0: #d7dde6;
+  --gray-d-1: #9aa3b1;
+  --gray-d-2: #767f8d;
+  --gray-d-3: #525b69;
+  --gray-d-4: #3a4351;
+  --gray-d-5: #303845;
+  --gray-d-6: #262e39;
+  --gray-d-7: #1c222b;
+  --gray-d-8: #161b22;
+
+  /* --- Verdict tints -----------------------------------------------------
+     **Carried over from the previous design untouched.** They are the one part
+     of the palette that means something rather than sets a tone, so the
+     rebrand does not get to have an opinion about them. Inks are darkened so
+     the label passes contrast on white; the dark column lightens the ink and
+     drops the tint to a dark wash of the same hue.
+
+     **The three dark fills moved with the ramp retune, and had to.** They were
+     picked to sit just above a #171E1F card. Against this ramp's #262E39 an
+     unchanged fill is *darker* than the surface it sits on, so a STANDOUT chip
+     stops reading as a chip and starts reading as a hole punched in the card.
+     The six inks did not move — those are the part that means something, and
+     each still clears 5.3:1 on its own new fill. */
   --green-ink: #0b7d46;
-  --red-bg: #fbe6e4;
-  --red-ink: #c5372c;
-  --yellow-bg: #fdf3d9;
-  --yellow-ink: #a17400;
-  --blue-bg: #e6effd;
-  --blue-ink: #1155cc;
-
-  /* Their dark-theme counterparts: lighter ink, near-black tint. */
+  --green-bg: #e3f3ea;
   --green-dark: #4bcf8b;
-  --green-dark-bg: #12331f;
+  --green-dark-bg: #1c3f2d;
+  --red-ink: #c5372c;
+  --red-bg: #fbe6e4;
   --red-dark: #f28b82;
-  --red-dark-bg: #3a1c19;
+  --red-dark-bg: #482a2b;
+  --yellow-ink: #a17400;
+  --yellow-bg: #fdf3d9;
   --yellow-dark: #fdd663;
-  --yellow-dark-bg: #3a2f0d;
-  --blue-dark: #8ab4f8;
-  --blue-dark-bg: #16243d;
+  --yellow-dark-bg: #413620;
 
   /* --- Theming -----------------------------------------------------------
      Every semantic below is one light-dark() call, which resolves against the
@@ -88,33 +124,82 @@
      for every user whose choice differs from their machine's. */
   color-scheme: light;
 
-  --page: light-dark(var(--gray-1), var(--gray-90));
-  --surface: light-dark(var(--gray-0), var(--gray-90));
-  --surface-alt: light-dark(var(--gray-1), var(--gray-85));
-  --surface-sunken: light-dark(var(--gray-2), var(--gray-d-sunken));
-  --surface-header: light-dark(var(--gray-2), var(--gray-8));
-  --surface-inverse: light-dark(var(--gray-9), var(--gray-0));
+  --page: light-dark(var(--gray-1), var(--gray-d-7));
+  --surface: light-dark(var(--gray-0), var(--gray-d-6));
+  /* Hover *and* block headers. Two roles for one value, where the previous
+     design gave block headers a heavier strip of their own: a header that is a
+     shade of the surface it caps, separated by a rule, is the whole of what
+     this design asks a header to be. */
+  --surface-alt: light-dark(var(--gray-2), var(--gray-d-5));
+  --surface-sunken: light-dark(var(--gray-3), var(--gray-d-8));
+  --surface-inverse: light-dark(var(--gray-9), var(--gray-d-0));
 
-  /* Foundations' hover rule is "surfaces darken one step", and this is the step
-     below the inverse surface — so in light it *lightens*, #000000 to #333333,
-     which looks like a violation and is not. The rule means "one step along the
-     ramp, away from the page", and the dark column above already reads that way:
-     --surface #212121 hovers to --surface-alt #2b2b2b, lighter. An inverse
-     surface inverts the direction too. Both values are existing ramp steps; no
-     hex was invented to fill the gap. */
-  --surface-inverse-hover: light-dark(var(--gray-8), var(--gray-2));
+  /* Foundations' hover rule is "surfaces move one step away from the page", and
+     an inverse surface is the *other* theme's ground — so its next step is that
+     theme's next step, which is why this is the one semantic that reads across
+     both ramps. In light, near-black #101516 hovers to dark's --surface-alt; in
+     dark, near-white #D7DDE6 hovers to light's --surface-sunken. Both values are
+     already tokens on the palette; no hex was invented to fill the gap.
 
-  --border: light-dark(var(--gray-3), var(--gray-d-border));
-  --border-strong: light-dark(var(--gray-5), var(--gray-d-border-strong));
-  --border-focus: light-dark(var(--gray-9), var(--gray-0));
+     It is also the one light-theme value the dark retune moved, which is not a
+     leak but the rule working: this semantic reads the *other* ramp by
+     definition, so retuning that ramp is supposed to move it. The light hover
+     went from #1F2829 to #303845 and is a touch more visible for it — the same
+     complaint the retune was answering, fixed in the same direction. */
+  --surface-inverse-hover: light-dark(var(--gray-d-5), var(--gray-3));
 
-  --text: light-dark(var(--gray-9), var(--gray-0));
-  --text-muted: light-dark(var(--gray-7), var(--gray-4));
-  --text-faint: var(--gray-6);
-  --text-inverse: light-dark(var(--gray-0), var(--gray-90));
+  --border: light-dark(var(--gray-4), var(--gray-d-4));
+  --border-strong: light-dark(var(--gray-5), var(--gray-d-3));
 
-  --link: light-dark(var(--link-blue), var(--blue-dark));
-  --link-hover: light-dark(var(--gray-9), var(--gray-0));
+  --text: light-dark(var(--gray-9), var(--gray-d-0));
+  --text-muted: light-dark(var(--gray-7), var(--gray-d-1));
+  /* Theme-dependent now, where it used to be one grey shared by both. A single
+     faint grey cannot sit a consistent distance below --text-muted in two
+     themes at once, and placeholder text drifting closer to legible in dark
+     than in light is the kind of difference nobody names and everybody sees. */
+  --text-faint: light-dark(var(--gray-6), var(--gray-d-2));
+  --text-inverse: light-dark(var(--gray-0), var(--gray-d-7));
+
+  --brand: light-dark(var(--marine-700), var(--marine-400));
+
+  /* --- Marine as an action -------------------------------------------------
+     The filled button. Marine's *first* category rather than its third — "this
+     is what you can act on" — so it needs no rule beyond the one already
+     written; a button is the plainest case of the rule there is.
+
+     **The only place the brand is a fill**, which is a decision the app arrived
+     at by trying the other one. Block headers were filled with marine for a
+     while and it was too much colour on a screen holding ten cards; they carry a
+     2px marine edge now and the button keeps the fill to itself. One filled
+     brand object on a screen is the whole budget.
+
+     It goes *light* in dark, unlike every other fill in this file, and the ink
+     flips with it. A button is the loudest thing on its screen by job
+     description, and the dark end of the marine ramp on a #1C222B page is a dark
+     box on a dark ground that stops reading as a button at all.
+
+     The fill is exactly `--brand`, and is written as `--brand` to say so: the
+     button is the brand at full strength. If the brand retunes, this moves.
+
+     The hover is one step along the ramp away from the page in each theme — 700
+     darkens to 900, 400 lightens to 200 — which is the same rule every other
+     surface follows and spends no value the ramp did not already have. There is
+     no press colour: the step below each hover would land on a value close
+     enough to muted text to read as disabled, so a filled surface takes the 1px
+     transform alone, exactly as it did when it was ink. */
+  --brand-action: var(--brand);
+  --brand-action-hover: light-dark(var(--marine-900), var(--marine-200));
+  --brand-action-ink: light-dark(var(--gray-0), var(--gray-d-7));
+
+  /* Marine absorbs the link role outright — there is no separate link blue any
+     more, which is the point: a second cool colour competing to mean
+     "interactive" is what the colour rule forbids. */
+  --link: var(--brand);
+  /* Ink on hover, with the base stylesheet's underline arriving at the same
+     moment. Marine says the thing is a link; going to ink under the cursor says
+     this particular one is being engaged with, and it is the only state change
+     available that does not reach for a second colour. */
+  --link-hover: var(--text);
 
   --overlay: light-dark(rgb(0 0 0 / 0.45), rgb(0 0 0 / 0.7));
 
@@ -124,8 +209,6 @@
   --flop-bg: light-dark(var(--red-bg), var(--red-dark-bg));
   --mvp: light-dark(var(--yellow-ink), var(--yellow-dark));
   --mvp-bg: light-dark(var(--yellow-bg), var(--yellow-dark-bg));
-  --info: light-dark(var(--link-blue), var(--blue-dark));
-  --info-bg: light-dark(var(--blue-bg), var(--blue-dark-bg));
   /* The same red as --flop, and deliberately not --flop. A match in play is not
      a verdict, and a token named for one would lie about why the colour is
      there — see foundations.md, which states this as a rule rather than as a
@@ -140,9 +223,11 @@
   --alert: light-dark(var(--red-ink), var(--red-dark));
   --alert-bg: light-dark(var(--red-bg), var(--red-dark-bg));
 
-  --standout-mark: var(--accent-green);
-  --flop-mark: var(--accent-red);
-  --mvp-mark: var(--accent-yellow);
+  /* **There is no --info, and that is a decision.** It marked a note in blue.
+     With marine as the brand, a second cool colour competing for meaning is
+     exactly what the colour rule forbids, so a note is now muted text behind a
+     rule and the NOTE badge is the resting chip in grey. A note is not a
+     verdict; grey is what this system says when something is not a judgement. */
 
   /* --- Frame -------------------------------------------------------------
      Not handed to Tailwind below: these are used as `w-(--sidebar-w)` and
@@ -162,9 +247,11 @@
   --border-w: 1px;
   --border-w-strong: 2px;
 
-  /* A 2px ring in --border-focus with a 2px surface-coloured gap, so it stays
-     legible against whatever it sits on. */
-  --focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--border-focus);
+  /* A 2px ring in --brand with a 2px surface-coloured gap, so it stays legible
+     against whatever it sits on. Marine, not ink: the focus ring is one of the
+     three things the brand marks, and the clearest case of the first of them —
+     a ring says "this is what you can act on" and nothing else. */
+  --focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--brand);
 
   /* --- Motion ------------------------------------------------------------ */
   --dur-1: 80ms;
@@ -202,8 +289,8 @@
 @theme inline {
   /* Fonts. next/font hashes the real family name at build time, so it can only
      be reached through the variable it declares on <html>. */
-  --font-sans: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
-  --font-mono: var(--font-jetbrains-mono), "Roboto Mono", monospace;
+  --font-sans: var(--font-schibsted-grotesk), "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-dm-mono), ui-monospace, "SF Mono", monospace;
 
   /* Surfaces and ink. Named without a `text-` prefix where foundations' own
      swatch sheet does the same ("Muted", "Faint"), so the utility reads
@@ -212,19 +299,21 @@
   --color-surface: var(--surface);
   --color-surface-alt: var(--surface-alt);
   --color-surface-sunken: var(--surface-sunken);
-  --color-surface-header: var(--surface-header);
   --color-surface-inverse: var(--surface-inverse);
   --color-surface-inverse-hover: var(--surface-inverse-hover);
 
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
-  --color-border-focus: var(--border-focus);
 
   --color-text: var(--text);
   --color-muted: var(--text-muted);
   --color-faint: var(--text-faint);
   --color-inverse: var(--text-inverse);
 
+  --color-brand: var(--brand);
+  --color-brand-action: var(--brand-action);
+  --color-brand-action-hover: var(--brand-action-hover);
+  --color-brand-action-ink: var(--brand-action-ink);
   --color-link: var(--link);
   --color-link-hover: var(--link-hover);
   --color-overlay: var(--overlay);
@@ -235,37 +324,30 @@
   --color-flop-bg: var(--flop-bg);
   --color-mvp: var(--mvp);
   --color-mvp-bg: var(--mvp-bg);
-  --color-info: var(--info);
-  --color-info-bg: var(--info-bg);
   --color-live: var(--live);
   --color-live-bg: var(--live-bg);
   --color-alert: var(--alert);
   --color-alert-bg: var(--alert-bg);
-
-  --color-standout-mark: var(--standout-mark);
-  --color-flop-mark: var(--flop-mark);
-  --color-mvp-mark: var(--mvp-mark);
 }
 
-/* Radius, elevation and easing are declared straight into the theme rather than
-   into :root above, because unlike the colours they are not indirections — they
-   are the values. A plain @theme (no `inline`) also publishes each one as a
-   :root variable, so `var(--radius-md)` still works in hand-written CSS. */
-@theme {
-  /* Near-square by intent. There is no 12px or 16px "friendly" radius, and
-     --radius-pill is Tailwind's own `rounded-full`, which is why it is absent
-     here — it belongs to Tags and pill Tabs only. */
-  --radius-sm: 2px;
-  --radius-md: 4px;
-  --radius-lg: 8px;
+/* Elevation and easing are declared straight into the theme rather than into
+   :root above, because unlike the colours they are not indirections — they are
+   the values. A plain @theme (no `inline`) also publishes each one as a :root
+   variable, so `var(--shadow-3)` still works in hand-written CSS.
 
-  /* The border is the primary separator; shadow means "this floats". Dark
-     deepens every alpha, because a soft shadow is invisible on near-black —
-     light-dark() resolves per element, so one declaration covers both. */
-  --shadow-1: 0 1px 2px light-dark(rgb(0 0 0 / 0.12), rgb(0 0 0 / 0.6));
-  --shadow-2:
-    0 1px 3px light-dark(rgb(0 0 0 / 0.14), rgb(0 0 0 / 0.7)),
-    0 2px 8px light-dark(rgb(0 0 0 / 0.08), rgb(0 0 0 / 0.5));
+   **Radius is absent, and that is the whole of what this design says about it:
+   zero, everywhere.** Buttons, fields, cards, chips, tiles, dialogs. Not
+   `--radius-*: 0`, which would leave eighty `rounded-md` classes in the markup
+   quietly resolving to nothing — a radius you have to look up to discover is
+   not applied. The switch and the radio keep their circles, because they are
+   not boxes. There are no pills: a pill in a zero-radius system is a
+   contradiction, so `--radius-pill` and the pill tab retired together. */
+@theme {
+  /* One shadow, not three. --shadow-1 and --shadow-2 retired with the rebrand:
+     if something looks like it needs to float, it needs a rule instead. What is
+     left is for the two things that genuinely do float, dialogs and toasts.
+     Dark deepens every alpha, because a soft shadow is invisible on near-black
+     — light-dark() resolves per element, so one declaration covers both. */
   --shadow-3: 0 8px 24px light-dark(rgb(0 0 0 / 0.18), rgb(0 0 0 / 0.8));
 
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
@@ -288,7 +370,7 @@
     color: var(--text);
     font-family: var(--font-sans);
     font-size: 14px;
-    line-height: 1.45;
+    line-height: 1.5;
   }
 
   a {
@@ -302,8 +384,8 @@
   }
 
   ::selection {
-    background-color: light-dark(var(--gray-3), var(--gray-8));
-    color: light-dark(var(--gray-9), var(--gray-0));
+    background-color: light-dark(var(--gray-3), var(--gray-d-3));
+    color: light-dark(var(--gray-9), var(--gray-d-0));
   }
 
   /* Foundations is absolute about this: all durations collapse to zero. The
@@ -328,6 +410,11 @@
    `text-title` that left the weight to the caller would be a different design.
    `@utility` rather than a plain class so that variants still compose
    (`md:text-title`).
+
+   Schibsted Grotesk is tracked tighter than Archivo was at every size above
+   body, and progressively: -0.035em at the hero down to -0.015em at a heading.
+   The face is wider than what it replaces, and letting it set loose at 48px is
+   what would make a landing page look like a slide.
    ========================================================================== */
 
 /* One heading in the app is the whole point of the screen it opens — the
@@ -341,81 +428,91 @@
 @utility text-hero {
   font-family: var(--font-sans);
   font-size: 48px;
-  font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
 }
 
 @utility text-display {
   font-family: var(--font-sans);
   font-size: 40px;
-  font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
 }
 
 @utility text-title {
   font-family: var(--font-sans);
   font-size: 24px;
   font-weight: 700;
-  line-height: 1.25;
-  letter-spacing: -0.02em;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
 }
 
 @utility text-heading {
   font-family: var(--font-sans);
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.25;
+  letter-spacing: -0.015em;
 }
 
 @utility text-body-lg {
   font-family: var(--font-sans);
   font-size: 16px;
   font-weight: 400;
-  line-height: 1.65;
+  line-height: 1.6;
 }
 
 @utility text-body {
   font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 400;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
 @utility text-label {
   font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 500;
-  line-height: 1.25;
+  line-height: 1.3;
 }
 
 @utility text-caption {
   font-family: var(--font-sans);
   font-size: 12px;
   font-weight: 400;
-  line-height: 1.25;
+  line-height: 1.35;
 }
 
 /* Uppercase is part of the role, not a decision left to the caller: caps appear
-   in exactly two places, the three verdict words and micro-labels. */
+   in exactly two places, the three verdict words and micro-labels. The tracking
+   is wide — 0.16em, twice what it was — because caps set tight in a grotesque
+   this even read as a block rather than as words. */
 @utility text-caps {
   font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 700;
   line-height: 1.25;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
 /* The four monospaced roles. If it is a number you can add up, it is one of
-   these — scores, tallies, shirt numbers, dates, minute marks. */
+   these — scores, tallies, shirt numbers, dates, minute marks.
+
+   All four are `tabular-nums`, which DM Mono makes cheap and which matters in
+   the one place monospace exists for: a column of counts where a 1 and a 7 have
+   to sit over each other. Every one of them tops out at weight 500, because
+   that is where the family tops out — the scoreline is quieter than JetBrains
+   Mono drew it, and foundations records that as accepted rather than pending. */
 @utility text-stat {
   font-family: var(--font-mono);
   font-size: 32px;
-  font-weight: 700;
-  line-height: 1.1;
+  font-weight: 500;
+  line-height: 1.05;
   letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
 /* `text-display`'s 40px in the monospaced family, for the one screen where a
@@ -425,9 +522,10 @@
 @utility text-score {
   font-family: var(--font-mono);
   font-size: 40px;
-  font-weight: 700;
-  line-height: 1.1;
+  font-weight: 500;
+  line-height: 1.05;
   letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
 /* The shirt number on a 40px tile, in a list row. The two neighbours are both
@@ -439,16 +537,41 @@
 @utility text-tally {
   font-family: var(--font-mono);
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.1;
-  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The wordmark, which is a type role rather than a drawing — that is the whole
+   reason it takes no custom lettering: a mark that is live text can be set in a
+   page title, an email, or a sidebar, and it stays selectable and searchable
+   everywhere it appears.
+
+   Marine, and one of the places the brand colour is allowed — the brand
+   speaking, which is the wordmark's whole job. 800 is a step
+   above anything else in the scale, and -0.04em is tighter than the hero's — a
+   word standing alone has no line of text to keep pace with, so it can close up
+   until the six letters read as one object. 24px is the only size the app draws
+   it at; the board shows it larger, but nothing here does.
+
+   Deliberately not `text-title` with a colour bolted on, which is what it used
+   to be: a page title and a wordmark are different things, and giving them one
+   class means retuning headings retunes the brand. */
+@utility text-wordmark {
+  font-family: var(--font-sans);
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.04em;
+  color: var(--brand);
 }
 
 @utility text-data {
   font-family: var(--font-mono);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.25;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ==========================================================================
@@ -467,12 +590,12 @@
    whether the caret arrived by keyboard or by mouse.
 
    Foundations gives fields their own focus treatment instead of the ring: the
-   border goes to --border-focus with a second inset 1px of it, which reads as a
-   2px border without the element changing size and pushing the layout around. */
+   border goes marine with a second inset 1px of it, which reads as a 2px border
+   without the element changing size and pushing the layout around. */
 @utility focus-field {
   outline: none;
-  border-color: var(--border-focus);
-  box-shadow: inset 0 0 0 1px var(--border-focus);
+  border-color: var(--brand);
+  box-shadow: inset 0 0 0 1px var(--brand);
 }
 
 /* The standard hover transition: colour crossfades only, never opacity, never
@@ -488,32 +611,39 @@
    ========================================================================== */
 
 @layer components {
-  /* Material Symbols are written as ligature text — <span class="icon">groups
-     </span> — which is why `liga` has to be on, and why the font loads with
-     `display: block`. Get either wrong and the literal word renders. */
+  /* Madooo's own glyphs, drawn to the grammar in foundations: a 20×20 grid, a
+     uniform 1.75 stroke that never tapers, butt caps, mitre joins.
+
+     All five drawing properties live here rather than on the paths, and that is
+     load-bearing in two ways. They are inherited SVG properties, so they cross
+     into the shadow tree a `<use>` builds and reach geometry defined elsewhere
+     in the document — which is what lets one sprite serve every instance. And
+     because a path in `icon-paths.tsx` carries coordinates and nothing else,
+     there is no way for one glyph to quietly break the grammar.
+
+     The stroke is in the viewBox's own units, so it scales with the box: 1.75
+     of twenty is 1.75px at the default size and 1.23px at 14. That is the
+     behaviour a font had, and it is why the small sizes stay light rather than
+     going gluey. */
   .icon {
     display: inline-block;
     flex: none;
-    font-family: var(--font-material-symbols);
-    font-size: var(--icon-size, 20px);
-    font-style: normal;
-    font-weight: 400;
-    line-height: 1;
-    letter-spacing: normal;
-    text-transform: none;
-    white-space: nowrap;
-    word-wrap: normal;
-    direction: ltr;
-    font-feature-settings: "liga";
-    /* FILL 1 means "on", and nothing else fills: an applied verdict, the active
-       nav item, a favourited player. */
-    font-variation-settings: "FILL" var(--icon-fill, 0);
-    -webkit-font-smoothing: antialiased;
-    user-select: none;
+    vertical-align: middle;
+    width: var(--icon-size, 20px);
+    height: var(--icon-size, 20px);
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: butt;
+    stroke-linejoin: miter;
   }
 
+  /* Fill means "on", and nothing else fills. Only a closed outline has an
+     inside to paint, which in this set is the star alone — `<Icon>` refuses the
+     class for every other name rather than drawing the wedge an open path would
+     produce. See `FILLABLE` in src/components/icon-paths.tsx. */
   .icon-filled {
-    --icon-fill: 1;
+    fill: currentColor;
   }
 
   /* The sizes foundations lists: 14 in badges and micro-labels, 16 in chips,
@@ -533,14 +663,14 @@
 
   /* National flags, and they are not icons. A flag is an identity mark, the way
      a crest chip is: it says *which* competition, where an icon says what kind
-     of thing something is. Material Symbols has no flags and could not have any
-     — there is no drawing of "England" a type designer adds to a set of
-     interface glyphs — so Iconography's "if a glyph does not exist, use a word"
-     is not the rule that governs this. `trophy` still means competition.
+     of thing something is. Our own set has no flags and will not get any —
+     there is no drawing of "England" that belongs beside a note glyph and a
+     chevron — so the rule that every glyph in the app comes from our set is not
+     the rule that governs this. `trophy` still means competition.
 
-     Four 4:3 files under public/flags/, vendored from flag-icons rather than
+     Seven 4:3 files under public/flags/, vendored from flag-icons rather than
      depended on: that package's CSS is 27 kB but names 542 SVGs of some 3.8 MiB,
-     every one of which a bundler emits into the build, in order to draw four.
+     every one of which a bundler emits into the build, in order to draw seven.
 
      A background-image rather than an inline <svg> or an <img>. Inline would put
      the path data into the payload of every page drawing a pill; a background
@@ -552,9 +682,9 @@
      edge of its own on --surface, and none on a *selected* pill in dark either,
      which is a white fill. An inset shadow draws one without a border changing
      the box — the trick `focus-field` already uses on a field. --border in both
-     themes covers both cases, and Italy needs the same along the top and bottom
-     of its white centre band. On Spain's and Portugal's own edges it is
-     invisible, so one rule beats four. */
+     themes covers both cases, and Italy and France need the same along the two
+     edges of their white bands. On Spain's, Portugal's, Germany's and Sweden's
+     own edges it is invisible, so one rule beats seven. */
   .flag {
     background-position: center;
     background-repeat: no-repeat;
@@ -582,6 +712,18 @@
 
   .flag-it {
     background-image: url("/flags/it.svg");
+  }
+
+  .flag-de {
+    background-image: url("/flags/de.svg");
+  }
+
+  .flag-fr {
+    background-image: url("/flags/fr.svg");
+  }
+
+  .flag-se {
+    background-image: url("/flags/se.svg");
   }
 
   /* The entrance of a modal <dialog>, and the whole of what CSS has to say about
@@ -656,4 +798,24 @@
   [data-theme="dark"] .theme-icon-dark {
     display: inline-flex;
   }
+}
+
+/* ==========================================================================
+   TEMPORARY — the "what's new" note in the sidebar.
+
+   Unlayered on purpose, where `.theme-icon-*` above sits inside `components`.
+   Unlayered CSS outranks every layer regardless of specificity, so this cannot
+   be beaten by a Tailwind display utility landing on the same element later —
+   the trap the theme-icon comment describes having fallen into. It is one rule
+   guarding one element, and it costs nothing to put it out of reach.
+
+   The attribute is written by `CHANGELOG_INIT_SCRIPT` during head parsing, so
+   this resolves before the first paint. React reaches the same conclusion after
+   hydration and removes the element outright; this only has to cover the frames
+   in between, which is exactly the ones the reader was seeing it in.
+
+   Delete with `src/lib/changelog.ts` and `changelog-note.tsx`.
+   ========================================================================== */
+[data-changelog-seen] .changelog-note {
+  display: none;
 }

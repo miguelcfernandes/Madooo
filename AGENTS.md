@@ -72,7 +72,7 @@ deep in the JS/TS ecosystem.
 Verified facts about the data source, including the real season entitlement, the
 rate-limit headers and the per-endpoint request costs, are in
 [`docs/api-football-findings.md`](docs/api-football-findings.md). The app runs on
-the **Pro** tier with `SEASON=2026` and `LEAGUES=39,94,140,135`. Entitlement is per
+the **Pro** tier with `SEASON=2026` and `LEAGUES=39,94,140,135,78,61,113`. Entitlement is per
 league as well as per season, so check a new id with
 `python3 scripts/verify_api.py --league <id>` before adding it.
 
@@ -90,13 +90,26 @@ first. It exists so the roadmap can stay a record of progress rather than
 accumulating everything ever learned; keep facts on the correct side of that
 line.
 
-**Anything that renders:** [`docs/design/`](docs/design/) is the design source of
-truth — `foundations.md` holds the tokens (colour, type, spacing, elevation,
-motion, states, icons) and the rules about when each applies, alongside the
-reference images and screenshots of the intended screens. Read it before writing
-markup or CSS, not after. Its own first rule is the one most easily broken by
-accident: **never hard-code a hex or a raw px value in product code — always a
-semantic token.**
+**Anything that renders:** [`docs/design/foundations.md`](docs/design/foundations.md)
+is the design source of truth — the tokens (colour, type, spacing, elevation,
+motion, states, icons) and the rules about when each applies. Read it before
+writing markup or CSS, not after. Its own first rule is the one most easily
+broken by accident: **never hard-code a hex or a raw px value in product code —
+always a semantic token.**
+
+The rebrand to "Field Notes" is **built**, and `foundations.md` describes it.
+Marine is the only colour the brand owns and has six permitted places; the type
+is Schibsted Grotesk and DM Mono; radius is zero everywhere; the icons are our
+own thirty-four glyphs rather than Material Symbols. The board it was agreed on
+is superseded by the document, which is the rule this project has kept
+throughout: **a board records what was agreed, `foundations.md` records what has
+landed, and the second wins.**
+
+One warning that cost time to discover: **the `next` branch is an abandoned
+earlier rebrand.** It carries a different identity — "Masthead", a full-bleed
+dark band, set in Agency FB — with its own rewritten `foundations.md`, plus three
+unrelated leagues nobody decided on. Do not read its `foundations.md` and assume
+it describes the design that shipped. It must not be built on or merged.
 
 ## Stack
 

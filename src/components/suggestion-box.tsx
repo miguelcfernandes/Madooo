@@ -49,13 +49,13 @@ export function SuggestionBox() {
           No `aria-label`. The label is visible at every width, so the button's
           text *is* its accessible name and a second copy in an attribute would
           only be a thing to keep in step. `<Icon>` is `aria-hidden` as always,
-          which is what stops the glyph's ligature text being read out beside it.
+          which is what keeps the glyph out of the button's computed name.
 
           If the label is ever hidden again at a breakpoint, the name has to come
           back as an `aria-label` — a control whose only content is a glyph has
           no accessible name at all.
         */
-        className="t-hover flex h-(--control-h-lg) cursor-pointer items-center gap-2 rounded-md px-3 text-label whitespace-nowrap text-muted hover:bg-surface-alt hover:text-text focus-visible:focus-ring"
+        className="t-hover flex h-(--control-h-lg) cursor-pointer items-center gap-2 px-3 text-label whitespace-nowrap text-muted hover:bg-surface-alt hover:text-text focus-visible:focus-ring"
       >
         {/* 18px — foundations' size for a glyph inside a button, rather than the
             22px the two icon-only controls beside it take. */}
@@ -166,7 +166,7 @@ function SuggestionDialog({ onClose }: { onClose: () => void }) {
       // test above only holds while there is no dialog surface to click on.
       // `m-auto` is not decoration: Tailwind's preflight zeroes every margin,
       // including the `margin: auto` the browser uses to centre a modal.
-      className="dialog m-auto w-[calc(100%-2rem)] max-w-lg overflow-hidden rounded-md border border-border bg-surface p-0 text-text shadow-3"
+      className="dialog m-auto w-[calc(100%-2rem)] max-w-lg overflow-hidden border border-border bg-surface p-0 text-text shadow-3"
     >
       <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
         <h2 id={titleId} className="truncate text-heading">
@@ -176,7 +176,7 @@ function SuggestionDialog({ onClose }: { onClose: () => void }) {
           type="button"
           onClick={close}
           aria-label="Close"
-          className="t-hover flex size-(--control-h) shrink-0 cursor-pointer items-center justify-center rounded-md text-muted hover:bg-surface-alt hover:text-text focus-visible:focus-ring"
+          className="t-hover flex size-(--control-h) shrink-0 cursor-pointer items-center justify-center text-muted hover:bg-surface-alt hover:text-text focus-visible:focus-ring"
         >
           <Icon name="close" size="md" />
         </button>
@@ -206,7 +206,7 @@ function SuggestionDialog({ onClose }: { onClose: () => void }) {
             maxLength={SUGGESTION_MAX_LENGTH}
             aria-describedby={hintId}
             placeholder="What would you like to see, or see changed?"
-            className="w-full resize-y rounded-md border border-border bg-surface px-3 py-2 text-body text-text placeholder:text-faint focus:focus-field"
+            className="w-full resize-y border border-border bg-surface px-3 py-2 text-body text-text placeholder:text-faint focus:focus-field"
           />
           <p
             id={hintId}
@@ -214,7 +214,7 @@ function SuggestionDialog({ onClose }: { onClose: () => void }) {
             // in `--flop`, rather than the message being added underneath it.
             className={`mt-2 text-caption ${error === null ? 'text-muted' : 'text-flop'}`}
           >
-            {error ?? 'Read by the person who builds this. There is no reply.'}
+            {error ?? 'Read by the person who builds this. You will not get a reply, but it is read.'}
           </p>
         </div>
       )}
@@ -225,7 +225,7 @@ function SuggestionDialog({ onClose }: { onClose: () => void }) {
             type="button"
             onClick={close}
             autoFocus
-            className="t-hover flex h-(--control-h-lg) cursor-pointer items-center rounded-md bg-surface-inverse px-5 text-label text-inverse hover:bg-surface-inverse-hover active:translate-y-px focus-visible:focus-ring"
+            className="t-hover flex h-(--control-h-lg) cursor-pointer items-center bg-brand-action px-5 text-label text-brand-action-ink hover:bg-brand-action-hover active:translate-y-px focus-visible:focus-ring"
           >
             Close
           </button>
@@ -234,7 +234,7 @@ function SuggestionDialog({ onClose }: { onClose: () => void }) {
             <button
               type="button"
               onClick={close}
-              className="t-hover flex h-(--control-h-lg) cursor-pointer items-center rounded-md border border-border px-5 text-label text-text hover:border-border-strong hover:bg-surface-alt focus-visible:focus-ring"
+              className="t-hover flex h-(--control-h-lg) cursor-pointer items-center border border-border px-5 text-label text-text hover:border-border-strong hover:bg-surface-alt focus-visible:focus-ring"
             >
               Cancel
             </button>
@@ -245,7 +245,7 @@ function SuggestionDialog({ onClose }: { onClose: () => void }) {
               // while the first is in flight. Foundations' disabled state is
               // opacity and a cursor, and nothing else.
               disabled={empty || pending}
-              className="t-hover flex h-(--control-h-lg) cursor-pointer items-center rounded-md bg-surface-inverse px-5 text-label text-inverse hover:bg-surface-inverse-hover active:translate-y-px focus-visible:focus-ring disabled:cursor-not-allowed disabled:opacity-40"
+              className="t-hover flex h-(--control-h-lg) cursor-pointer items-center bg-brand-action px-5 text-label text-brand-action-ink hover:bg-brand-action-hover active:translate-y-px focus-visible:focus-ring disabled:cursor-not-allowed disabled:opacity-40"
             >
               {pending ? 'Sending…' : 'Send'}
             </button>

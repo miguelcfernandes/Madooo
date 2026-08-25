@@ -58,7 +58,7 @@ function Card({ team }: { team: TeamIndexRow }) {
     <li>
       <Link
         href={teamHref(team.id, '/teams')}
-        className="t-hover flex h-full flex-col gap-3 rounded-md border border-border bg-surface p-4 text-text no-underline hover:bg-surface-alt hover:text-text hover:no-underline focus-visible:focus-ring"
+        className="t-hover flex h-full flex-col gap-3 border border-border bg-surface p-4 text-text no-underline hover:bg-surface-alt hover:text-text hover:no-underline focus-visible:focus-ring"
       >
         <span className="flex items-center gap-3">
           <CrestChip team={team} size="lg" />
@@ -158,8 +158,8 @@ export function TeamsBrowser({
         <p className="text-body text-muted">No teams match your search.</p>
       ) : layout === 'list' ? (
         // The `SquadPanel` card, so every list in the app reads as one system.
-        <section className="overflow-hidden rounded-md border border-border bg-surface">
-          <header className="flex items-center justify-between gap-3 bg-surface-header px-4 py-2">
+        <section className="overflow-hidden border border-border bg-surface">
+          <header className="flex items-center justify-between gap-3 border-b-2 border-brand bg-surface-alt px-4 py-2">
             <h2 className="truncate text-caps">{sort.label}</h2>
             <span className="shrink-0 text-data text-muted">
               {visible.length}

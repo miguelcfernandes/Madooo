@@ -59,7 +59,7 @@ function Step({ day, direction }: { day: string; direction: 'left' | 'right' }) 
       // size-8 is --control-h, foundations' default icon button. `no-underline`
       // and an explicit colour because the base stylesheet styles every <a> as a
       // prose link, which is right for body copy and wrong for chrome.
-      className="t-hover inline-flex size-8 items-center justify-center rounded-md text-muted no-underline hover:bg-surface-alt hover:text-text focus-visible:focus-ring"
+      className="t-hover inline-flex size-8 items-center justify-center text-muted no-underline hover:bg-surface-alt hover:text-text focus-visible:focus-ring"
     >
       <Icon name={direction === 'left' ? 'chevron_left' : 'chevron_right'} size="md" />
     </Link>
@@ -111,7 +111,7 @@ export function DayPager({ day, previous, next, count, today }: Props) {
           // A bare `/fixtures` rather than `?date=<today>`: the page defaults to
           // today, so the shorter address is the same destination and stays
           // right when the reader opens it again tomorrow.
-          className="t-hover inline-flex h-8 items-center rounded-md px-3 text-label text-muted no-underline hover:bg-surface-alt hover:text-text hover:no-underline focus-visible:focus-ring"
+          className="t-hover inline-flex h-8 items-center px-3 text-label text-muted no-underline hover:bg-surface-alt hover:text-text hover:no-underline focus-visible:focus-ring"
         >
           Today
         </Link>

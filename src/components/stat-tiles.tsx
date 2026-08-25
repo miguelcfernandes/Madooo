@@ -9,9 +9,9 @@ import type { VerdictCounts } from '@/lib/verdict-split'
  * The four tallies a screen opens with: what the user has done, and what they
  * said about it.
  *
- * The same card as `FixtureCard` and `SquadPanel` — a bordered `--surface` at
- * `--radius-md` with no shadow — so the page reads as one system rather than as
- * a dashboard bolted above a list.
+ * The same card as `SquadPanel` and a `/fixtures` competition block — a bordered `--surface`,
+ * square-cornered, with no shadow — so the page reads as one system rather than
+ * as a dashboard bolted above a list.
  *
  * Both screens that have tiles draw the same four boxes over different numbers,
  * so this is generic over the keys rather than duplicated. The tables below are
@@ -48,10 +48,13 @@ export const FIXTURE_TILES: readonly Tile<keyof SeasonTotals>[] = [
   { key: 'watched', icon: 'visibility', label: 'Watched', ink: 'text-text', sub: 'this season' },
   { key: 'standouts', icon: 'trending_up', label: 'Standouts', ink: 'text-standout' },
   { key: 'flops', icon: 'trending_down', label: 'Flops', ink: 'text-flop' },
-  // A note is not a verdict, so it takes the informational blue rather than one
-  // of the three verdict colours — the same distinction the match page draws by
-  // leaving notes out of its header counts.
-  { key: 'notes', icon: 'edit_note', label: 'Notes', ink: 'text-info' },
+  // A note is not a verdict, so it takes none of the three verdict colours —
+  // the same distinction the match page draws by leaving notes out of its
+  // header counts. Muted rather than the informational blue it used to be:
+  // that token is gone, because a second cool colour beside marine would be a
+  // second thing claiming to mean something. Grey is what this system says for
+  // "real, and not a judgement".
+  { key: 'notes', icon: 'edit_note', label: 'Notes', ink: 'text-muted' },
 ]
 
 /**
@@ -59,21 +62,21 @@ export const FIXTURE_TILES: readonly Tile<keyof SeasonTotals>[] = [
  * matches it came from. `two_pager` is the sidebar's own Diary glyph, so the
  * tile and the destination agree.
  *
- * No `sub` on any of them, as the reference screenshot draws it — the diary
+ * No `sub` on any of them — the diary
  * says "this season" in its subtitle instead.
  */
 export const DIARY_TILES: readonly Tile<keyof DiaryTotals>[] = [
   { key: 'entries', icon: 'two_pager', label: 'Entries', ink: 'text-text' },
   { key: 'standouts', icon: 'trending_up', label: 'Standouts', ink: 'text-standout' },
   { key: 'flops', icon: 'trending_down', label: 'Flops', ink: 'text-flop' },
-  { key: 'notes', icon: 'edit_note', label: 'Notes', ink: 'text-info' },
+  { key: 'notes', icon: 'edit_note', label: 'Notes', ink: 'text-muted' },
 ]
 
 /**
  * A player profile: how often this player was watched, and what he got for it.
  *
- * The one set of four with no Notes tile and an MVPs tile instead, which is what
- * the reference screenshot draws — a profile is read to answer "how did he do",
+ * The one set of four with no Notes tile and an MVPs tile instead: a profile is
+ * read to answer "how did he do",
  * where the other two screens are read to answer "what have I written". It is
  * also the first table to use `text-mvp`, since MVP has a tile of its own
  * nowhere else.
@@ -122,7 +125,7 @@ export const PLAYERS_TILES: readonly Tile<keyof PlayersTotals>[] = [
   { key: 'mvps', icon: 'star', label: 'MVPs given', ink: 'text-mvp' },
   { key: 'standouts', icon: 'trending_up', label: 'Standouts', ink: 'text-standout' },
   { key: 'flops', icon: 'trending_down', label: 'Flops', ink: 'text-flop' },
-  { key: 'notes', icon: 'edit_note', label: 'Notes', ink: 'text-info' },
+  { key: 'notes', icon: 'edit_note', label: 'Notes', ink: 'text-muted' },
 ]
 
 type Props<K extends string> = {
@@ -141,11 +144,11 @@ export function StatTiles<K extends string>({ tiles, totals }: Props<K>) {
 
       Grid items stretch, so the three tiles with no sub-line come out the same
       height as the one that has it, with the space left under the number. That
-      is what the screenshot shows and it needs no second declaration.
+      is the result we want, so it needs no second declaration.
     */
     <ul className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
       {tiles.map((tile) => (
-        <li key={tile.key} className="rounded-md border border-border bg-surface p-4">
+        <li key={tile.key} className="border border-border bg-surface p-4">
           {/* Not a heading. A tile is a datum, not a section of the page, and
               an <h2> here would put four of them between the page title and the
               list in a screen reader's outline. */}

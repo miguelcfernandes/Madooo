@@ -85,10 +85,10 @@ export default async function Diary({ searchParams }: PageProps<'/diary'>) {
 
   return (
     <>
-      {/* Not "every verdict", which is what the reference screenshot says: a
+      {/* Not "every verdict": a
           note with no tag is an entry here too, and it is not a verdict. */}
       <PageHeader title="Diary">
-        Everything you have recorded this season, newest first.
+        Everything you have written this season, newest first.
       </PageHeader>
 
       <StatTiles tiles={DIARY_TILES} totals={totals} />
@@ -115,8 +115,8 @@ export default async function Diary({ searchParams }: PageProps<'/diary'>) {
               <span className="flex-1 border-t border-border" />
               {/* `--surface-alt` would be invisible against `--page` in light,
                   which is the same value; one step further down the ramp is the
-                  quiet fill the screenshot draws. */}
-              <span className="rounded-sm bg-surface-sunken px-1.5 py-0.5 text-data text-muted">
+                  quiet fill this needs. */}
+              <span className="bg-surface-sunken px-1.5 py-0.5 text-data text-muted">
                 {month.items.length}
               </span>
             </div>

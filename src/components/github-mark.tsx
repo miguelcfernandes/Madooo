@@ -1,14 +1,15 @@
 /**
- * GitHub's mark, and the one glyph in the app that is not a Material Symbol.
+ * GitHub's mark, and the one glyph in the app that is not ours.
  *
- * `foundations.md` fixes the icon set at Material Symbols Outlined and says that
- * anything without a glyph there becomes a word. This is the documented
- * exception to that rule, and it is narrow on purpose: the octocat is how a
- * repository link is recognised without being read, and "use a word" would give
- * back the labelled row that made this look like a fifth destination. The
- * exception covers this mark, wherever the repository is linked — the top bar
- * and the landing page's button, which are the two places. Some *other*
- * non-Symbol glyph is a new decision, not a precedent already set.
+ * `foundations.md` fixes the icon set at Madooo's own thirty-four glyphs and
+ * bans anything from outside it. This is the documented exception, and it is
+ * narrow on purpose: the octocat is how a repository link is recognised without
+ * being read, it is somebody else's mark rather than an interface glyph we could
+ * have drawn, and "use a word" would give back the labelled row that made this
+ * look like a fifth destination. The exception covers this mark, wherever the
+ * repository is linked — the top bar and the landing page's button, which are
+ * the two places. Some *other* foreign glyph is a new decision, not a precedent
+ * already set.
  *
  * It is inline SVG rather than a file in `public/` — unlike the flags, which are
  * `<img>` — because an `<img>` cannot inherit `currentColor`. The mark has to
@@ -17,9 +18,9 @@
  * component can sit muted in the top bar and inverted on a filled button
  * without either caller passing it a colour.
  *
- * Callers set the size, and it goes 2px under the Material Symbol beside it:
- * `size-5` against the top bar's 22px toggle, `size-4` against the button's
- * 18px. A solid silhouette carries more ink than a 2px outline at the same box.
+ * Callers set the size, and it goes 2px under the glyph beside it: `size-5`
+ * against the top bar's 22px toggle, `size-4` against the button's 18px. A solid
+ * silhouette carries more ink than a 1.75 stroke at the same box.
  *
  * `aria-hidden`, like `<Icon>`: the mark stands alone here, so the name lives on
  * the anchor around it.

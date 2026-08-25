@@ -95,8 +95,8 @@ export default async function TeamPage({ params, searchParams }: PageProps<'/tea
       ) : (
         // The `SquadPanel` card, so the club's squad and the match page's read as
         // one system.
-        <section className="overflow-hidden rounded-md border border-border bg-surface">
-          <header className="flex items-center justify-between gap-3 bg-surface-header px-4 py-2">
+        <section className="overflow-hidden border border-border bg-surface">
+          <header className="flex items-center justify-between gap-3 border-b-2 border-brand bg-surface-alt px-4 py-2">
             <h2 className="truncate text-caps">Squad</h2>
             <span className="shrink-0 text-data text-muted">
               {players.length}

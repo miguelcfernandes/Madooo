@@ -192,13 +192,15 @@ export function VerdictControls({ matchSquadId, playerName, tag }: Props) {
               className={[
                 // 40px for a thumb, 32px from `md` up as drawn — the same
                 // arrangement-not-scaling move the rows themselves make.
-                'flex size-(--control-h-lg) items-center justify-center rounded-md border',
+                'flex size-(--control-h-lg) items-center justify-center border',
                 'active:translate-y-px focus-visible:focus-ring md:size-(--control-h)',
                 selected ? chip.selected : RESTING,
               ].join(' ')}
             >
-              {/* FILL 1 means "on", and an applied verdict is the example
-                  foundations gives for it. */}
+              {/* Filled means "on", and an applied verdict is the example
+                  foundations gives for it. Only the star has an outline that
+                  closes, so it is the only one of the three this paints; the
+                  two arrows carry the state in the chip's tint instead. */}
               <Icon name={chip.icon} size="md" filled={selected} />
               <span className="sr-only">{chip.label}</span>
             </button>
@@ -219,11 +221,13 @@ export function VerdictControls({ matchSquadId, playerName, tag }: Props) {
           on this very row, where a shared name would be read as a FLOP.
         */
         <p role="status" className="text-caption text-alert">
-          {failed.offline ? 'Not saved — check your connection.' : 'Not saved — something went wrong.'}{' '}
+          {failed.offline
+            ? 'That did not save — check your connection.'
+            : 'That did not save — something went wrong.'}{' '}
           <button
             type="button"
             onClick={() => write(failed.value)}
-            className="t-hover cursor-pointer rounded-sm underline underline-offset-2 hover:text-text focus-visible:focus-ring"
+            className="t-hover cursor-pointer underline underline-offset-2 hover:text-text focus-visible:focus-ring"
           >
             Try again
           </button>

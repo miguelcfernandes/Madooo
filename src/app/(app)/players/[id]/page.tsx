@@ -73,9 +73,11 @@ export default async function PlayerPage({ params, searchParams }: PageProps<'/p
       >
         {/*
           `MID`, not the drawing's "Attacking midfielder". The finer position is
-          in no provider response — `MatchSquad.position` is one of four letters —
-          and 6.3 settled that inventing one prints a confident falsehood about a
-          real person. See architecture.md.
+          in no provider response — the four letters `MatchSquad.position` is
+          read for are the whole of what the payloads carry — and 6.3 settled
+          that inventing one prints a confident falsehood about a real person.
+          Anything else in that column, including the null it is often, draws no
+          position at all rather than a guess. See architecture.md.
 
           The club is the link; the position is not, so this is a node rather
           than one joined string. What travels as the origin is this profile with
@@ -90,7 +92,7 @@ export default async function PlayerPage({ params, searchParams }: PageProps<'/p
                 latest.team.id,
                 `/players/${header.id}${current === PLAYER_VIEWS[0] ? '' : `?view=${current.slug}`}`,
               )}
-              className="rounded-sm text-muted underline-offset-2 hover:text-text focus-visible:focus-ring"
+              className="text-muted underline-offset-2 hover:text-text focus-visible:focus-ring"
             >
               {latest.team.name}
             </Link>

@@ -14,15 +14,20 @@ import { Icon } from './icon'
  * the design draws: `appearance-none` removes the platform arrow, and the
  * `expand_more` glyph beside it is ours.
  *
- * ### Why the league is a select here and a pill on `/fixtures`
+ * ### Why the league is a select here and was a tab row on `/fixtures`
  *
- * `foundations.md` gives league scope to the pill tab, and this does not
- * contradict it. **A pill chooses the scope the page was drawn for; a select
- * narrows what is already on screen.** The league row on `/fixtures` is what the
- * server queried — a fact about which page you are on — and it shows every league
- * at once. In a row of filters over one list, beside a search box and a sort, the
- * same choice is a select: those controls have to read as one set, and none of
- * them changes what was fetched.
+ * **A scope control says what the page was drawn for; a select narrows what is
+ * already on screen.** The league row `/fixtures` used to carry was the first:
+ * it named what the server had queried, it was a fact about which page you were
+ * on, and it showed every league at once. In a row of filters over one list,
+ * beside a search box and a sort, the same choice is a select — those controls
+ * have to read as one set, and none of them changes what was fetched.
+ *
+ * The control that used to draw the first is gone: `/fixtures` is indexed by day
+ * now, and the rebrand retired the pill tab it wore. The distinction survives the
+ * control, which is why `foundations.md` still records it — a select in a filter
+ * row is the only thing this app draws, and a scope control would need deciding
+ * again before it drew another.
  */
 export function SelectField({
   label,
@@ -53,7 +58,7 @@ export function SelectField({
         onChange={(event) => onChange(event.target.value)}
         // `pr-8` leaves the glyph its room. `cursor-pointer` because a select is
         // pressed rather than typed in, unlike the field it otherwise matches.
-        className="t-hover h-(--control-h-lg) w-full cursor-pointer appearance-none rounded-md border border-border bg-surface pr-8 pl-3 text-body text-text hover:border-border-strong focus:focus-field md:h-(--control-h)"
+        className="t-hover h-(--control-h-lg) w-full cursor-pointer appearance-none border border-border bg-surface pr-8 pl-3 text-body text-text hover:border-border-strong focus:focus-field md:h-(--control-h)"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>

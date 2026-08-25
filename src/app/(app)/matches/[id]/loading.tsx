@@ -26,9 +26,9 @@ function SkeletonSquad() {
       {[11, 9].map((count, panel) => (
         <section
           key={panel}
-          className="overflow-hidden rounded-md border border-border bg-surface"
+          className="overflow-hidden border border-border bg-surface"
         >
-          <header className="flex items-center justify-between gap-3 bg-surface-header px-4 py-2">
+          <header className="flex items-center justify-between gap-3 border-b-2 border-brand bg-surface-alt px-4 py-2">
             <SkeletonLine className="text-caps w-36" />
           </header>
           <ul className="divide-y divide-border">
@@ -40,9 +40,9 @@ function SkeletonSquad() {
                 <SkeletonBox className="size-8 shrink-0" />
                 <SkeletonLine className="text-body w-40 max-w-full" />
                 <span className="ml-auto flex shrink-0 gap-1">
-                  <SkeletonBox className="size-8 rounded-sm" />
-                  <SkeletonBox className="size-8 rounded-sm" />
-                  <SkeletonBox className="size-8 rounded-sm" />
+                  <SkeletonBox className="size-8" />
+                  <SkeletonBox className="size-8" />
+                  <SkeletonBox className="size-8" />
                 </span>
               </li>
             ))}
@@ -59,10 +59,10 @@ export default function Loading() {
       <header className="mb-8">
         <SkeletonLine className="text-body mb-4 w-36" />
 
-        <div className="overflow-hidden rounded-md border border-border bg-surface">
+        <div className="overflow-hidden border border-border bg-surface">
           {/* The facts strip: competition, ground, date, referee, centred and
               wrapping rather than shrinking. */}
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 bg-surface-header px-4 py-2 md:gap-x-6">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 border-b-2 border-brand bg-surface-alt px-4 py-2 md:gap-x-6">
             <SkeletonLine className="text-caption w-28" />
             <SkeletonLine className="text-caption w-32" />
             <SkeletonLine className="text-caption w-24" />

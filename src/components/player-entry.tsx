@@ -22,7 +22,7 @@ export function PlayerEntry({ entry }: { entry: Entry }) {
           that cannot reach the match it judges is a dead end. */}
       <Link
         href={`/matches/${match.id}`}
-        className="rounded-sm text-body text-text focus-visible:focus-ring"
+        className="text-body text-text focus-visible:focus-ring"
       >
         {scoreline(match)}
       </Link>

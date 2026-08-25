@@ -48,8 +48,19 @@ const PREMIER_LEAGUE = leagueName('fixtures_39_2024.json')
 const PRIMEIRA_LIGA = leagueName('fixtures_94_2026.json')
 const LA_LIGA = leagueName('fixtures_140_2026.json')
 const SERIE_A = leagueName('fixtures_135_2026.json')
+const BUNDESLIGA = leagueName('fixtures_78_2026.json')
+const LIGUE_1 = leagueName('fixtures_61_2026.json')
+const ALLSVENSKAN = leagueName('fixtures_113_2026.json')
 
-const ALL = [PREMIER_LEAGUE, PRIMEIRA_LIGA, LA_LIGA, SERIE_A]
+const ALL = [
+  PREMIER_LEAGUE,
+  PRIMEIRA_LIGA,
+  LA_LIGA,
+  SERIE_A,
+  BUNDESLIGA,
+  LIGUE_1,
+  ALLSVENSKAN,
+]
 
 /**
  * What the page hands the grouper: our own ids, the provider's names and its
@@ -61,6 +72,9 @@ const SECTIONS: LeagueSection[] = [
   { id: 2, name: PRIMEIRA_LIGA, country: rawLeague('fixtures_94_2026.json').country },
   { id: 3, name: LA_LIGA, country: rawLeague('fixtures_140_2026.json').country },
   { id: 4, name: SERIE_A, country: rawLeague('fixtures_135_2026.json').country },
+  { id: 5, name: BUNDESLIGA, country: rawLeague('fixtures_78_2026.json').country },
+  { id: 6, name: LIGUE_1, country: rawLeague('fixtures_61_2026.json').country },
+  { id: 7, name: ALLSVENSKAN, country: rawLeague('fixtures_113_2026.json').country },
 ]
 
 describe('leagueSlug', () => {
@@ -91,9 +105,17 @@ describe('leagueSlug', () => {
 })
 
 describe('leagueRank', () => {
-  it('orders the four leagues the app holds, most followed first', () => {
+  it('orders the seven leagues the app holds, most followed first', () => {
     const ordered = [...ALL].sort((a, b) => leagueRank({ name: a }) - leagueRank({ name: b }))
-    expect(ordered).toEqual([PREMIER_LEAGUE, LA_LIGA, SERIE_A, PRIMEIRA_LIGA])
+    expect(ordered).toEqual([
+      PREMIER_LEAGUE,
+      LA_LIGA,
+      SERIE_A,
+      BUNDESLIGA,
+      LIGUE_1,
+      PRIMEIRA_LIGA,
+      ALLSVENSKAN,
+    ])
   })
 
   it('reads the provider\u2019s own names, not a person\u2019s', () => {
@@ -106,9 +128,14 @@ describe('leagueRank', () => {
   })
 
   it('sends a league it does not name to the back rather than hiding it', () => {
-    // The clause that keeps this legal against AGENTS.md's first constraint: a
-    // fifth league costs no edit here. It ranks last and still renders.
-    expect(leagueRank({ name: 'Bundesliga' })).toBe(Number.MAX_SAFE_INTEGER)
+    // The clause that keeps this legal against AGENTS.md's first constraint: an
+    // eighth league costs no edit here. It ranks last and still renders.
+    //
+    // This used to name the Bundesliga, which was the honest choice while the
+    // app held four leagues and is a wrong one now that it holds seven. The
+    // stand-in has to be a competition LEAGUE_ORDER genuinely does not name, or
+    // the test passes while asserting nothing.
+    expect(leagueRank({ name: 'Eredivisie' })).toBe(Number.MAX_SAFE_INTEGER)
   })
 
   it('is unaffected by casing or diacritics', () => {
@@ -170,8 +197,8 @@ describe('groupByLeague', () => {
 
   it('sorts unranked leagues after the ranked ones, alphabetically', () => {
     const unranked = [
-      { id: 9, name: 'Eredivisie', country: 'Netherlands' },
-      { id: 8, name: 'Bundesliga', country: 'Germany' },
+      { id: 9, name: 'Süper Lig', country: 'Turkey' },
+      { id: 8, name: 'Eredivisie', country: 'Netherlands' },
     ]
     const grouped = groupByLeague(
       [
@@ -183,8 +210,8 @@ describe('groupByLeague', () => {
     )
     expect(grouped.map((group) => group.league.name)).toEqual([
       PREMIER_LEAGUE,
-      'Bundesliga',
       'Eredivisie',
+      'Süper Lig',
     ])
   })
 
@@ -206,6 +233,9 @@ describe('flagClass', () => {
     rawLeague('fixtures_94_2026.json').country,
     rawLeague('fixtures_140_2026.json').country,
     rawLeague('fixtures_135_2026.json').country,
+    rawLeague('fixtures_78_2026.json').country,
+    rawLeague('fixtures_61_2026.json').country,
+    rawLeague('fixtures_113_2026.json').country,
   ]
 
   const css = readFileSync(join(process.cwd(), 'src/app/globals.css'), 'utf8')
@@ -214,9 +244,10 @@ describe('flagClass', () => {
     The check that earns this suite its place. A country and its class name live
     in two files with nothing binding them, so `flagClass` returning `flag-pt`
     while globals.css says `.flag-prt` draws an empty 16x12 box: no console
-    error, no failing build, nothing but a gap in a pill. It is precisely how a
-    misspelled Material Symbols name fails, which architecture.md already
-    records — this is that failure closed rather than documented.
+    error, no failing build, nothing but a gap in a heading. It is the same
+    failure a glyph name with no geometry behind it would have — except that one
+    is a compile error now, because `ICON_PATHS` is keyed by `IconName`. This is
+    the flags' version of that check, closed rather than documented.
   */
   it.each(COUNTRIES)('has a rule and a file for %s', (country) => {
     const flag = flagClass({ country })
@@ -227,7 +258,7 @@ describe('flagClass', () => {
     )
   })
 
-  it('tells the four leagues apart', () => {
+  it('tells the seven leagues apart', () => {
     expect(new Set(COUNTRIES.map((country) => flagClass({ country }))).size).toBe(COUNTRIES.length)
   })
 

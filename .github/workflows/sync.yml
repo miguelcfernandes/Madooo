@@ -18,7 +18,7 @@
 #   secret    DATABASE_URL        pooled Neon connection string, production branch
 #   secret    API_FOOTBALL_KEY    the Pro key
 #   variable  SEASON              2026
-#   variable  LEAGUES             39,94,140,135
+#   variable  LEAGUES             39,94,140,135,78,61,113
 
 name: sync
 

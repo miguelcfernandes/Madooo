@@ -23,13 +23,12 @@ import { crest, type TeamIdentity } from '@/lib/teams/identity'
  * strings: **Tailwind finds class names by scanning source as text**, so one
  * assembled from the prop would be a name it never sees and never generates.
  *
- * `sm` is foundations' 20px "Badge, crest chip" row with `--radius-sm` — a label
- * sitting inside a row of other things. `lg` is 40px with `--radius-md`, which
- * foundations gives to "almost everything: buttons, fields, cards, tiles": a
- * mark carrying the identity of the whole page is a tile, not a label, and it is
- * the same reading that put `ShirtTile` on `--radius-md`. `xl` is 64px, the size
- * `ShirtTile` takes in the same header slot, so a club profile and a player
- * profile open with a mark of one size.
+ * `sm` is foundations' 20px "Badge, crest chip" row — a label sitting inside a
+ * row of other things. `lg` is 40px: a mark carrying the identity of the whole
+ * page is a tile rather than a label, and it is the same reading that sizes
+ * `ShirtTile`. `xl` is 64px, the size `ShirtTile` takes in the same header slot,
+ * so a club profile and a player profile open with a mark of one size. All three
+ * are square-cornered, like every box in this design.
  *
  * **The letter role belongs to the size**, which is why it is in this table
  * rather than in the className below. `text-caps` at 20 and 40px: it is the only
@@ -41,11 +40,11 @@ import { crest, type TeamIdentity } from '@/lib/teams/identity'
  * whole of the rule that picks the monospaced family.
  */
 const SIZES = {
-  sm: 'h-5 rounded-sm px-1.5 text-caps',
+  sm: 'h-5 px-1.5 text-caps',
   // No horizontal padding: a fixed square centres its content already, and
   // padding on it could only squeeze a four-letter code.
-  lg: 'size-10 rounded-md text-caps',
-  xl: 'size-16 rounded-md text-title',
+  lg: 'size-10 text-caps',
+  xl: 'size-16 text-title',
 } as const
 
 export function CrestChip({

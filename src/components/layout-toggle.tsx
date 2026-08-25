@@ -8,13 +8,11 @@ import type { Layout } from '@/lib/rankings'
  * things and both fit on screen — foundations' own reason for preferring tabs to
  * a dropdown wherever the options are few.
  *
- * **The selected one fills with `--surface-inverse`**, which is what foundations
- * gives a selected pill tab and what the filled button uses. The glyph does *not*
- * take `FILL 1`: foundations scopes the fill axis to an applied verdict, the
- * active nav item and a favourited player, and the inverse fill already says
- * "on" here without borrowing a signal that means something else. The two
- * reference frames happen to disagree with each other on this button's selected
- * state, so it was a decision either way.
+ * **The selected one fills with `--surface-inverse`**, which is what the filled
+ * button uses. The glyph itself does not fill: foundations scopes that to an
+ * applied verdict, and the inverse fill already says "on" here without borrowing
+ * a signal that means something else. It would be a no-op in any case — the two
+ * layout glyphs are open paths, and only a closed outline has an inside.
  *
  * `aria-pressed` rather than `role="tablist"`: these do not switch between
  * panels, they redraw one. A tablist would promise arrow-key navigation between
@@ -48,7 +46,7 @@ export function LayoutToggle({
             type="button"
             aria-pressed={current}
             onClick={() => onChange(option.layout)}
-            className={`flex size-(--control-h-lg) items-center justify-center rounded-md focus-visible:focus-ring md:size-(--control-h) ${
+            className={`flex size-(--control-h-lg) items-center justify-center focus-visible:focus-ring md:size-(--control-h) ${
               current ? SELECTED : RESTING
             }`}
           >

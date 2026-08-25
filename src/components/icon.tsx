@@ -1,4 +1,5 @@
 import type { IconName } from './icon-names'
+import { FILLABLE } from './icon-paths'
 
 /** The sizes `foundations.md` allows, by the role each one is for. */
 const SIZES = {
@@ -16,36 +17,46 @@ const SIZES = {
 
 type Props = {
   name: IconName
-  /** `FILL 1`, which means "on" — an applied verdict, the active nav item. Nothing else fills. */
+  /**
+   * "On" — an applied verdict. Nothing else fills.
+   *
+   * Honoured only for a glyph whose outline closes, which in this set is the
+   * star alone; see `FILLABLE` in [`icon-paths.tsx`](./icon-paths.tsx) for why
+   * an open path has no inside to paint. Callers pass it by meaning and the
+   * icon module decides whether there is anything to do, which is the way round
+   * that keeps glyph geometry out of the call sites.
+   */
   filled?: boolean
   size?: keyof typeof SIZES
   className?: string
 }
 
 /**
- * A Material Symbol.
+ * One glyph from Madooo's own set.
  *
- * The glyph is selected by writing its *name as text* — the font maps the
- * ligature "trending_up" to the icon. That is why the name goes in the element's
- * body rather than in an attribute, and why the font has to load before anything
- * legible appears.
+ * The geometry lives in the sprite `IconSprite` renders once per document; this
+ * is a `<use>` pointing into it. The name reaches the DOM as a fragment
+ * reference rather than as text, which is the substantive difference from the
+ * Material Symbols ligature this replaces — a misspelled name there rendered
+ * the literal word "trending_up" on screen until the font arrived, and there is
+ * no font here to arrive. `IconName` makes a typo a compile error either way.
  *
  * Always `aria-hidden`: every icon in this design sits beside a label that
  * already says the same thing, so announcing it would just repeat. An icon that
  * ever stands alone needs a label on the control around it, not here.
  *
- * Colour is never set here. Icons inherit `currentColor`, so they take the
- * colour of whatever holds them — which is what keeps a chip's icon and its text
+ * Colour is never set here. The stroke is `currentColor`, so an icon takes the
+ * colour of whatever holds it — which is what keeps a chip's glyph and its text
  * from ever drifting apart.
  */
 export function Icon({ name, filled = false, size = 'base', className }: Props) {
-  const classes = ['icon', SIZES[size], filled && 'icon-filled', className]
+  const classes = ['icon', SIZES[size], filled && FILLABLE.has(name) && 'icon-filled', className]
     .filter(Boolean)
     .join(' ')
 
   return (
-    <span aria-hidden className={classes}>
-      {name}
-    </span>
+    <svg aria-hidden focusable="false" className={classes}>
+      <use href={`#i-${name}`} />
+    </svg>
   )
 }

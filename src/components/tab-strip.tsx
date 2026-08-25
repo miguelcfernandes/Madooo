@@ -3,17 +3,18 @@ import Link from 'next/link'
 /**
  * The app's tab strip: switching the view of the screen you are already on.
  *
- * **Two tab vocabularies, and this is the one the app currently draws.**
- * `foundations.md` lists a 40px `--control-h-lg` "tab" and a 28px "pill tab" as
- * separate controls. An underline tab changes the *view* of the current screen —
- * the diary's filter, a player's Diary or Notes — and that is this. A pill
- * chooses the *scope* the screen is drawn for; the league row was its only
- * instance, and `/fixtures` retired it when the page became a day rather than a
- * league and a matchday. The control stays defined in foundations, with nothing
- * drawing it.
+ * **The app's only tab, since the rebrand.** There used to be two vocabularies:
+ * this 40px underline tab, which changes the *view* of the screen you are on —
+ * the diary's filter, a player's Diary or Notes — and a 28px pill tab, which
+ * chose the *scope* the screen was drawn for. The league row was the pill's only
+ * instance and `/fixtures` retired it when the page became a day rather than a
+ * league and a matchday; zero radius then retired the control itself, because a
+ * pill in a system with no corners is a contradiction. The distinction it drew
+ * outlives it and is recorded in `foundations.md`, against the `<select>` that
+ * now carries scope.
  *
  * **The underline sits under the selected tab alone, with no rule spanning the
- * strip.** That is how the reference screenshot draws it, and it is also what
+ * strip.** That is what
  * lets the strip wrap: a continuous rule under a strip that had wrapped would
  * underline only the last row, leaving the selected tab on the first row
  * detached from it. Wrapping rather than scrolling sideways is 7.1's decision,
@@ -39,14 +40,16 @@ export function TabStrip({ label, tabs }: { label: string; tabs: readonly Tab[] 
             Not a link to the page you are already on. `aria-current` says what
             the underline says visually.
 
-            `border-text` rather than `border-border-focus`: the two resolve to
-            the same value in both themes, but only one of them is honest about
-            why — this is the selected mark in ink, not a focus ring.
+            Marine, and the label stays ink. The underline is one of the six
+            places the brand colour is allowed — it says which view of this
+            screen you are looking at, which is "where you are" exactly as the
+            active nav item is. Colouring the word as well would make the tab
+            compete with the nav item for the same signal.
           */
           <span
             key={tab.href}
             aria-current="page"
-            className="inline-flex h-(--control-h-lg) items-center border-b-2 border-text text-label text-text"
+            className="inline-flex h-(--control-h-lg) items-center border-b-2 border-brand text-label text-text"
           >
             {tab.label}
           </span>

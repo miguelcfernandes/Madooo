@@ -8,7 +8,7 @@ import type { SquadEntry } from '@/lib/matches'
  * "Your verdicts" — everything judged in this match, under the two benches.
  *
  * The same card as `SquadPanel`, full width. Player names link to the profile,
- * as the reference screenshot draws — though in ink rather than its blue, which
+ * in ink rather than link blue, which
  * is the treatment every in-list link in this app takes.
  */
 
@@ -34,8 +34,8 @@ export function VerdictSummary({
   const verdicts = summariseVerdicts(entries)
 
   return (
-    <section className="mt-4 overflow-hidden rounded-md border border-border bg-surface md:mt-6">
-      <header className="bg-surface-header px-4 py-2">
+    <section className="mt-4 overflow-hidden border border-border bg-surface md:mt-6">
+      <header className="border-b-2 border-brand bg-surface-alt px-4 py-2">
         <h2 className="text-caps">Your verdicts</h2>
       </header>
 
@@ -55,7 +55,7 @@ export function VerdictSummary({
             >
               <Link
                 href={playerHref(entry.player.id, `/matches/${matchId}`)}
-                className="truncate rounded-sm text-body text-text focus-visible:focus-ring"
+                className="truncate text-body text-text focus-visible:focus-ring"
               >
                 {entry.player.name}
               </Link>
@@ -63,7 +63,7 @@ export function VerdictSummary({
                   family as the crest chip, and one of the exactly two places
                   caps are allowed: the three verdict words. */}
               <span
-                className={`inline-flex h-5 shrink-0 items-center rounded-sm px-2 text-caps ${BADGE[tag]}`}
+                className={`inline-flex h-5 shrink-0 items-center px-2 text-caps ${BADGE[tag]}`}
               >
                 {tag}
               </span>

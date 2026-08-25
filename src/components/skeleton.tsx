@@ -33,7 +33,7 @@
  * runtime is one it never sees. Every caller writes its roles out in full.
  */
 export function SkeletonLine({ className }: { className: string }) {
-  return <span className={`block rounded-sm bg-surface-alt ${className}`}>&nbsp;</span>
+  return <span className={`block bg-surface-alt ${className}`}>&nbsp;</span>
 }
 
 /**
@@ -41,7 +41,7 @@ export function SkeletonLine({ className }: { className: string }) {
  * tile, a control. Sized by the caller, since there is no type role to inherit.
  */
 export function SkeletonBox({ className }: { className: string }) {
-  return <span className={`block rounded-sm bg-surface-alt ${className}`} />
+  return <span className={`block bg-surface-alt ${className}`} />
 }
 
 /**
@@ -94,7 +94,7 @@ export function SkeletonTiles() {
   return (
     <ul className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
       {Array.from({ length: 4 }, (_, i) => (
-        <li key={i} className="rounded-md border border-border bg-surface p-4">
+        <li key={i} className="border border-border bg-surface p-4">
           <SkeletonLine className="text-caps w-20" />
           <SkeletonLine className="text-stat mt-2 w-12" />
         </li>

@@ -12,8 +12,9 @@ import { TabStrip } from './tab-strip'
  * The drawing is [`tab-strip.tsx`](./tab-strip.tsx)'s, which 7.2 introduced and
  * this row moved onto: these choose what the diary shows, which is the underline
  * tab's job. The pill it used to wear belonged to the league row on `/fixtures`,
- * where the choice was which competition the screen was drawn for; nothing draws
- * a pill tab now that the page is indexed by day.
+ * where the choice was which competition the screen was drawn for — and the
+ * rebrand retired the pill outright, so the underline is now the only tab this
+ * design has.
  *
  * There were five, and three of them were tag filters. Why they went is in
  * [`diary-views.ts`](../lib/diary-views.ts), beside the table itself.

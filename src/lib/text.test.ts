@@ -14,7 +14,7 @@ describe('plural', () => {
     expect(plural(1, 'note')).toBe('note')
   })
 
-  it('pluralises zero, which is the case the reference screenshot draws most', () => {
+  it('pluralises zero, which is the commonest case on screen', () => {
     expect(plural(0, 'note')).toBe('notes')
   })
 

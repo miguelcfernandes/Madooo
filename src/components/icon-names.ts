@@ -1,16 +1,18 @@
 /**
  * The icon vocabulary, and the only place it is written down.
  *
- * `docs/design/foundations.md` fixes the set: Material Symbols Outlined, and
- * nothing else — "if a glyph does not exist in Material Symbols, use a word".
- * This array is both the type that `<Icon>` accepts and the subset request that
- * `scripts/fetch-icon-font.ts` sends, so the font file can never contain a glyph
- * the code cannot name, or lack one it can.
+ * `docs/design/foundations.md` fixes the set: Madooo's own glyphs, drawn to one
+ * grammar, and nothing else. This array is both the type `<Icon>` accepts and
+ * the list [`icon-sprite.tsx`](./icon-sprite.tsx) walks to build the sprite, so
+ * the two cannot drift — a name here with no geometry in
+ * [`icon-paths.tsx`](./icon-paths.tsx) is a compile error, and geometry with no
+ * name is unreachable.
  *
- * **Sorted alphabetically, and it has to stay that way.** Google's font API
- * rejects an unsorted `icon_names` list with a bare `400: Invalid selector` and
- * no indication of why. Adding an icon means inserting it in position and
- * re-running `npm run icons`.
+ * **It was a subset request and is not any more.** Until the rebrand this array
+ * was sent to Google's font API by `npm run icons`, which rejected an unsorted
+ * list with a bare `400: Invalid selector`. That is gone along with the font.
+ * The alphabetical order stays for a plainer reason: the icon board lists all
+ * thirty-four in this order, so the two can be read down side by side.
  */
 export const ICON_NAMES = [
   'add_comment',

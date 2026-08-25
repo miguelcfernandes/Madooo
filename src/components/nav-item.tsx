@@ -51,13 +51,20 @@ export function NavItem({ href, icon, children }: Props) {
       // row, and a drawer opened by thumb is where it earns its place. Written
       // unprefixed-then-`md:` because Tailwind's variants are min-width only, so
       // the small-screen case is necessarily the one without a prefix.
-      className={`t-hover flex h-(--row-h-lg) items-center gap-3 rounded-md px-3 no-underline focus-visible:focus-ring md:h-(--row-h) ${
+      // Marine at 600 on --surface-alt is the active item — the second of the
+      // three things the brand colour marks, "where you are". The weight
+      // carries it too, so the state does not rest on colour alone.
+      className={`t-hover flex h-(--row-h-lg) items-center gap-3 px-3 no-underline focus-visible:focus-ring md:h-(--row-h) ${
         active
-          ? 'bg-surface-sunken font-medium text-text'
+          ? 'bg-surface-alt font-semibold text-brand'
           : 'text-muted hover:bg-surface-alt hover:text-text'
       }`}
     >
-      <Icon name={icon} filled={active} />
+      {/* Not filled when active, which is a change the icon set brought with it.
+          A filled glyph was the old set's way of saying "on"; here the marine
+          and the weight say it, and filling `view_agenda` or `stadium` would
+          put a solid black shape in a sidebar of line drawings. */}
+      <Icon name={icon} />
       {children}
     </Link>
   )

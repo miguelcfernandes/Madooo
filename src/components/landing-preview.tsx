@@ -80,16 +80,16 @@ const ROWS: Row[] = [
 export function LandingPreview() {
   return (
     /*
-      The same card as `FixtureCard` and `SquadPanel` — a bordered `--surface` at
-      `--radius-md` with a `--surface-header` strip — so a visitor who signs up
+      The same card as `SquadPanel` and a `/fixtures` competition block — a bordered `--surface` at
+      a bordered card with a `--surface-alt` strip — so a visitor who signs up
       lands on a page made of what they were just shown.
 
       `aria-hidden`, and the whole point of it: this is a picture of the product,
       not information. Read aloud it would announce four strangers and their
       invented verdicts between the hero's heading and the first real content.
     */
-    <div aria-hidden className="overflow-hidden rounded-md border border-border bg-surface">
-      <div className="flex items-center justify-between gap-3 bg-surface-header px-4 py-2">
+    <div aria-hidden className="overflow-hidden border border-border bg-surface">
+      <div className="flex items-center justify-between gap-3 border-b-2 border-brand bg-surface-alt px-4 py-2">
         <span className="truncate text-caps">Arsenal 2–1 Tottenham</span>
         {/* A date is counted rather than spoken, so it is monospaced — the same
             role `/diary` gives the date on every entry. */}

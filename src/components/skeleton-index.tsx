@@ -26,10 +26,10 @@ import { SkeletonBox, SkeletonLine } from './skeleton'
 export function SkeletonControls() {
   return (
     <div className="mb-6 flex flex-wrap items-center gap-2 md:gap-3">
-      <SkeletonBox className="h-(--control-h-lg) basis-full rounded-md md:h-(--control-h) md:basis-0 md:grow" />
-      <SkeletonBox className="h-(--control-h-lg) grow rounded-md md:h-(--control-h) md:w-44 md:grow-0" />
-      <SkeletonBox className="h-(--control-h-lg) grow rounded-md md:h-(--control-h) md:w-44 md:grow-0" />
-      <SkeletonBox className="size-(--control-h-lg) shrink-0 rounded-md md:size-(--control-h)" />
+      <SkeletonBox className="h-(--control-h-lg) basis-full md:h-(--control-h) md:basis-0 md:grow" />
+      <SkeletonBox className="h-(--control-h-lg) grow md:h-(--control-h) md:w-44 md:grow-0" />
+      <SkeletonBox className="h-(--control-h-lg) grow md:h-(--control-h) md:w-44 md:grow-0" />
+      <SkeletonBox className="size-(--control-h-lg) shrink-0 md:size-(--control-h)" />
     </div>
   )
 }
@@ -55,8 +55,8 @@ export function SkeletonIndexList({
   rows?: number
 }) {
   return (
-    <section className="overflow-hidden rounded-md border border-border bg-surface">
-      <header className="flex items-center justify-between gap-3 bg-surface-header px-4 py-2">
+    <section className="overflow-hidden border border-border bg-surface">
+      <header className="flex items-center justify-between gap-3 border-b-2 border-brand bg-surface-alt px-4 py-2">
         <SkeletonLine className="text-caps w-32" />
         <SkeletonLine className="text-data w-8" />
       </header>

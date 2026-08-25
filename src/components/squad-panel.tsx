@@ -11,7 +11,7 @@ import type { TeamIdentity } from '@/lib/teams/identity'
 /**
  * One list of players: a club's starting eleven, or its bench.
  *
- * The same card as `FixtureCard` — a bordered surface with a header strip — so
+ * The same card as a `/fixtures` competition block — a bordered surface with a header strip — so
  * the two screens read as one system. The header's count is verdicts only: a
  * note is not a verdict, and a player carrying nothing but a note is not part
  * of it.
@@ -56,7 +56,7 @@ function Row({ entry, matchId }: { entry: SquadEntry; matchId: number }) {
       */}
       <Link
         href={playerHref(entry.player.id, `/matches/${matchId}`)}
-        className="truncate rounded-sm text-body text-text focus-visible:focus-ring"
+        className="truncate text-body text-text focus-visible:focus-ring"
       >
         {entry.player.name}
       </Link>
@@ -118,13 +118,13 @@ export function SquadPanel({ team, label, entries, matchId }: Props) {
   const verdicts = countVerdicts(entries)
 
   return (
-    <section className="overflow-hidden rounded-md border border-border bg-surface">
+    <section className="overflow-hidden border border-border bg-surface">
       {/*
         The count sits beside the heading rather than inside it. Inside, it would
         become part of the heading's accessible name — "Manchester United —
         Starting XI 3" — which reads as a squad numbered 3.
       */}
-      <header className="flex items-center justify-between gap-3 bg-surface-header px-4 py-2">
+      <header className="flex items-center justify-between gap-3 border-b-2 border-brand bg-surface-alt px-4 py-2">
         <h2 className="flex min-w-0 items-center gap-2 text-caps">
           {/*
             The crest is the link to the club, and the club's name inside it is
@@ -137,7 +137,7 @@ export function SquadPanel({ team, label, entries, matchId }: Props) {
           */}
           <Link
             href={teamHref(team.id, `/matches/${matchId}`)}
-            className="-m-1 shrink-0 rounded-sm p-1 text-text no-underline hover:no-underline focus-visible:focus-ring"
+            className="-m-1 shrink-0 p-1 text-text no-underline hover:no-underline focus-visible:focus-ring"
           >
             <CrestChip team={team} />
             <span className="sr-only">{team.name}</span>
@@ -148,8 +148,8 @@ export function SquadPanel({ team, label, entries, matchId }: Props) {
               to the whole row and clip the crest instead of the words. */}
           <span className="truncate">{label}</span>
         </h2>
-        {/* Zero is shown, not hidden: the screenshots draw `0` on both benches,
-            and a number that disappears reads as something failing to load. */}
+        {/* Zero is shown, not hidden: a number that disappears reads as
+            something failing to load. */}
         <span className="shrink-0 text-data text-muted">
           {verdicts}
           <span className="sr-only"> verdicts</span>

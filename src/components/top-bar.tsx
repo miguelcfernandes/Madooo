@@ -62,7 +62,7 @@ export function TopBar({ menuOpen, onMenuClick, ref }: Props) {
         aria-label={menuOpen ? 'Close navigation' : 'Open navigation'}
         aria-expanded={menuOpen}
         aria-controls="app-sidebar"
-        className="t-hover flex size-(--control-h-lg) items-center justify-center rounded-md text-muted hover:bg-surface-alt hover:text-text focus-visible:focus-ring md:hidden"
+        className="t-hover flex size-(--control-h-lg) items-center justify-center text-muted hover:bg-surface-alt hover:text-text focus-visible:focus-ring md:hidden"
       >
         <Icon name={menuOpen ? 'close' : 'menu'} size="lg" />
       </button>
@@ -81,9 +81,9 @@ export function TopBar({ menuOpen, onMenuClick, ref }: Props) {
       */}
       <div className="ml-auto flex items-center gap-0.5">
         {/*
-          20px, not the toggle's 22px. The mark is a solid silhouette where a
-          Material Symbol is a 2px outline, so matching their box sizes puts far
-          more ink on screen for the same nominal size — at 22px it read as the
+          20px, not the toggle's 22px. The mark is a solid silhouette where our
+          own glyphs are a 1.75 stroke, so matching their box sizes puts far more
+          ink on screen for the same nominal size — at 22px it read as the
           loudest thing in a bar that is meant to be quiet.
 
           The anchor carries the name, because `<GithubMark>` is `aria-hidden`
@@ -95,7 +95,7 @@ export function TopBar({ menuOpen, onMenuClick, ref }: Props) {
           target="_blank"
           rel="noreferrer"
           aria-label="Source on GitHub"
-          className="t-hover flex size-(--control-h-lg) items-center justify-center rounded-md text-muted no-underline hover:bg-surface-alt hover:text-text focus-visible:focus-ring"
+          className="t-hover flex size-(--control-h-lg) items-center justify-center text-muted no-underline hover:bg-surface-alt hover:text-text focus-visible:focus-ring"
         >
           <GithubMark className="size-5" />
         </a>

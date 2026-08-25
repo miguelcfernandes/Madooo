@@ -102,9 +102,9 @@ export function DiaryMatchRow({ match }: { match: DiaryMatch }) {
             ink="text-standout"
           />
           <Tally icon="trending_down" count={summary.flops} label="flops" ink="text-flop" />
-          {/* A note is not a verdict, so it takes the informational blue rather
-              than one of the three verdict colours. */}
-          <Tally icon="edit_note" count={summary.notes} label="notes" ink="text-info" />
+          {/* A note is not a verdict, so it takes none of the three verdict
+              colours — and since `--info` retired, none of its own either. */}
+          <Tally icon="edit_note" count={summary.notes} label="notes" ink="text-muted" />
           <Icon name="chevron_right" size="md" className="text-faint" />
         </span>
       </Link>

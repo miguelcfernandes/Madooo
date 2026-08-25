@@ -78,6 +78,9 @@ const FLAGS = new Map([
   ['portugal', 'flag-pt'],
   ['spain', 'flag-es'],
   ['italy', 'flag-it'],
+  ['germany', 'flag-de'],
+  ['france', 'flag-fr'],
+  ['sweden', 'flag-se'],
 ])
 
 /**
@@ -86,9 +89,9 @@ const FLAGS = new Map([
  * **`null` is the whole reason this is legal against `AGENTS.md`'s first
  * constraint.** The map above names no league, no id and no season — it is
  * indexed by a value that came out of the `League` table, so it cannot be
- * consulted without a row. A fifth league needs no edit here to work: it draws
- * the pill exactly as one is drawn today, which is what the Premier League, the
- * Primeira Liga, La Liga and Serie A each did before their file was vendored.
+ * consulted without a row. An eighth league needs no edit here to work: it draws
+ * its heading exactly as one is drawn today, which is what each of the seven
+ * mapped countries did before its file was vendored.
  * The moment the fallback became an invented flag or a reserved gap, the map
  * would be part of the price of a league and the constraint would be broken.
  *
@@ -107,10 +110,17 @@ export function flagClass(league: LeagueIdentity): string | null {
  * **This is a map for exactly the reason `FLAGS` above is one, and it passes
  * the same test.** It names no season and no league id; it is indexed by a value
  * that came out of the `League` table, so it cannot be consulted without a row.
- * A fifth league needs no edit here to work — it renders exactly as a ranked one
- * does and sorts after them, which is what keeps this decoration on a league
+ * An eighth league needs no edit here to work — it renders exactly as a ranked
+ * one does and sorts after them, which is what keeps this decoration on a league
  * rather than part of the price of one. The moment an unranked league were
  * hidden, or held a reserved gap, `AGENTS.md`'s first constraint would be broken.
+ *
+ * **Adding Bundesliga, Ligue 1 and Allsvenskan moved the Primeira Liga from
+ * fourth to sixth**, which is the rule below applied rather than a preference
+ * about it: the order claims "most followed", and on that claim the two
+ * remaining big-five competitions sit above it. It is one line if the author
+ * wants it otherwise, and the section order on `/fixtures` is the only thing in
+ * the app that would change.
  *
  * **Why an order has to be stated at all.** Every derivable order is wrong here.
  * Alphabetical opens on La Liga forever. Earliest kickoff or most fixtures would
@@ -128,7 +138,10 @@ const LEAGUE_ORDER = new Map([
   ['premier league', 1],
   ['la liga', 2],
   ['serie a', 3],
-  ['primeira liga', 4],
+  ['bundesliga', 4],
+  ['ligue 1', 5],
+  ['primeira liga', 6],
+  ['allsvenskan', 7],
 ])
 
 /**

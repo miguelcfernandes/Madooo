@@ -102,7 +102,7 @@ function Card({ player, team }: { player: PlayerIndexRow; team: IndexTeam | null
     <li>
       <Link
         href={playerHref(player.id, '/players')}
-        className="t-hover flex h-full flex-col gap-3 rounded-md border border-border bg-surface p-4 text-text no-underline hover:bg-surface-alt hover:text-text hover:no-underline focus-visible:focus-ring"
+        className="t-hover flex h-full flex-col gap-3 border border-border bg-surface p-4 text-text no-underline hover:bg-surface-alt hover:text-text hover:no-underline focus-visible:focus-ring"
       >
         <span className="flex items-center gap-3">
           <ShirtTile team={team} shirtNumber={player.shirtNumber} />
@@ -234,8 +234,8 @@ export function PlayersBrowser({
         <>
           {layout === 'list' ? (
             // The `SquadPanel` card, so the two screens read as one system.
-            <section className="overflow-hidden rounded-md border border-border bg-surface">
-              <header className="flex items-center justify-between gap-3 bg-surface-header px-4 py-2">
+            <section className="overflow-hidden border border-border bg-surface">
+              <header className="flex items-center justify-between gap-3 border-b-2 border-brand bg-surface-alt px-4 py-2">
                 <h2 className="truncate text-caps">{sort.label}</h2>
                 {/* The true filtered count, not the drawn one: the cap is a
                     drawing decision and should not be reported as a fact about
@@ -268,7 +268,7 @@ export function PlayersBrowser({
               <button
                 type="button"
                 onClick={() => setShown((current) => current + SHOWN_STEP)}
-                className="t-hover inline-flex h-(--control-h-lg) items-center rounded-md border border-border bg-surface px-4 text-label text-text hover:border-border-strong hover:bg-surface-alt active:translate-y-px focus-visible:focus-ring md:h-(--control-h)"
+                className="t-hover inline-flex h-(--control-h-lg) items-center border border-border bg-surface px-4 text-label text-text hover:border-border-strong hover:bg-surface-alt active:translate-y-px focus-visible:focus-ring md:h-(--control-h)"
               >
                 Show more
                 {/* The numbers say how much is left, which a bare "Show more"

@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
-import { archivo, jetbrainsMono, materialSymbols } from "./fonts";
+import { schibstedGrotesk, dmMono } from "./fonts";
+import { IconSprite } from "@/components/icon-sprite";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
+import { CHANGELOG_INIT_SCRIPT } from "@/lib/changelog";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Madooo",
-  description: "A personal database for the football you watched.",
+  description: "The football you watched, in your own words.",
 };
 
 export default function RootLayout({
@@ -16,10 +18,13 @@ export default function RootLayout({
 }>) {
   return (
     /*
-      The three font `variable` classes each declare one CSS custom property on
+      The two font `variable` classes each declare one CSS custom property on
       <html>, holding the hashed family name next/font generated at build time.
-      `globals.css` reads them into --font-sans, --font-mono and the .icon class;
-      nothing else ever names a typeface.
+      `globals.css` reads them into --font-sans and --font-mono; nothing else
+      ever names a typeface.
+
+      Two, where there were three: the icons are ours and drawn as SVG now, so
+      there is no icon font in front of the first paint.
 
       No `data-theme` attribute rendered here, deliberately. Light is the
       default and needs no attribute, so the server always emits the light
@@ -36,7 +41,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${archivo.variable} ${jetbrainsMono.variable} ${materialSymbols.variable} h-full antialiased`}
+      className={`${schibstedGrotesk.variable} ${dmMono.variable} h-full antialiased`}
     >
       <head>
         {/*
@@ -47,6 +52,17 @@ export default function RootLayout({
           nothing interpolated into it. See `src/lib/theme.ts`.
         */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        {/*
+          TEMPORARY — the same trick, for the "what's new" note. The server
+          cannot know the note was dismissed, so it always renders it; this
+          marks <html> during parsing if it was, and `globals.css` keeps it off
+          the screen for the frame before React reaches the same conclusion.
+          Without it a dismissed note flashes back on every reload.
+
+          Delete with `src/lib/changelog.ts`. Same constraint as above: a module
+          constant with nothing interpolated into it.
+        */}
+        <script dangerouslySetInnerHTML={{ __html: CHANGELOG_INIT_SCRIPT }} />
       </head>
       {/*
         `ClerkProvider` sits inside `<body>`, not around `<html>`. Next 16
@@ -69,6 +85,14 @@ export default function RootLayout({
         app shell want different chrome.
       */}
       <body className="min-h-full flex flex-col">
+        {/*
+          The icon set, defined once for the document. Every `<Icon>` below is a
+          reference into this, so the geometry is sent once however many times
+          it is drawn. It sits here rather than in the app shell because the
+          landing page draws icons too, and a `<use>` only resolves against its
+          own document. See `src/components/icon-sprite.tsx`.
+        */}
+        <IconSprite />
         <ClerkProvider
           appearance={{
             cssLayerName: "clerk",
@@ -80,7 +104,7 @@ export default function RootLayout({
               colorInput: "var(--surface)",
               colorInputForeground: "var(--text)",
               colorBorder: "var(--border)",
-              colorRing: "var(--border-focus)",
+              colorRing: "var(--brand)",
               colorModalBackdrop: "var(--overlay)",
               colorPrimary: "var(--surface-inverse)",
               colorPrimaryForeground: "var(--text-inverse)",
@@ -88,7 +112,10 @@ export default function RootLayout({
               colorSuccess: "var(--standout)",
               colorWarning: "var(--mvp)",
               fontFamily: "var(--font-sans)",
-              borderRadius: "var(--radius-md)",
+              // Zero, like everything else. Clerk needs a value rather than
+              // the absence of one, so this is where the design's silence on
+              // radius has to be spoken out loud.
+              borderRadius: "0",
             },
           }}
         >

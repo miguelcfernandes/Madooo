@@ -76,15 +76,16 @@ export function PlayerControls({ matchSquadId, playerName, note, children }: Pro
             // The same box as a chip, and deliberately without its border: the
             // design draws this one borderless, which is what keeps a row of
             // four controls from reading as four equal choices.
-            'flex size-(--control-h-lg) items-center justify-center rounded-md md:size-(--control-h)',
+            'flex size-(--control-h-lg) items-center justify-center md:size-(--control-h)',
             'active:translate-y-px focus-visible:focus-ring',
             empty
               ? 't-hover text-muted hover:bg-surface-alt hover:text-text'
               : // One step further down the surface ramp than the resting
                 // hover, and no hover of its own — the same reasoning as a
                 // selected chip, which has nothing below its tint to darken to.
-                // The glyph does not fill: `FILL 1` means "on" for the states
-                // foundations lists, and a note is not one of them.
+                // The glyph does not fill: filled means "on" for the states
+                // foundations lists, and a note is not one of them — nor could
+                // it, since `edit_note` is three open rules with no inside.
                 'bg-surface-sunken text-text',
           ].join(' ')}
         >
@@ -186,7 +187,7 @@ function NoteDialog({ playerName, note, onSave, onClose }: DialogProps) {
       // backdrop test above only holds while there is no dialog surface to
       // click on. `m-auto` is not decoration — Tailwind's preflight zeroes every
       // margin, including the `margin: auto` the browser uses to centre a modal.
-      className="dialog m-auto w-[calc(100%-2rem)] max-w-lg overflow-hidden rounded-md border border-border bg-surface p-0 text-text shadow-3"
+      className="dialog m-auto w-[calc(100%-2rem)] max-w-lg overflow-hidden border border-border bg-surface p-0 text-text shadow-3"
     >
       <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
         <h2 id={titleId} className="truncate text-heading">
@@ -196,7 +197,7 @@ function NoteDialog({ playerName, note, onSave, onClose }: DialogProps) {
           type="button"
           onClick={close}
           aria-label="Close"
-          className="t-hover flex size-(--control-h) shrink-0 items-center justify-center rounded-md text-muted hover:bg-surface-alt hover:text-text focus-visible:focus-ring"
+          className="t-hover flex size-(--control-h) shrink-0 items-center justify-center text-muted hover:bg-surface-alt hover:text-text focus-visible:focus-ring"
         >
           <Icon name="close" size="md" />
         </button>
@@ -210,7 +211,7 @@ function NoteDialog({ playerName, note, onSave, onClose }: DialogProps) {
           rows={4}
           maxLength={NOTE_MAX_LENGTH}
           placeholder="Any notes on his performance?"
-          className="w-full resize-y rounded-md border border-border bg-surface px-3 py-2 text-body text-text placeholder:text-faint focus:focus-field"
+          className="w-full resize-y border border-border bg-surface px-3 py-2 text-body text-text placeholder:text-faint focus:focus-field"
         />
       </div>
 
@@ -218,7 +219,7 @@ function NoteDialog({ playerName, note, onSave, onClose }: DialogProps) {
         <button
           type="button"
           onClick={close}
-          className="t-hover flex h-(--control-h-lg) cursor-pointer items-center rounded-md border border-border px-5 text-label text-text hover:border-border-strong hover:bg-surface-alt focus-visible:focus-ring"
+          className="t-hover flex h-(--control-h-lg) cursor-pointer items-center border border-border px-5 text-label text-text hover:border-border-strong hover:bg-surface-alt focus-visible:focus-ring"
         >
           Cancel
         </button>
@@ -232,7 +233,7 @@ function NoteDialog({ playerName, note, onSave, onClose }: DialogProps) {
             onSave(draft)
             close()
           }}
-          className="t-hover flex h-(--control-h-lg) cursor-pointer items-center rounded-md bg-surface-inverse px-5 text-label text-inverse hover:bg-surface-inverse-hover active:translate-y-px focus-visible:focus-ring"
+          className="t-hover flex h-(--control-h-lg) cursor-pointer items-center bg-brand-action px-5 text-label text-brand-action-ink hover:bg-brand-action-hover active:translate-y-px focus-visible:focus-ring"
         >
           Save note
         </button>

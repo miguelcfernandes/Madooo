@@ -20,7 +20,7 @@ import type { MatchWithSquads } from '@/lib/matches'
  * holds an opinion about header spacing, and this page's rhythm cannot drift
  * from the other five.
  *
- * `MatchWithSquads` rather than a hand-written `Pick<>`, following `FixtureCard`
+ * `MatchWithSquads` rather than a hand-written `Pick<>`, following `FixtureRow`
  * and its `Fixture`: the query decides the shape, and a second copy of it here
  * would be free to drift from what the page actually selects.
  */
@@ -39,7 +39,7 @@ function Fact({
     <span className="flex items-center gap-1.5">
       <Icon name={icon} size="xs" />
       {/*
-        Two flex children, not three, and the same reason as `FixtureCard`'s
+        Two flex children, not three, and the same reason as `FixtureRow`'s
         tallies: the label and its value are one span, or the label would become
         an anonymous flex item and take the gap.
 
@@ -60,7 +60,7 @@ function Fact({
  * order of precedence.
  */
 function Score({ match }: { match: MatchWithSquads }) {
-  // First, as it is on `FixtureCard`: whether the match is happening at all comes
+  // First, as it is on `FixtureRow`: whether the match is happening at all comes
   // before whether it is happening now, and it has to come before the goals check
   // below — a called-off fixture has no goals recorded, so it used to draw a
   // kickoff time for a match that will not be played then.
@@ -69,7 +69,7 @@ function Score({ match }: { match: MatchWithSquads }) {
     return <Badge label={calledOff} classes={CALLED_OFF_BADGE} />
   }
 
-  // Still before the goals check, and `FixtureCard`'s reading: a match kicks off
+  // Still before the goals check, and `FixtureRow`'s reading: a match kicks off
   // with a 0–0 recorded against it, so asking about goals first draws a live
   // match as a finished goalless draw. The page never polls either, so a live
   // score would be stale the moment it was painted.
@@ -78,9 +78,13 @@ function Score({ match }: { match: MatchWithSquads }) {
   }
 
   // Null goals means no result recorded, not a goalless draw — so the kickoff
-  // time stands in, which is `FixtureCard`'s reading and the thing a reader of
-  // an unplayed fixture wants. On the reader's own clock, as that card's is; the
-  // strip's date above stays on the competition's.
+  // time stands in, which is the thing a reader of an unplayed fixture wants. On
+  // the reader's own clock; the strip's date above stays on the competition's.
+  //
+  // **`FixtureRow` diverges here, and only here.** A row has a left margin this
+  // card does not, so it keeps the kickoff there permanently and spends its
+  // centre slot on the fixture's state instead — "Lineups out", or an en dash.
+  // This card has one slot and the kickoff is the best thing to put in it.
   if (match.homeGoals === null || match.awayGoals === null) {
     return <KickoffTime kickoff={match.kickoff} className="text-data text-muted" />
   }
@@ -112,7 +116,7 @@ function ClubLink({ match, side }: { match: MatchWithSquads; side: 'home' | 'awa
   return (
     <Link
       href={teamHref(team.id, `/matches/${match.id}`)}
-      className={`-m-2 flex min-w-0 items-center gap-3 rounded-md p-2 text-text no-underline hover:bg-surface-alt hover:text-text hover:no-underline focus-visible:focus-ring ${
+      className={`-m-2 flex min-w-0 items-center gap-3 p-2 text-text no-underline hover:bg-surface-alt hover:text-text hover:no-underline focus-visible:focus-ring ${
         side === 'home' ? 'md:justify-end' : ''
       }`}
     >
@@ -175,10 +179,11 @@ export function ScorelineCard({
     <header className="mb-8">
       <BackLink {...back} />
 
-      <div className="overflow-hidden rounded-md border border-border bg-surface">
+      <div className="overflow-hidden border border-border bg-surface">
         {/*
           The card's header strip, one step off `--surface` — the same treatment
-          as `FixtureCard`'s and `SquadPanel`'s, so the three read as one system.
+          as `SquadPanel`'s and a `/fixtures` competition block's, so the three
+          read as one system.
           No bottom border: the colour step is the separator, and the border is
           the card's own outline.
 
@@ -195,14 +200,16 @@ export function ScorelineCard({
           thing the responsive rules never do, and a horizontal scroller hides
           its own overflow.
         */}
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 bg-surface-header px-4 py-2 text-caption text-muted md:gap-x-6">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 border-b-2 border-brand bg-surface-alt px-4 py-2 text-caption text-muted md:gap-x-6">
           <Fact icon="trophy" label="Competition">
             {match.league.name}
           </Fact>
-          {/* Both nullable columns are omitted rather than filled. `FixtureCard`
-              says "Venue unknown" because its strip is `justify-between` with
-              two children and dropping one leaves the date against empty space;
-              this one is a centred run that simply closes up. And "Referee
+          {/* Both nullable columns are omitted rather than filled, and this is
+              now the only screen that names a venue at all: `/fixtures` used to
+              carry one per card and dropped it when the card became a row, on
+              the grounds that a ground is what you look up about a match rather
+              than what you scan a day for. This strip is a centred run, so a
+              missing column simply closes up. And "Referee
               unknown" would be a sentence about an official who does not exist,
               which is the reasoning that made a position read `MID` rather than
               the design's invented `AM`. */}
@@ -241,15 +248,16 @@ export function ScorelineCard({
           /*
             Three columns with the middle sized to its content, so the score
             sits on the card's centre line however long the club names are —
-            `FixtureCard`'s trick, and `md:justify-end` on the home block is
+            `FixtureRow`'s trick, and `md:justify-end` on the home block is
             what pins both blocks against that middle column.
 
             Below `md` it stacks instead, each crest staying inboard beside the
             score. At 320px the row is arithmetically impossible: about 136px
-            left for two 24px club names. `FixtureCard` shrinks its names at
-            that width, and this deliberately does not — a dense repeated card
-            *becomes* a fixture line on a phone, a different element with a
-            different job, but the scoreline is still the thing the page is
+            left for two 24px club names. `FixtureRow` sets its names at
+            `--text-label` at every width — a row *is* a fixture line, which is
+            the smaller role foundations gives one — and this deliberately does
+            not follow it: a row is a different element with a different job,
+            and the scoreline is still the thing the page is
             about, and shrinking it would be scaling for its own sake.
 
             `items-center` is written once and does double duty: `align-items`

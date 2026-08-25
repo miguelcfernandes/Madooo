@@ -40,7 +40,7 @@ export interface Scored {
  * `Chelsea 1–1 Arsenal`, or `Chelsea v Arsenal` when there is no result.
  *
  * **A null goal count means no result was recorded, not a goalless draw** — the
- * reading `FixtureCard` and the match page both take, and the reason this is a
+ * reading `FixtureRow` and the match page both take, and the reason this is a
  * function rather than a template literal at each call site. A fixture is in the
  * database from the moment it is scheduled, so most of a season is null for most
  * of a season.

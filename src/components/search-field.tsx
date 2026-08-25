@@ -59,7 +59,7 @@ export function SearchField({
         // `focus:`, not `focus-visible:` — a field is focused in order to be
         // typed in, so the state is real however the caret arrived. Foundations
         // gives fields `focus-field` rather than the ring for the same reason.
-        className="t-hover h-(--control-h-lg) w-full appearance-none rounded-md border border-border bg-surface pr-3 pl-9 text-body text-text placeholder:text-faint focus:focus-field md:h-(--control-h)"
+        className="t-hover h-(--control-h-lg) w-full appearance-none border border-border bg-surface pr-3 pl-9 text-body text-text placeholder:text-faint focus:focus-field md:h-(--control-h)"
       />
     </label>
   )

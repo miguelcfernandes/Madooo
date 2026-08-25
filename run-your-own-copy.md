@@ -40,5 +40,3 @@ than on the host so the API key never has to exist in the deployed environment.
 
 - `npm test` runs Vitest over the sync mapper and the pages' pure helpers.
 - `npm run db:check` exercises the database layer end to end.
-- `npm run icons` refetches the Material Symbols subset listed in
-  `src/components/icon-names.ts`.

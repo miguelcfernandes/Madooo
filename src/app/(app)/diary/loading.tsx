@@ -39,7 +39,7 @@ export default function Loading() {
         <div className="flex items-center gap-3">
           <SkeletonLine className="text-caps w-28" />
           <span className="flex-1 border-t border-border" />
-          <SkeletonBox className="h-5 w-8 rounded-sm" />
+          <SkeletonBox className="h-5 w-8" />
         </div>
 
         {/* `JudgementEntry`'s row: the date in its own column at `md`, the
@@ -53,7 +53,7 @@ export default function Loading() {
               <SkeletonLine className="text-data w-24" />
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                 <SkeletonLine className="text-body w-40" />
-                <SkeletonBox className="h-5 w-20 rounded-sm" />
+                <SkeletonBox className="h-5 w-20" />
               </div>
               <SkeletonLine className="text-body-lg w-3/4 md:col-start-2" />
             </li>

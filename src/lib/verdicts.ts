@@ -103,8 +103,8 @@ export function countNotes(entries: readonly Annotated[]): number {
 }
 
 /**
- * MVP, then the standouts, then the flops — the order the reference screenshot
- * draws the summary panel in, which is not the left-to-right order of the
+ * MVP, then the standouts, then the flops — the order the summary
+ * panel reads in, which is not the left-to-right order of the
  * buttons on a row. Two orders for one vocabulary, so both are written down.
  */
 const SUMMARY_RANK: Record<JudgementTag, number> = { MVP: 0, STANDOUT: 1, FLOP: 2 }

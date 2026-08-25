@@ -29,12 +29,12 @@ export function DiaryEntry({ entry, from }: { entry: Entry; from: string }) {
             the reader actually left rather than to an unfiltered one. */}
         <Link
           href={playerHref(player.id, from)}
-          className="rounded-sm text-text focus-visible:focus-ring"
+          className="text-text focus-visible:focus-ring"
         >
           {player.name}
         </Link>{' '}
         ·{' '}
-        <Link href={`/matches/${match.id}`} className="rounded-sm text-text focus-visible:focus-ring">
+        <Link href={`/matches/${match.id}`} className="text-text focus-visible:focus-ring">
           {scoreline(match)}
         </Link>
       </span>

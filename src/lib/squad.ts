@@ -23,11 +23,18 @@ export interface SquadOrderable {
 }
 
 /**
- * `MatchSquad.position` is only ever `G`, `D`, `M` or `F` — that is the whole
- * vocabulary both provider endpoints use, and it is checked against the captured
- * payload in `squad.test.ts`.
+ * `G`, `D`, `M` and `F` are the whole vocabulary the captured payloads use, and
+ * `squad.test.ts` asserts that against them.
  *
- * The reference screenshots label players `RB`, `CB`, `AM`, `LW`. That data does
+ * **The live column holds more than that, and this docblock used to say it did
+ * not.** The development database carries one row whose position is the letter
+ * `C`, and seventy-three whose position is null. Both fall through the lookup
+ * below to null, which is why nothing was ever visibly wrong — a page with no
+ * position label is what the null case was already specified to draw. The
+ * captured payload is a fixture, not the column's domain, and a test over one is
+ * not a constraint on the other.
+ *
+ * A finer position label — `RB`, `CB`, `AM`, `LW` — is data that does
  * not exist anywhere in the provider's responses. `grid` ("row:column") holds
  * enough to guess a side, but the column convention is unverified and a wrong
  * guess prints a confident falsehood about a real player, so the four letters we
@@ -75,8 +82,8 @@ function gridCell(grid: string | null): [number, number] {
  * Goalkeeper first, then the defence, the midfield and the attack.
  *
  * Position rank leads rather than the grid, because it is the only key the
- * substitutes have — the provider sends the bench in no useful order, and both
- * reference screenshots show it grouped the same way as the starting XI. Within
+ * substitutes have — the provider sends the bench in no useful order, and it is
+ * grouped the same way as the starting XI so the two lists compare. Within
  * a group the grid orders the line across the pitch, then the shirt number, then
  * the name, so the result is total and cannot depend on the order Postgres
  * happened to return the rows in.

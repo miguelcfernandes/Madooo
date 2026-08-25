@@ -345,10 +345,10 @@ and pacing puts it at around three minutes of wall clock. The constraint that
 shaped the CLI's round-at-a-time discipline is gone.
 
 **Steady state** is negligible either way. The scheduled run fires 96 times a
-day and re-reads each league's calendar every time, which is 288 requests of
-7,500 before a single fixture is hydrated — the price of catching a kickoff a
-broadcaster has moved. Hydration adds two per finished fixture, so a full
-gameweek of four leagues is another 80-odd. Adding a league multiplies the
+day and re-reads each league's calendar every time, which is 672 requests of
+7,500 at seven leagues before a single fixture is hydrated — the price of
+catching a kickoff a broadcaster has moved. Hydration adds two per finished
+fixture, so a full gameweek of seven leagues is another 240-odd. Adding a league multiplies the
 backfill and the calendar floor, not the weekly load, and at 7,500/day there is
 room for several. The
 Primeira Liga measured it rather than predicted it: **613 requests** for its full

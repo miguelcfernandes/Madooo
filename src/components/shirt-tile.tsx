@@ -10,8 +10,9 @@ import { crest, type TeamIdentity } from '@/lib/teams/identity'
  * nobody has seeded. A wrong club colour reads as a fact about the club; a grey
  * one reads as missing data.
  *
- * `--radius-md` rather than the crest chip's 2px: this is an identity mark, not a
- * label in a row, and foundations gives `--radius-md` to almost everything.
+ * Square, like the crest chip and every other box: the rebrand took radius to
+ * zero everywhere, so the two marks that used to differ by two pixels of corner
+ * now differ only by what they are.
  */
 
 /**
@@ -50,7 +51,7 @@ export function ShirtTile({
     <span
       style={{ backgroundColor: background, color: ink }}
       // Monospaced at either size: a shirt number is a number you can add up.
-      className={`flex shrink-0 items-center justify-center rounded-md ${SIZES[size]}`}
+      className={`flex shrink-0 items-center justify-center ${SIZES[size]}`}
       // With no number there is nothing to announce, and the em dash standing in
       // for one would be read aloud as punctuation.
       aria-hidden={shirtNumber === null ? true : undefined}

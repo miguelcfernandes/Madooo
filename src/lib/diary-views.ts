@@ -1,5 +1,5 @@
 /**
- * The diary's three views — the tab row from the reference screenshots — and
+ * The diary's three views — the tab row — and
  * the only place they are written down.
  *
  * One table, read by three callers: the tabs render the labels, the page reads
@@ -73,7 +73,7 @@ export const DIARY_VIEWS: readonly DiaryView[] = [
     slug: 'all',
     label: 'All',
     kind: 'entries',
-    empty: 'Nothing here yet — start by opening a fixture and rating the players.',
+    empty: 'Nothing here yet. Start after the next match.',
     where: {},
   },
   {
@@ -83,7 +83,7 @@ export const DIARY_VIEWS: readonly DiaryView[] = [
     // Its own sentence rather than `all`'s, so a reader with plenty written is
     // never told the diary is empty — the rule that every view owns its own
     // empty state.
-    empty: 'No matches yet — start by opening a fixture and rating the players.',
+    empty: 'No matches yet. Start after the next match.',
   },
   {
     slug: 'notes',

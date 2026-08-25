@@ -15,6 +15,7 @@ binding rules are in [`AGENTS.md`](../AGENTS.md) and, for anything that renders,
   - [How the database is addressed](#how-the-database-is-addressed)
   - [Prisma 7 differs from most writing about it](#prisma-7-differs-from-most-writing-about-it)
   - [Two columns are seeded by hand and never synced](#two-columns-are-seeded-by-hand-and-never-synced)
+  - [`npm run colours` is where a club colour comes from](#npm-run-colours-is-where-a-club-colour-comes-from)
   - [A relation can be counted whole and read filtered in one query](#a-relation-can-be-counted-whole-and-read-filtered-in-one-query)
   - [Prisma resolves `distinct` and a nested `take` in Node, so "latest row per group" is raw SQL](#prisma-resolves-distinct-and-a-nested-take-in-node-so-latest-row-per-group-is-raw-sql)
   - [The diary is ordered by when an entry was written](#the-diary-is-ordered-by-when-an-entry-was-written)
@@ -26,6 +27,7 @@ binding rules are in [`AGENTS.md`](../AGENTS.md) and, for anything that renders,
   - [A live season's calendar is provisional, and a closed one's is not](#a-live-seasons-calendar-is-provisional-and-a-closed-ones-is-not)
   - [What is deliberately unmapped](#what-is-deliberately-unmapped)
   - [A position is one of four letters, and the designs ask for more](#a-position-is-one-of-four-letters-and-the-designs-ask-for-more)
+  - [The same person can be in one match squad twice](#the-same-person-can-be-in-one-match-squad-twice)
   - [Anything a page needs from a round string lives in `src/lib/rounds.ts`](#anything-a-page-needs-from-a-round-string-lives-in-srclibroundsts)
   - [The tests read `scratch/`, which is gitignored](#the-tests-read-scratch-which-is-gitignored)
   - [The schedule is a GitHub Actions workflow](#the-schedule-is-a-github-actions-workflow)
@@ -40,7 +42,7 @@ binding rules are in [`AGENTS.md`](../AGENTS.md) and, for anything that renders,
   - [The dialog is the platform's, and so are the fields](#the-dialog-is-the-platforms-and-so-are-the-fields)
   - [Things the toolchain does that the source does not show](#things-the-toolchain-does-that-the-source-does-not-show)
   - [The season's calendar is pinned to London; a kickoff time is the reader's](#the-seasons-calendar-is-pinned-to-london-a-kickoff-time-is-the-readers)
-  - [The icon font is a subset, fetched by script](#the-icon-font-is-a-subset-fetched-by-script)
+  - [The icons are ours, and they ship as one sprite](#the-icons-are-ours-and-they-ship-as-one-sprite)
   - [The flags are vendored files under `public/`, not a dependency](#the-flags-are-vendored-files-under-public-not-a-dependency)
 - [The app shell](#the-app-shell)
   - [Every route has a `loading.tsx`, and two separate things depend on it](#every-route-has-a-loadingtsx-and-two-separate-things-depend-on-it)
@@ -74,6 +76,19 @@ default above carries it to development with no code involved. Both carry
 see [Auth and routing](#auth-and-routing). Pointing Preview at the dev branch by
 putting the dev connection string in `DATABASE_URL` would work equally well and
 label it a lie; this way the variable names stay true.
+
+**The dev branch is not a small copy of production, and two of its differences
+will mislead you.** It carries **more than one user**, so a day that looks empty
+of verdicts may be showing you somebody else's — a screen reads `User.id`, not
+"the only account there is", and checking a tally against the database means
+filtering by the signed-in user first. It also holds **competitions `LEAGUES`
+does not name** — Ligue 1, Allsvenskan and the Bundesliga alongside the four —
+because the branch accumulated whatever past syncs asked for and nothing prunes
+it. Neither is a fault: `LEAGUES` is read by the sync alone, and every screen
+discovers its competitions from the `League` table, which is the constraint
+working. But a local `/fixtures` shows seven competitions on a Saturday where
+production would show four, so it is the wrong place to judge how busy a day
+looks.
 
 `DATABASE_TARGET` exists in exactly two places — Vercel's Production environment
 and the sync workflow — and **they have to agree.** Moving one without the other
@@ -158,12 +173,76 @@ after any sync that introduces a club.
   by one rather than spreading an object. That narrow list is now load-bearing:
   widening it to a spread would blank both columns on the next sync.
 - Codes are the league's own abbreviations, not the first three letters of the
-  name. The reference screenshots draw `MAN` on both Manchester clubs and `AST`
-  on Aston Villa; a badge whose only job is to identify a club has to be able to.
+  name. Three letters off the front would give `MAN` to both Manchester clubs and
+  `AST` to Aston Villa; a badge whose only job is to identify a club has to be
+  able to.
 - Both are nullable and both have a fallback, in
   [`src/lib/teams/identity.ts`](../src/lib/teams/identity.ts). An unseeded club
   gets a neutral grey chip, which reads as missing data rather than as a wrong
   fact about the club.
+- **A colour in the table may be `null`, and that is a third state rather than a
+  missing entry.** A null writes the code and leaves `Team.colour` alone; the
+  club draws the fallback. It means *nobody has said what this club plays in*,
+  which is a different claim from a colour that was checked and a colour that was
+  drafted, and the table's comments say which each block is.
+
+### `npm run colours` is where a club colour comes from
+
+[`scripts/colour-picker.ts`](../scripts/colour-picker.ts) serves a local page on
+`127.0.0.1:4780`, stepping to the next free port if that one is taken: one row
+per club, the crest chip drawn as the app draws it, a colour picker beside it,
+light and dark. Saving writes `Team.code` and `Team.colour` to the configured
+branch, and the page also emits the block of TypeScript to paste back into
+`seed-team-identity.ts`.
+
+**Not 4321, which is where it started.** That is Astro's default dev port, and
+the clash did not announce itself the usual way: this binds `127.0.0.1` and Astro
+binds `::1`, so both servers start and `localhost:4321` resolves to whichever of
+IPv4 and IPv6 the OS tries first. A tool that silently serves somebody else's
+site is worse than one that refuses to start.
+
+**Why a tool rather than a better guess.** Colours are the one part of adding a
+league that cannot be derived: the provider publishes none, and a published
+primary is wrong about a quarter of the time — five of twenty in La Liga,
+thirteen of eighteen in Serie A — and wrong quietly, because a chip in the wrong
+red is still a chip. Up to four leagues the answer was to draft twenty and have
+the author correct them on sight. Three leagues at once is 52 clubs, which is
+past where correcting a draft works: it means holding the right answer in mind
+while looking at a wrong one, 52 times.
+
+Three things about it are load-bearing:
+
+- **The database write and the TypeScript block are both needed, and neither
+  replaces the other.** The write is what makes the change visible in the app
+  immediately; the block is what carries it to production, where this tool never
+  runs. `seed-team-identity.ts` stays the source of truth.
+- **The emitted block covers the clubs on the page and no others**, because the
+  seed table deliberately holds clubs with no fixture this season — the promoted
+  and the relegated — so that changing `SEASON` does not blank a chip. This tool
+  reaches a club by its having played, so it cannot see them. A block of
+  "everything I can see", pasted over `IDENTITIES` whole, would delete them
+  silently. The page says so above the textarea.
+- **It carries a second copy of `crestInk`'s black-or-white rule**, because the
+  chip has to repaint while the picker is being dragged and the real one is a
+  module-scoped function whose helpers are not exported. The duplication is
+  written down at both ends. If the threshold or the gamma curve in
+  `teams/identity.ts` moves, the copy in the picker moves with it; the failure if
+  it does not is a wrong ink in a dev tool, not wrong data.
+
+It is a script rather than a route under `src/app/` for three independent
+reasons: it writes columns no user may write, it is for the person who builds the
+app rather than the people who use it, and a page under `src/app/` may not read
+`LEAGUES`.
+
+**What the picker cannot choose is the ink.** `crestInk` takes whichever of black
+or white contrasts more, and there is no per-club override — a third hand-seeded
+column would be needed for one. Twelve reds sat just on the black side of the
+threshold and were deepened 3–5% instead, which flips them to white; because the
+0.179 crossover sits almost exactly on WCAG AA's 4.5, a colour the rule gives
+white to also passes AA with white, so the two decisions are one. The reasoning
+is in `seed-team-identity.ts` beside the affected clubs, since a colour edited to
+suit a rendering rule inverts that file's doctrine and a future session would
+otherwise "correct" it back.
 
 ### A relation can be counted whole and read filtered in one query
 
@@ -182,7 +261,7 @@ what comes back; it never asks per competition, so the fifth league and the
 fifteenth are free here.
 
 One relation carries only one `_count`, so a query cannot ask Postgres for two
-different tallies over the same rows. That is why a fixture card's verdicts and
+different tallies over the same rows. That is why a fixture row's verdicts and
 notes are folded in JavaScript, by `countVerdicts` and `countNotes` in
 [`verdicts.ts`](../src/lib/verdicts.ts) — the rows are already in hand and bounded
 by how much one user judged one match.
@@ -398,7 +477,7 @@ raw types, a thin client, and a pure mapper. [`src/lib/sync.ts`](../src/lib/sync
 turns mapped objects into rows, and [`scripts/sync.ts`](../scripts/sync.ts) is
 the CLI. Nothing under `src/app/` imports any of it.
 
-**Which leagues to sync is configuration, `LEAGUES=39,94,140,135`, and only the sync
+**Which leagues to sync is configuration, `LEAGUES=39,94,140,135,78,61,113`, and only the sync
 reads it.** The asymmetry is the point: the sync *writes* `League` rows, while
 every read side *discovers* leagues from Postgres — `leaguesWithMatches`,
 `leaguesInSeason`, `parseLeague`. A page reading the variable would have two
@@ -425,7 +504,7 @@ a second reading of the same fixture routine rather than exceptional.
 ### A scheduled run asks our own table, not the provider, what to read
 
 `--due` never asks which round is current. It asks Postgres which *fixtures* are
-finished and not yet read, which is why four leagues at four different points
+finished and not yet read, which is why seven leagues at seven different points
 of their seasons — 38 rounds, 34, 38 and 38, played on different weekends —
 produce no branch anywhere. The question is asked per fixture, so the competitions never
 have to be told apart. A round would have needed three answers and a rule for
@@ -622,13 +701,22 @@ corrected at the boundary.
 
 ### A position is one of four letters, and the designs ask for more
 
-`MatchSquad.position` only ever holds `G`, `D`, `M` or `F`. Both endpoints agree
-on that vocabulary — `player.pos` on `/fixtures/lineups`, `games.position` on
-`/fixtures/players` — and [`squad.test.ts`](../src/lib/squad.test.ts) asserts it
-against the captured payload, so a fifth letter fails the suite rather than
-reaching a page as a blank column.
+`G`, `D`, `M` and `F` are the vocabulary both endpoints use — `player.pos` on
+`/fixtures/lineups`, `games.position` on `/fixtures/players` — and
+[`squad.test.ts`](../src/lib/squad.test.ts) asserts it against the captured
+payload.
 
-The reference screenshots label players `RB`, `CB`, `AM`, `LW`. **That data does
+**It does not follow that the column holds nothing else, and this section used
+to claim it did.** The development database has one row whose position is `C`
+and seventy-three whose position is null. A test over a captured payload
+constrains the payload, not the column: the fixture is one afternoon and the
+column is every afternoon since. Nothing broke, because `positionLabel` answers
+null for anything outside the four and a row with no label was already the
+specified drawing for a null — so the wrong claim cost nothing and was invisible
+for exactly that reason. The nulls have a cause worth reading:
+[a person can be in one squad twice](#the-same-person-can-be-in-one-match-squad-twice).
+
+A finer position label — `RB`, `CB`, `AM`, `LW` — **is data that does
 not exist anywhere in the provider's responses.** `grid` carries enough to guess
 a side, and the guess is deliberately not made: the column convention is
 unverified against ground truth, and a wrong one prints a confident falsehood
@@ -639,10 +727,53 @@ about a real player. The match page expands the four letters to
 integers before it is compared. Sorted as text it puts row 10 ahead of row 2 —
 which no captured fixture reaches, so nothing would catch it in passing.
 
+### The same person can be in one match squad twice
+
+**Known, unfixed, and the reason a starting XI can have twelve players in it.**
+Twenty-four matches in the 2026 development data have a starting eleven of
+twelve or thirteen, and every extra name is somebody already in the list.
+
+`buildSquad` in [`map.ts`](../src/lib/api-football/map.ts) merges the two
+endpoints through a `Map` keyed on `player.id`, which is exactly right and is
+the only key either payload offers. What defeats it is that **the provider
+sometimes gives one person two different player ids across its own two
+endpoints**. Roland Galčík is `539997` on `/fixtures/lineups` and `61439` on
+`/fixtures/players`; Robinho is `546510` and `41257`. Neither entry can find the
+other, so both survive the merge, `Player.apiFootballId` is `@unique` and honours
+both, and `@@unique([matchId, playerId])` sees two different players and lets
+both through. Every constraint did what it says.
+
+The two halves are trivially distinguishable, which is what makes a fix
+tractable: the lineups row carries `grid`, the abbreviated name the provider
+sends there — `R. Galcik` — and null `position` and null `minutes`; the
+statistics row carries the full name, the position and the minutes and no grid.
+Twenty-eight rows this season match that signature, and about seventy
+`(match, team, shirtNumber)` groups hold more than one row once the bench is
+counted.
+
+What it costs today, in order of how much it matters:
+
+- **A person can hold two verdicts in one match.** They are two `MatchSquad`
+  rows and therefore two `matchSquadId`s, so the MVP-is-exclusive rule — which
+  is enforced per squad row — does not see them as the same player. **No
+  judgement is attached to one of these rows yet**, which is why this is
+  recorded rather than urgent.
+- A starting XI reads as twelve or thirteen players.
+- `/players` lists the ghost as its own person, under the abbreviated name that
+  [`Player.name`'s schema comment](../prisma/schema.prisma) exists to avoid.
+- Every null in `MatchSquad.position` in the development database comes from
+  here — all twenty-eight null-position starters are ghosts — which is the fact
+  the section above had wrong.
+
+The fix is a decision rather than a patch, and it belongs to the author: it
+changes what the one translation boundary does, and it needs the existing rows
+dealt with as well as the next run. See `docs/roadmap.md`.
+
 ### Anything a page needs from a round string lives in `src/lib/rounds.ts`
 
-`Match.round` holds API-Football's own label, `"Regular Season - 1"`, and a
-fixture card has to display it. It may not get that from
+`Match.round` holds API-Football's own label, `"Regular Season - 1"`, and
+`/fixtures` has to display it — in a competition's block header when the whole
+league shares a round that day, and on the row itself when it does not. It may not get that from
 [`sync.ts`](../src/lib/sync.ts), which imports the provider client — constraint
 #2 is about the import graph, not about intent. So `roundLabel` moved out to
 [`rounds.ts`](../src/lib/rounds.ts) and the sync re-exports it for the CLI.
@@ -681,7 +812,12 @@ month abbreviations and the payload disagreed: `en-GB` renders September as
 `Sept`, four letters where every other month gets three.
 
 The consequence: a fresh clone has no fixtures and `npm test` fails with a
-message saying to re-run `scripts/verify_api.py` (about 5 requests). **This is
+message saying to re-run `scripts/verify_api.py` (about 5 requests) — eight test
+files fail to load while the other eleven pass, which reads as a broken suite and
+is not one. A **git worktree** hits this too, and there the cheaper fix is
+copying `scratch/` across from the checkout that already has it, since the
+payloads are the same captures either way. `.env.local` is gitignored and needs
+the same treatment; without it there is no database and no Clerk key. **This is
 why `npm test` is not part of the Vercel build and must not become part of one** —
 every deployment builds from a fresh clone, so the tests would fail every time.
 
@@ -848,7 +984,7 @@ fails to fire — it only shows a signed-in user the landing page.
 route inside it one by one, because there is no shared URL segment to match on.
 Anything added under `(app)` has to be added there too, or it ships unprotected.
 The list is already longer than the sidebar — `/matches/[id]` has no nav item and
-is reached only from a fixture card — so "did I add the nav item?" is not the
+is reached only from a fixture row — so "did I add the nav item?" is not the
 question to check it against.
 
 **Screen state that survives a reload belongs in the URL, not in React state.**
@@ -901,15 +1037,28 @@ stranger's is private, so there was never a real answer to draw.
 
 - **It sits on `--surface`, not `--page`.** Every other screen takes the page
   tone, which is what makes the cards on it read as raised off something. This
-  one is flat — one card, separated by its border, which foundations calls the
-  primary separator — and the drawing is white edge to edge, including behind
-  the header. The two grounds differ only in light; in dark they are the same
-  colour.
+  one is flat — its cards are separated by their borders, which foundations calls
+  the primary separator — and the drawing is white edge to edge, including behind
+  the header. The two grounds differ in both themes since the rebrand:
+  `#262E39` against `#1C222B` in dark, where the old palette resolved both to
+  `#212121`.
 - **The mock is built from the app's own objects but not from its components.**
   The card, the header strip, `ShirtTile`, the note's rule and `Badge` are shared,
   so what a visitor is shown is what they get; `SquadPanel` is not, because its
   types are shaped by the match page's query and naming them here would drag
   Prisma onto a page that must never reach it.
+- **The three features are specimen panels, not bare columns.** Each takes the
+  app's own card — a `--surface-alt` header strip over a bordered body — with its
+  number and name in the strip, its sample in the body and its sentence as a
+  caption underneath. The trade is that the name drops from `--text-title` to
+  `--text-caps`: in a specimen sheet the sample is the argument and the label only
+  says which sample it is. If the three stop reading as the three things the app
+  does, that is the line to change first.
+- **The open-source claim is one line, not a band.** It was a section with an
+  eyebrow, a `--text-display` heading, a sentence and the button, restating at
+  three sizes of type a claim the hero's tag has already made. The sentence and
+  the button say it once; the octocat stays, because foundations gives the mark to
+  every link to the repository and this is one of the two.
 - **It draws `FWD`/`MID`/`DEF`, not the drawing's `RW`/`CM`/`CB`.** Same decision
   as [everywhere else](#a-position-is-one-of-four-letters-and-the-designs-ask-for-more),
   and it binds hardest here: a landing page promising a detail the product cannot
@@ -1375,16 +1524,30 @@ and nothing was invented: a **resting** verdict chip takes the standard hover
 a **selected** one takes no colour change at all. Anything later that sits on a
 tint should do the same.
 
-The selected pill tab and the selected segmented button fill with
-`--surface-inverse` too and were deliberately left outside the new token's scope.
-They are selected states rather than buttons — clicking either again is a no-op —
-which is the same reason a selected chip has no hover.
+The selected segmented button fills with `--surface-inverse` too and was
+deliberately left outside the new token's scope. It is a selected state rather
+than a button — clicking it again is a no-op — which is the same reason a
+selected chip has no hover. The selected pill tab used to be the other case, and
+the rebrand retired the control.
+
+**That distinction is now visible rather than merely true.** The filled button
+moved to `--brand-action` when marine took the primary action, and the selected
+segment stayed ink — so marine reads as something to press and ink as something
+already chosen. Before, both were `--surface-inverse` and the difference was a
+comment.
+
+The button is also the **only** marine fill in the app. Block headers were filled
+with it briefly and are a 2px marine bottom rule now; `foundations.md` records
+why under **The brand as an edge**. The short version is `/fixtures`: ten cards
+down a page turned ten filled bands into a coloured page rather than a quiet one
+with a brand.
 
 The note button on the same row is the rule applied one step up the ramp: resting
 it is borderless and takes the standard hover to `--surface-alt`, and once there
 is a note it sits on `--surface-sunken` with no hover of its own. Its glyph does
-**not** fill — `FILL 1` means "on" for the states `foundations.md` lists, and a
-note is not one of them, so the box carries it.
+**not** fill — filled means "on" for the states `foundations.md` lists, and a
+note is not one of them, so the box carries it. It could not in any case:
+`edit_note` is three open rules with no inside to paint.
 
 The chips' selected classes are written out one verdict at a time rather than
 built from the tag. **Tailwind finds class names by scanning source as text**, so
@@ -1393,12 +1556,14 @@ This applies to every future tinted thing, not just these.
 
 **`NOTE` is a fourth badge over a three-value enum.** `JudgementTag` has three
 members and a judgement list draws four badges: a judgement carrying a note and
-no tag is a valid row, and it is rendered in the informational blue with
+no tag is a valid row, and it is rendered as the resting grey chip with
 `edit_note` — the same distinction that keeps notes out of the match page's
-header counts. The key type is `JudgementTag | 'NOTE'`, exported from
+header counts. It was the informational blue until the rebrand retired `--info`,
+on the grounds that a second cool colour beside marine is a second thing claiming
+to mean something. The key type is `JudgementTag | 'NOTE'`, exported from
 [`badge.tsx`](../src/components/badge.tsx) beside the table of tints. Nothing
-named `NOTE` reaches the database, and nothing should: the reference screenshots
-have no example of this case, so it is a drawing decision, not a schema one.
+named `NOTE` reaches the database, and nothing should: no design
+covered this case, so it is a drawing decision, not a schema one.
 
 **The badge itself is one component, and callers with a key of their own write
 it beside the table rather than into it.** The landing page draws an `UNRATED`
@@ -1477,13 +1642,15 @@ crest plus an unconditional `sr-only` club name, so the heading no longer depend
 on whether a sibling panel exists. **A component that took a pre-composed string
 had to be told about its own context; one that takes the thing itself does not.**
 
-**A missing fact is dropped from a centred strip and stood in for in a justified
-one.** The scoreline card omits the venue or the referee when the column is null;
-`FixtureCard` prints "Venue unknown" instead. Not an inconsistency — that strip is
-`justify-between` with two children, so dropping one leaves the date against empty
-space, and the placeholder is holding a slot open. A centred wrapping run has no
-slots to hold, so the remaining facts close up. Where there is a choice, prefer
-dropping: "Referee unknown" is a sentence about an official who does not exist,
+**A missing fact is dropped from a centred strip rather than stood in for.** The
+scoreline card omits the venue or the referee when the column is null, and it is
+now the only screen that names a venue at all — `/fixtures` carried one per card
+and dropped it when the card became a row. A centred wrapping run has no slots to
+hold open, so the remaining facts close up. The rule this replaced said a
+*justified* strip stands a missing fact in instead, because dropping one of two
+children in a `justify-between` row leaves the other against empty space; that
+was `FixtureCard`'s "Venue unknown", and no strip in the app is built that way
+any more. Where there is a choice, prefer dropping: "Referee unknown" is a sentence about an official who does not exist,
 which is [the reasoning that keeps positions at four
 letters](#a-position-is-one-of-four-letters-and-the-designs-ask-for-more).
 
@@ -1515,25 +1682,25 @@ named the club in its own header, puts what the player has been judged. It
 carries no `'use client'` of its own, so it renders on the server inside the club
 profile and joins the bundle inside `players-browser`.
 
-**Two tab vocabularies, and which is which.** `foundations.md` lists a 40px
-`--control-h-lg` tab and a 28px pill tab as separate controls; the rule between
-them is that an **underline tab changes the view of the screen you are on** —
-the diary's three views, a player's Diary and Notes — while a **pill chooses the
-scope the screen is drawn for**. Only the first is drawn.
-[`tab-strip.tsx`](../src/components/tab-strip.tsx) is it; the pill's one instance
-was the league row on `/fixtures`, retired when that page became a day rather
-than a league and a matchday. The control stays specified in foundations with
-nothing drawing it, which is the right state for a vocabulary the next scope
-control will want.
+**There is one tab, and there used to be two.** An **underline tab changes the
+view of the screen you are on** — the diary's three views, a player's Diary and
+Notes — while a **scope control names what the screen was drawn for**.
+[`tab-strip.tsx`](../src/components/tab-strip.tsx) is the first and the only one
+drawn. The second was a 28px pill tab whose one instance was the league row on
+`/fixtures`, retired when that page became a day rather than a league and a
+matchday; the rebrand then retired the control itself, because a pill in a
+zero-radius system is a contradiction. `foundations.md` still records the
+distinction, and flags that **what a scope control should look like is now open**
+rather than answered by a specification nothing draws.
+
+The selected tab's 2px underline is `--brand`, which is marine marking **where
+you are** — the second of the three things it marks. It says which view of this
+screen you are looking at, exactly as the active nav item does. The label stays `--text` — colouring
+the word as well would make the tab compete with the nav item for one signal.
 
 `current` arrives as a prop rather than being read from the location: the page
 has already parsed the parameter to run its query, and asking again in a client
-hook would give the answer two sources. Only the unselected
-state differs — foundations draws the pill selected and disabled but never
-unselected, so the pill's own component set that itself, borrowing the
-muted-to-ink treatment the pager's arrows and the inactive underline tab already
-use. That is recorded because the next scope control will need it and foundations
-still does not draw the state.
+hook would give the answer two sources.
 
 The underline sits under the selected tab alone, with **no rule spanning the
 strip**. That is how the design draws it and it is also what lets the strip wrap:
@@ -1640,9 +1807,11 @@ take the whole of that as props.
   its body for a confirmation. That is also why a refusal there keeps the draft
   in the box rather than closing: the text is the thing that must survive being
   told "not now".
-- **A field's focus state is not the ring.** `foundations.md` gives fields
-  `--border-focus` plus an inset 1px of it, which reads as a 2px border without
-  the element changing size and shifting the layout. That is the `focus-field`
+- **A field's focus state is not the ring.** `foundations.md` gives fields a
+  `--brand` border plus an inset 1px of it, which reads as a 2px border without
+  the element changing size and shifting the layout. Marine in both cases —
+  `--border-focus` retired into `--brand` with the rebrand, because the focus
+  ring is marine marking what you can act on. That is the `focus-field`
   utility, and it is written `focus:` rather than `focus-visible:` — a field is
   focused in order to be typed in, so the state is real however the caret got
   there. It applies to all three fields the app now has.
@@ -1692,7 +1861,7 @@ The players index added the other two — a text input and a `<select>`, in
   like the source, which is worth knowing before debugging a colour in devtools.
 - **The base stylesheet styles every `<a>`**, so chrome links need `no-underline`
   and an explicit colour or they render as blue underlined prose links. `NavItem`,
-  `FixtureCard` and the day pager all do this. One class is enough despite
+  `FixtureRow` and the day pager all do this. One class is enough despite
   `a:hover` having the higher specificity, because the utilities layer is
   declared after `base` and layer order beats specificity.
 - **Club colour is the only colour in product code that is not a token**, and
@@ -1768,56 +1937,78 @@ match page's `sr-only` `<h1>` had to become a node rather than a string: it
 announces the kickoff, so left server-formatted it would read the London time
 into a screen reader while the scoreline beside it drew the local one.
 
-### The icon font is a subset, fetched by script
+### The icons are ours, and they ship as one sprite
 
-`next/font/google` has no entry for Material Symbols at all, and the full
-variable font is 3.96 MB. What works instead: Google's `css2` endpoint accepts
-`icon_names=` *together with* an axis selector, and returns only those glyphs
-with the FILL axis intact — a few kB for the whole vocabulary in
-[`icon-names.ts`](../src/components/icon-names.ts). `npm run icons` fetches it
-into `src/app/fonts/`, which is **committed**: unlike `src/generated/` it is
-build input, and a fresh clone must build without reaching Google. Treat the
-file size as approximate — Google regenerates the upstream font, and a fetch has
-been seen to get *smaller* while gaining a glyph.
+The rebrand retired Material Symbols. Thirty-four glyphs are drawn to one grammar
+in [`icon-paths.tsx`](../src/components/icon-paths.tsx) as bare coordinates —
+`<path d="…">` and `<circle>`, with no `stroke` or `fill` attribute anywhere.
 
-- **`icon_names` must be sorted alphabetically**, and axis names lowercase first
-  then uppercase (`opsz,wght,FILL,GRAD`). Either wrong gives a bare
-  `400: Invalid selector` naming neither.
-- **A misspelled glyph name fails silently, and nothing in the toolchain catches
-  it.** Google answers `200` and leaves the unknown name out of the font; the
-  ligature then has no glyph, so the literal word renders — `trophy` in the middle
-  of a sentence. The script's own "32 icons" line is `ICON_NAMES.length`, which is
-  what we asked for rather than what came back, so it reports success either way.
+**What went with the font is the interesting part.** `npm run icons`,
+`scripts/fetch-icon-font.ts`, the committed `.woff2` subset, a render-blocking
+font request, and a whole class of silent failure: a misspelled glyph name used
+to answer `200` from Google, be left out of the font, and render the literal word
+`trophy` in the middle of a sentence. Geometry is now keyed by `IconName`, so the
+same mistake is a compile error.
 
-  **Count distinct glyphs, not codepoints.** This entry used to say `len(cmap ≥
-  0xE000)` should equal the array's length; it does not, and never did. Material
-  Symbols gives many icons several private-use codepoints — deprecated names and
-  aliases all mapping to one outline — so a 32-name subset answers with 47 PUA
-  codepoints over 32 distinct glyphs. `len({cmap[c] for c in cmap if c ≥ 0xE000})`
-  is the number that matches.
+**`npm run icons` exists again and means something else, which is worth saying
+before the name misleads somebody.** A later slice reused the freed script name
+for [`make-icons.ts`](../scripts/make-icons.ts), which draws the app icon PNGs
+from the real Schibsted Grotesk letterform. Nothing about the icon *set* is
+generated any more — the thirty-four glyphs are committed geometry, and no script
+touches them.
 
-  The stronger check, and the one worth running, tests the mechanism instead:
-  every name must have a **ligature**, since a ligature is what turns the word
-  `grid_view` into a glyph. Walk `GSUB` — the lookups are `ExtensionSubst`, so
-  unwrap `ExtSubTable` before looking for `ligatures` — rebuild each ligature's
-  input string through the reverse cmap, and assert every entry of `ICON_NAMES`
-  appears. `fontTools` reads `.woff2` directly given `brotli`.
-- The script sends a browser User-Agent on purpose. Google serves the old static
-  `Material Icons` font to clients it does not recognise, and that font silently
-  has no FILL axis.
+Three pieces, and the split is load-bearing:
+
+- [`icon-names.ts`](../src/components/icon-names.ts) — `ICON_NAMES`, still the
+  type `<Icon>` accepts. It was a subset request sent to Google's `css2` endpoint,
+  which rejected an unsorted list with a bare `400: Invalid selector`; that
+  constraint is gone, and the alphabetical order stays only so the array can be
+  read down against the icon board.
+- [`icon-paths.tsx`](../src/components/icon-paths.tsx) — `ICON_PATHS`, a
+  `Record<IconName, ReactElement>`, plus `FILLABLE`.
+- [`icon-sprite.tsx`](../src/components/icon-sprite.tsx) — walks `ICON_NAMES` and
+  emits a `<symbol id="i-{name}">` per glyph into a hidden `<svg>`.
+
+**The sprite is rendered in the root layout, and only there works.** A `<use>`
+resolves against its own document and needs the symbol already in it, so the
+sprite has to be in the page; the root layout is also the only place it survives
+a client-side navigation without being torn down and rebuilt. It sits in `<body>`
+rather than in the app shell because the landing page draws icons too. The
+wrapper is `position: absolute; width: 0; height: 0` rather than `display: none`
+— Safari has historically failed to resolve references into a `display: none`
+subtree, and a `<symbol>` never renders where it is defined anyway.
+
+**The five drawing properties are set once, in CSS, on the outer `<svg>`.**
+`fill`, `stroke`, `stroke-width`, `stroke-linecap` and `stroke-linejoin` are all
+*inherited* SVG properties, so they cross into the shadow tree a `<use>` builds
+and reach geometry defined elsewhere in the document. That is what lets one
+sprite serve every instance, and it means a path in `icon-paths.tsx` has nowhere
+to write an exception to the grammar.
+
+The stroke is in the viewBox's own units — 1.75 of twenty — so it scales with the
+box: 1.75px at the 20px default, 1.23px at 14. That is what a font did, and it is
+why the small sizes stay light instead of going gluey.
+
+**Fill means "on", and only `star` can take it.** Material had a FILL axis on
+every glyph; a stroked set only has an inside to fill where the outline closes.
+Every glyph but the star is one or more open paths, and painting one would close
+it implicitly and draw a wedge. `<Icon filled>` therefore consults `FILLABLE` and
+silently does nothing for the rest — the knowledge of which glyph is closed
+belongs in the icon module, not at forty call sites, and the two arrows and the
+note were always carrying their state in the chip's tint anyway.
 
 ### The flags are vendored files under `public/`, not a dependency
 
 `flag-icons` is the obvious package and the wrong one here. Its CSS is only
 27 kB, but it names 542 SVGs totalling some 3.8 MiB through `url()`, every one
 of which a bundler resolves and emits into the build — a 4.13 MB dependency to
-draw four of 271 flags. The four files are copied out of it instead, under its
+draw seven of 271 flags. The seven files are copied out of it instead, under its
 MIT licence, with the notice in `public/flags/LICENSE`. `es.svg` keeps only the
 two stripe paths: the coat of arms is 81 kB of the file and renders as a smudge
 at 12px, and what is left is the Spanish civil flag rather than an invention.
 
 A `background-image` rather than an inline `<svg>` or an `<img>`. Inline puts the
-path data into the payload of every page that draws a pill; a background keeps
+path data into the payload of every page that draws a league heading; a background keeps
 each flag a separately cached file, fetched only when a rule matches. An `<img>`
 would want alt text a decorative mark must not have, and trips eslint's
 `no-img-element`. Root-relative `url("/flags/pt.svg")` passes through Lightning
@@ -1827,9 +2018,10 @@ that way — there is nothing for the toolchain to follow and get wrong.
 **The entry that changes how later work goes:** a country and its class name live
 in two files with nothing in the language binding them. `flagClass` returning
 `flag-pt` while `globals.css` says `.flag-prt` draws an empty 16×12 box — no
-console error, no failing build. That is the same silent failure as a misspelled
-Material Symbols name above, and `leagues.test.ts` is where it is caught rather
-than merely described: it asserts every class the map can return has a rule in
+console error, no failing build. That is the silent failure a glyph name used to have before the
+icons became ours and `ICON_PATHS` made it a compile error, and
+`leagues.test.ts` is where the flags' version is caught rather than merely
+described: it asserts every class the map can return has a rule in
 `globals.css` and a file on disk. Adding a flag means a file, a rule, a map entry
 and nothing else; the test tells you which one you forgot.
 
@@ -1877,8 +2069,8 @@ item.
   than something either control asserts about itself. The URL lives in
   [`src/lib/links.ts`](../src/lib/links.ts), shared with the landing page,
   because a repository URL spelled out twice is a broken link waiting for the
-  second copy to be edited. The mark itself is the one non-Material-Symbol glyph
-  in the app — see `foundations.md` for the exception and its bar.
+  second copy to be edited. The mark itself is the one glyph in the app that is
+  not ours — see `foundations.md` for the exception and its bar.
 - **The bar's one labelled control is the suggestion box.** Everything else in
   there is a bare glyph, because a reader who wants the theme or the repository
   goes looking for it. A suggestion box has the opposite job — it has to be found
@@ -1909,8 +2101,8 @@ item.
   clear space before the border starts.
 - **It carries no `aria-label`, and that is a consequence of the label being
   permanent.** The button's text is its accessible name, and `<Icon>` is
-  `aria-hidden`, so the glyph's ligature text — the literal word `inbox` — is
-  excluded from the name rather than read out in front of it. Hiding the label at
+  `aria-hidden`, so the glyph is kept out of the computed name rather than
+  contributing to it. Hiding the label at
   any breakpoint again means putting the `aria-label` back, because a control
   whose only content is an `aria-hidden` glyph has no accessible name at all.
 - **The theme toggle holds no React state**, and that is what keeps it free of
@@ -1963,7 +2155,7 @@ without one.
   entire app. The skeleton is therefore not only what the reader sees; it is the
   thing that makes the prefetch have something safe to cache.
 - **The fallbacks copy their geometry off the real components** — the tile grid,
-  the fixture card's three bands, the index control row, `--row-h-lg`. The point
+  a competition block and the rows in it, the index control row, `--row-h-lg`. The point
   of a skeleton is that nothing moves when it is replaced, and matching spacing by
   eye is exactly how that goes wrong. `skeleton.tsx` and `skeleton-index.tsx` hold
   the shared pieces; the latter exists because `/players` and `/teams` draw one
