@@ -1,6 +1,6 @@
 'use client'
 
-import { startTransition, useId, useOptimistic, useRef, useState } from 'react'
+import { startTransition, useCallback, useId, useOptimistic, useRef, useState } from 'react'
 
 import { Icon } from './icon'
 import { setNote } from '@/lib/actions'
@@ -149,31 +149,41 @@ function NoteDialog({ playerName, note, onSave, onClose }: DialogProps) {
     dialog.current?.close()
   }
 
+  /*
+    A callback ref, rather than an effect: it runs as soon as the element is in
+    the DOM and before paint, which is when `showModal()` has to be called — a
+    `<dialog>` is inert markup until it is, and the attribute form (`open`)
+    gives a non-modal dialog with no backdrop.
+
+    React attaches a child's ref before its parent's, so the textarea is
+    already known here. Focusing it after `showModal()` is deliberate:
+    `showModal()` moves focus to the first focusable descendant, which is the
+    close button, and this puts it where the typing goes. The caret goes to the
+    end, so editing an existing note appends rather than prepends.
+
+    **`useCallback` is not a micro-optimisation here, it is the whole of a bug
+    fix.** React holds a ref by identity, so a ref written inline is a new
+    function on every render and React detaches and re-attaches it each time —
+    which ran this body again after every keystroke and put the caret back at
+    the end of the box. Clicking into the middle of a note bought you exactly
+    one character before the next one landed at the end. Memoised with no
+    dependencies the function is stable, so React attaches it once when the
+    dialog mounts, and this runs when it is meant to: on the way in, once.
+  */
+  const openDialog = useCallback((element: HTMLDialogElement | null) => {
+    dialog.current = element
+    element?.showModal()
+
+    const textarea = field.current
+    if (textarea) {
+      textarea.focus()
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length)
+    }
+  }, [])
+
   return (
     <dialog
-      ref={(element) => {
-        /*
-          A callback ref, rather than an effect: it runs once the element is in
-          the DOM and before paint, which is when `showModal()` has to be
-          called — a `<dialog>` is inert markup until it is, and the attribute
-          form (`open`) gives a non-modal dialog with no backdrop.
-
-          React attaches a child's ref before its parent's, so the textarea is
-          already known here. Focusing it after `showModal()` is deliberate:
-          `showModal()` moves focus to the first focusable descendant, which is
-          the close button, and this puts it where the typing goes. The caret
-          goes to the end, so editing an existing note appends rather than
-          prepends.
-        */
-        dialog.current = element
-        element?.showModal()
-
-        const textarea = field.current
-        if (textarea) {
-          textarea.focus()
-          textarea.setSelectionRange(textarea.value.length, textarea.value.length)
-        }
-      }}
+      ref={openDialog}
       onClose={onClose}
       // Dismiss on a press on the backdrop. On mouse *down* rather than click,
       // because a click's target after a drag is the nearest common ancestor —

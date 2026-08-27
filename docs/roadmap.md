@@ -11,7 +11,7 @@ commit message is the account of the slice — written once, at the moment the
 reasoning was fresh, and better placed there than restated in a file every
 session reads.
 
-**Last updated:** 2026-08-25 (a fixture row is marked rather than counted)
+**Last updated:** 2026-08-27 (a note can be edited in the middle)
 
 > **The rebrand is built.** **"Field Notes"** — Schibsted Grotesk and DM Mono on
 > a marine brand colour, zero radius everywhere, one shadow, and thirty-four
@@ -184,6 +184,9 @@ the squash-one-commit-per-slice flow, which is why they name several.
 - **A verdict that fails to save says so.** `c718dd8`. Reported from outside as
   "it might be a little bit bugged", which was the most a reader could say when
   the chip was the only feedback there was.
+- **A note can be edited in the middle.** Reported through the suggestion box:
+  "only one letter can be added or backspaced before the cursor automatically
+  moves to the very end."
 - **The app icon is the real letterform at last.** `icon.png`, `apple-icon.png`
   and `favicon.ico` were the last thing on the screen still carrying the
   previous design — a white M on a *black rounded* square, which is the wrong

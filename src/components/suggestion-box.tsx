@@ -1,4 +1,4 @@
-import { useId, useRef, useState, useTransition } from 'react'
+import { useCallback, useId, useRef, useState, useTransition } from 'react'
 
 import { sendSuggestion } from '@/lib/actions'
 import { SUGGESTION_MAX_LENGTH, type SuggestionResult } from '@/lib/suggestions'
@@ -103,6 +103,30 @@ function SuggestionDialog({ onClose }: { onClose: () => void }) {
     dialog.current?.close()
   }
 
+  /*
+    A callback ref rather than an effect: it runs as soon as the element is in
+    the DOM and before paint, which is when `showModal()` has to be called — a
+    `<dialog>` is inert markup until it is, and the attribute form (`open`)
+    gives a non-modal dialog with no backdrop.
+
+    React attaches a child's ref before its parent's, so the textarea is already
+    known here. `showModal()` focuses the first focusable descendant, which is
+    the close button; this puts focus where the typing goes instead.
+
+    **Memoised for the same reason the note dialog's is**, which is the reason
+    that one had a bug: React holds a ref by identity, so a ref written inline
+    is a new function every render and React re-runs it on every one. Here that
+    meant `focus()` firing again on each keystroke — harmless, because focus was
+    already in the box — and then pulling focus *out of the Send button* the
+    moment `pending` flipped and re-rendered. Stable, it attaches once on mount,
+    which is when opening the dialog and placing focus is meant to happen.
+  */
+  const openDialog = useCallback((element: HTMLDialogElement | null) => {
+    dialog.current = element
+    element?.showModal()
+    field.current?.focus()
+  }, [])
+
   function send() {
     setError(null)
 
@@ -137,22 +161,7 @@ function SuggestionDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <dialog
-      ref={(element) => {
-        /*
-          A callback ref rather than an effect: it runs once the element is in
-          the DOM and before paint, which is when `showModal()` has to be called
-          — a `<dialog>` is inert markup until it is, and the attribute form
-          (`open`) gives a non-modal dialog with no backdrop.
-
-          React attaches a child's ref before its parent's, so the textarea is
-          already known here. `showModal()` focuses the first focusable
-          descendant, which is the close button; this puts focus where the
-          typing goes instead.
-        */
-        dialog.current = element
-        element?.showModal()
-        field.current?.focus()
-      }}
+      ref={openDialog}
       onClose={onClose}
       // Dismiss on a press on the backdrop, on mouse *down* rather than click:
       // a click's target after a drag is the nearest common ancestor, so

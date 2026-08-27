@@ -1807,6 +1807,18 @@ take the whole of that as props.
   before its parent's. The note dialog also puts the caret at the end, so editing
   an existing note appends rather than prepends; the suggestion box always opens
   empty and has no caret to place.
+- **Both of those refs are memoised with `useCallback`, and that is not
+  tidiness.** React holds a ref by identity, so a ref written inline is a new
+  function on every render, and React detaches and re-attaches it on every
+  render — running its body again each time. The note dialog shipped that way
+  and had a bug for it: its body ends by putting the caret at the end of the
+  textarea, and typing re-renders, so clicking into the middle of a note bought
+  exactly one character or one backspace before the caret jumped to the end. The
+  suggestion box had the milder form of the same fault — `focus()` re-running was
+  invisible while focus was already in the box, but it pulled focus back out of
+  the Send button the moment `pending` flipped. With an empty dependency list the
+  function is stable, React attaches it once on mount, and the body means what it
+  says: on the way in, once. **A third dialog copies the memoised shape.**
 - **Only one of the two has an outcome to report.** Saving a note is visible on
   the row underneath, so the dialog can simply close. A suggestion goes somewhere
   the reader cannot see, so `suggestion-box.tsx` holds a `sent` state and swaps
