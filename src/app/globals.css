@@ -799,23 +799,3 @@
     display: inline-flex;
   }
 }
-
-/* ==========================================================================
-   TEMPORARY — the "what's new" note in the sidebar.
-
-   Unlayered on purpose, where `.theme-icon-*` above sits inside `components`.
-   Unlayered CSS outranks every layer regardless of specificity, so this cannot
-   be beaten by a Tailwind display utility landing on the same element later —
-   the trap the theme-icon comment describes having fallen into. It is one rule
-   guarding one element, and it costs nothing to put it out of reach.
-
-   The attribute is written by `CHANGELOG_INIT_SCRIPT` during head parsing, so
-   this resolves before the first paint. React reaches the same conclusion after
-   hydration and removes the element outright; this only has to cover the frames
-   in between, which is exactly the ones the reader was seeing it in.
-
-   Delete with `src/lib/changelog.ts` and `changelog-note.tsx`.
-   ========================================================================== */
-[data-changelog-seen] .changelog-note {
-  display: none;
-}

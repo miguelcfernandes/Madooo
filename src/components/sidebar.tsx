@@ -1,5 +1,4 @@
 import { UserButton } from '@clerk/nextjs'
-import { ChangelogNote } from './changelog-note'
 import { NavItem } from './nav-item'
 import type { IconName } from './icon-names'
 
@@ -47,23 +46,6 @@ export function Sidebar() {
           ))}
         </ul>
       </nav>
-
-      {/*
-        TEMPORARY — a note saying what just changed, above the identity because
-        that is where the eye lands last and because it must not push the account
-        menu off a short viewport. It dismisses itself to nothing, so the sidebar
-        below is what it was.
-
-        The one thing it costs this file: `<ChangelogNote>` is `'use client'`,
-        which makes it a client boundary inside a server component. That is the
-        narrow version and is fine — `AppFrame`'s note explains the rule, and the
-        rule is about what `Sidebar` itself is, not about what it may contain.
-        `Sidebar` stays a server component and the `<UserButton>` below stays
-        server-rendered with it.
-
-        Delete this and `changelog-note.tsx` to remove the note entirely.
-      */}
-      <ChangelogNote />
 
       {/*
         The signed-in identity, moved here out of the old dashboard header.

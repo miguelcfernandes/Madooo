@@ -3,7 +3,6 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { schibstedGrotesk, dmMono } from "./fonts";
 import { IconSprite } from "@/components/icon-sprite";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
-import { CHANGELOG_INIT_SCRIPT } from "@/lib/changelog";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -52,17 +51,6 @@ export default function RootLayout({
           nothing interpolated into it. See `src/lib/theme.ts`.
         */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-        {/*
-          TEMPORARY — the same trick, for the "what's new" note. The server
-          cannot know the note was dismissed, so it always renders it; this
-          marks <html> during parsing if it was, and `globals.css` keeps it off
-          the screen for the frame before React reaches the same conclusion.
-          Without it a dismissed note flashes back on every reload.
-
-          Delete with `src/lib/changelog.ts`. Same constraint as above: a module
-          constant with nothing interpolated into it.
-        */}
-        <script dangerouslySetInnerHTML={{ __html: CHANGELOG_INIT_SCRIPT }} />
       </head>
       {/*
         `ClerkProvider` sits inside `<body>`, not around `<html>`. Next 16
