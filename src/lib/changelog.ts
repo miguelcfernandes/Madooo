@@ -75,6 +75,11 @@ export type ChangelogEntry = Omit<Written, 'date'> & { date: Date }
 const WRITTEN: Written[] = [
   {
     date: '2026-08-27',
+    title: 'Verdicts and notes save the first time',
+    note: 'A verdict or note written after the app had been sitting in another tab could fail without saving; it now saves, and a note that does fail says so instead of disappearing.',
+  },
+  {
+    date: '2026-08-27',
     title: 'Notes stay where the cursor is',
     note: 'Typing into the middle of a note no longer jumps to the end after each letter.',
   },
