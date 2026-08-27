@@ -12,11 +12,13 @@
  * was sent to Google's font API by `npm run icons`, which rejected an unsorted
  * list with a bare `400: Invalid selector`. That is gone along with the font.
  * The alphabetical order stays for a plainer reason: the icon board lists all
- * thirty-four in this order, so the two can be read down side by side.
+ * the vocabulary in `foundations.md` in this order, so the two can be read down
+ * side by side.
  */
 export const ICON_NAMES = [
   'add_comment',
   'arrow_forward',
+  'article',
   'calendar_today',
   'check',
   'chevron_left',

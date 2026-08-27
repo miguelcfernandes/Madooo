@@ -13,12 +13,13 @@ import { Icon } from './icon'
  * side of it. `search-field.tsx` and `icon.tsx` have the same shape.
  *
  * **This is the only labelled control in the bar, and that is deliberate.** The
- * GitHub mark and the theme toggle are bare glyphs because they are chrome a
- * reader already knows how to find. This one has a job neither of those has: it
- * has to be *noticed* by someone who was not looking for it, because a
- * suggestion box nobody sees collects nothing. The label is the whole of that —
- * it is the only run of words in the bar, which is loud enough in a strip that
- * is otherwise four glyphs.
+ * changelog, the GitHub mark and the theme toggle are bare glyphs because they
+ * are chrome a reader already knows how to find. This one has a job none of
+ * those has: it has to be *noticed* by someone who was not looking for it,
+ * because a suggestion box nobody sees collects nothing. The label is the whole
+ * of that — it is the only run of words in the bar, which is loud enough in a
+ * strip that is otherwise five glyphs. The count is what moves as the bar grows;
+ * the *one* is the rule, and a second label would halve what this one buys.
  *
  * **An outline was tried here and taken back out.** It read as a box inside a
  * box: `foundations.md` opens with "the border is the primary separator", so in

@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+
 import { GITHUB_URL } from '@/lib/links'
 import { GithubMark } from './github-mark'
 import { Icon } from './icon'
@@ -19,8 +21,8 @@ type Props = {
 }
 
 /**
- * The top bar: the suggestion box, the source link and the theme toggle, and
- * below `md` a menu button.
+ * The top bar: the suggestion box, the changelog, the source link and the theme
+ * toggle, and below `md` a menu button.
  *
  * The design puts a search field in here too, and it is deliberately not here:
  * search belongs to the screen that has something to search, next to the filters
@@ -48,6 +50,22 @@ type Props = {
  * the bar now has an occupant at both ends at every width; `ml-auto` on the
  * right-hand group, which existed for the menu button's sake below `md`, is
  * what keeps the two apart.
+ *
+ * **The changelog is the fifth, and it is the first thing in here that
+ * navigates.** Everything above was argued into this bar for the same reason —
+ * it leaves the page alone — and a `<Link>` to `/changelog` plainly does not.
+ * The rule it keeps is the one underneath that: **the bar holds what is about
+ * the app, and the sidebar holds what is about the football.** Fixtures,
+ * Players, Teams and Diary are one loop and a fifth `<nav>` row would claim to
+ * be part of it; a page saying what changed in the app belongs beside the
+ * source link and the suggestion box, which is the reader's half of the same
+ * conversation.
+ *
+ * It is a **bare glyph**, and that is the suggestion box's argument used the
+ * other way. The label there is loud because it is the only run of words in the
+ * bar; a second one would halve that for a control nobody needs to be ambushed
+ * by. So this is chrome a reader goes looking for, like the theme and the
+ * repository, and it carries its name in an `aria-label` as they do.
  */
 export function TopBar({ menuOpen, onMenuClick, ref }: Props) {
   return (
@@ -71,15 +89,41 @@ export function TopBar({ menuOpen, onMenuClick, ref }: Props) {
 
       {/*
         `ml-auto` moved off the toggle and onto this group when the source link
-        joined it: two controls pinned right are the bar's arrangement to make,
-        not something either control should assert about itself.
+        joined it: controls pinned right are the bar's arrangement to make, not
+        something any one of them should assert about itself.
 
-        `gap-0.5` rather than the usual `gap-2`. Both children are already
-        `--control-h-lg` boxes with their glyphs centred inside, so the visible
-        space between the two marks is most of that box, and a full gap on top
-        of it reads as two unrelated controls instead of one cluster.
+        `gap-0.5` rather than the usual `gap-2`. Every child is already a
+        `--control-h-lg` box with its glyph centred inside, so the visible space
+        between two marks is most of that box, and a full gap on top of it reads
+        as unrelated controls instead of one cluster.
+
+        The changelog leads the group: it is the only one of the three that stays
+        inside the app, and the two that leave it — for another site, or for the
+        other theme — sit together at the edge.
       */}
       <div className="ml-auto flex items-center gap-0.5">
+        {/*
+          A `<Link>`, so it prefetches and navigates without a document load
+          like every other destination in the app. `no-underline` because the
+          base stylesheet styles every `<a>` as prose, which is right for a
+          sentence and wrong for a control — the same note the source link
+          below carries.
+
+          `article` is a **thirty-fifth glyph, drawn for this**. The set had
+          no mark for it, and `notifications` shipped here first: a bell
+          promises an alert, where this is a page you go and read. Since the
+          rebrand our set is the authority rather than Material's, so a missing
+          meaning is answered by drawing a glyph rather than by spending a near
+          one. See `icon-paths.tsx` for the three drawings that lost.
+        */}
+        <Link
+          href="/changelog"
+          aria-label="What's new"
+          className="t-hover flex size-(--control-h-lg) items-center justify-center text-muted no-underline hover:bg-surface-alt hover:text-text focus-visible:focus-ring"
+        >
+          <Icon name="article" size="lg" />
+        </Link>
+
         {/*
           20px, not the toggle's 22px. The mark is a solid silhouette where our
           own glyphs are a 1.75 stroke, so matching their box sizes puts far more

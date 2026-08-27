@@ -11,11 +11,11 @@ commit message is the account of the slice — written once, at the moment the
 reasoning was fresh, and better placed there than restated in a file every
 session reads.
 
-**Last updated:** 2026-08-27 (a note can be edited in the middle)
+**Last updated:** 2026-08-27 (a changelog for signed-in readers)
 
 > **The rebrand is built.** **"Field Notes"** — Schibsted Grotesk and DM Mono on
-> a marine brand colour, zero radius everywhere, one shadow, and thirty-four
-> glyphs of our own in place of Material Symbols — is in the code, and
+> a marine brand colour, zero radius everywhere, one shadow, and glyphs of our
+> own in place of Material Symbols — is in the code, and
 > [`design/foundations.md`](design/foundations.md) describes it. The board it was
 > agreed on and the "what we agreed" file that pointed at it are both gone: once
 > the design has landed, keeping either would give the project three sources of
@@ -52,8 +52,8 @@ rebuilt past its drawing:
 
 - `/` — the landing page: a header, a hero beside a mock match card, three
   features drawn as specimen panels, an open-source line, a footer. It reads
-  nothing, which is what keeps it the one route that prerenders, so its fixture
-  and its three totals are invented. Seen only signed out; a visitor with a
+  nothing, which is what keeps it prerendered, so its fixture and its three
+  totals are invented. Seen only signed out; a visitor with a
   session is sent to `/fixtures`.
 - `/fixtures` — one calendar day at a time across every competition, cut into a
   section per league in a written-down popularity order, under a pager that steps
@@ -76,6 +76,10 @@ rebuilt past its drawing:
   `localStorage`.
 - `/players/[id]` and `/teams/[id]` — profiles, each over four tallies and a
   split bar, with the way back carried in `?from=`.
+- `/changelog` — what has changed in the app, newest first, cut into calendar
+  months. Reached from a bell in the top bar and from nowhere else. The entries
+  are a hand-written module in the repository, so this is the one route under
+  `(app)` that reads nothing, and the only prerendered screen behind the login.
 
 Every screen renders in light or dark, light-first for everyone, toggled from the
 top bar. The bar also carries a labelled "Suggest a feature" button: what is
@@ -110,7 +114,7 @@ screen, since every read filters by season; they were the author's own test data
   colour and type reference sheets went with the palette they documented. The
   tokens are CSS, in [`src/app/globals.css`](../src/app/globals.css)
 - Schibsted Grotesk and DM Mono come from `next/font/google`. There is no third
-  font: the icons are thirty-four SVG glyphs of our own, drawn in
+  font: the icons are thirty-five SVG glyphs of our own, drawn in
   [`src/components/icon-paths.tsx`](../src/components/icon-paths.tsx) and served
   from one sprite per document
 - `.env.local` holds `API_FOOTBALL_KEY`, `SEASON`, `LEAGUES`, `DATABASE_URL`,
@@ -324,6 +328,12 @@ the squash-one-commit-per-slice flow, which is why they name several.
   note text — `take: 1` and a `length` answer a yes-or-no question — and
   `countNotes` went with its only caller.
 
+- **A changelog for signed-in readers.** `/changelog`, reached from a bell in
+  the top bar, over a hand-written module backfilled to the day the app opened. It replaces the temporary sidebar note deleted in `24a228b` with the
+  version that is maintained rather than thrown away, and `/slice` gained the
+  step that keeps it from drifting: an entry is written in the slice that earns
+  it, so the page can never describe code that is not deployed.
+
 ## Not built, and why
 
 Things left out on purpose, each with the argument that kept it out. This is the
@@ -437,6 +447,25 @@ either built or decided against for good.
   `/matches/123` quietly records what somebody was looking at, in an app whose
   whole promise is that nobody sees your diary.
 
+**The changelog**
+
+- **No unread mark on the bell.** The obvious next thing, and the mechanism is
+  already proven twice: a stored id — a string rather than a boolean, so
+  changing it brings the mark back — settled before first paint by the trick
+  `theme.ts` uses. It is left out because it is a second slice's worth of
+  machinery, and because the deleted sidebar note is the evidence for why it
+  cannot be bolted on carelessly: a mark that paints and then vanishes after
+  hydration was reported as a bug the first time.
+- **It is behind the login, and a visitor cannot read it.** Decided rather than
+  overlooked. A public changelog is the other reasonable answer — it is evidence
+  to somebody deciding whether to sign up — and what it costs is that the page
+  either leaves the app shell or is drawn twice.
+- **No version numbers, no tags, no "unreleased".** The repository has no tags
+  and a slice is not a release; a date is the only unit this project actually
+  ships in.
+- **Nothing links to it from `/`, the sidebar or the footer.** One way in, so
+  there is one thing to change if it moves.
+
 **Elsewhere**
 
 - **No club link on a fixture row.** The whole row is already a link, so a club
@@ -480,11 +509,18 @@ Not code, and not to be left to launch day.
       is not a token: the slashed zero is far more frequent than the open
       decision about it assumed. That decision has since been made — the slash
       stays; see "Not built".
-- [ ] **Render all thirty-four glyphs at ~100px and look at them.** `lock_open`
+- [ ] **Render all thirty-five glyphs at ~100px and look at them.** `lock_open`
       shipped with its shackle arcing *down through the lock body* — an SVG
       sweep-flag error, invisible at 14px and unmistakable enlarged, caught only
       because something happened to blow it up. The other thirty-three have never
       had that treatment, and it is the only way this class of error surfaces.
+
+      `article` is the exception and the evidence: `/changelog` went through
+      three drawings, and the `history` clock among them was retired because
+      seeing it at size showed a shape that read as broken rather than
+      deliberate. `foundations.md` now makes judging a new glyph at 100px *and*
+      at the shipping size the rule, along with the three tests those drawings
+      each failed one of. That leaves the thirty-three inherited ones.
 - [ ] **See the "Lineups out" badge render once.** `/fixtures` draws it for a
       fixture whose team news has landed but which has not kicked off — and no
       row in the dev database is in that state, because every day carrying

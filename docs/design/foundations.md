@@ -734,7 +734,7 @@ and colours the border and label. There is no third "neutral" state — unselect
 
 ## Iconography
 
-**Madooo's own set.** Thirty-four glyphs, drawn to one grammar, shipped as inline
+**Madooo's own set.** Thirty-five glyphs, drawn to one grammar, shipped as inline
 SVG. Material Symbols retired with the rebrand: it was chosen to sit with the
 Google Slides look this design replaces, and its rounded terminals and generous
 curves read soft against a zero-radius, squared system.
@@ -778,7 +778,8 @@ the first place. The list is `FILLABLE` in
 
 ### The vocabulary
 
-`add_comment` · `arrow_forward` · `calendar_today` · `check` · `chevron_left` ·
+`add_comment` · `arrow_forward` · `article` · `calendar_today` · `check` ·
+`chevron_left` ·
 `chevron_right` · `close` · `dark_mode` · `delete` · `edit_note` ·
 `expand_more` · `grid_view` · `groups` · `how_to_reg` · `inbox` · `light_mode` ·
 `lock_open` · `menu` · `more_horiz` · `notifications` · `search` · `settings` ·
@@ -833,6 +834,44 @@ design choice**. POSTPONED, the unrated chip and "That did not save" are words
 because a word is right there, not because Google had no picture. There is no
 glyph we could not draw for "in play"; there is no *good* one, which is a
 different sentence.
+
+### The set grows by drawing, not by spending
+
+`article` is the thirty-fifth, drawn for `/changelog` because nothing in the
+thirty-four meant it. That is the rule the inverted one above implies and is
+worth stating outright: **when a screen needs a mark the set does not have, the
+answer is a new glyph to this grammar — not the nearest glyph that already
+exists.** A near-miss is worse than an absence, because it teaches the reader the
+wrong word. `notifications` shipped in that slot first and is the case in point:
+a bell promises an alert, and the changelog is a page you go and read.
+
+The bar for adding one is that the meaning is genuinely absent, not that the
+existing glyph is slightly off — a set that grows on every screen's preference
+stops being a vocabulary. What is cheap is the drawing; what is expensive is a
+reader having to learn thirty-five marks instead of twenty.
+
+**It took three drawings, and each one failed a different test — which is the
+useful part.** `notifications` failed on *meaning*: a bell promises an alert. A
+`history` clock — a ring with a gap across the top and an arrowhead sitting on
+the gap — failed on *form*: an open contour with something perched in the break
+reads as a rendering fault rather than a decision, and no adjustment of the
+arrowhead fixed it, because the arrowhead was never the fault. A megaphone
+closed the contour and failed on *voice*: it announces, where this page is read,
+and the Voice section below is explicit about not selling.
+
+So the three tests a new glyph has to pass are the right word, a shape that
+reads as finished, and the register the app speaks in. **A closed silhouette is
+the safer shape**, and a glyph made of an interrupted contour should be treated
+as suspect until it has been seen at the size it ships.
+
+The arrowhead's four passes are worth keeping for a separate reason: every one
+of its failures was invisible at 14px. Arms shorter than about twice the stroke
+draw a blob rather than a chevron, and a head pushed out along the radius or
+splayed wide merges an arm into the ring and fills a wedge. Which is the deeper
+version of the lesson `lock_open` taught below. **A glyph is judged at 100px
+*and* at the size it ships** — the first finds the geometry errors, the second
+finds out whether it reads at all. The clock passed the first and failed the
+second.
 
 ### The one glyph to keep watching
 

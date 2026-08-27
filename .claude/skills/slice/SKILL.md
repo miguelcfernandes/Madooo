@@ -140,6 +140,22 @@ roadmap holds what is true about the *project's progress*; the architecture file
 holds what is true about the *system*.** A fact that will still be true after
 this slice ships is not roadmap material.
 
+**A third file, when the slice changed something a reader would notice.** Add an
+entry to [`src/lib/changelog.ts`](../../../src/lib/changelog.ts), dated the day
+the slice lands, written for somebody who keeps a football diary rather than for
+whoever reads this repository next. It is a data file, so this is one object at
+the top of the list and the tests cover the rest.
+
+**Here, in this step, is the point.** The changelog is a second telling of what
+the commit already says, and every changelog that dies does so by being written
+later. Landing it in the slice's own commit is what makes it impossible for the
+page to describe code that is not deployed.
+
+Not every slice earns one. Infrastructure a reader cannot see — a schema change,
+a region, the sync's selection rules — is left out however much work it was; so
+is anything the same slice removed again. If the slice changed no screen and no
+behaviour, write nothing.
+
 In [`docs/roadmap.md`](../../../docs/roadmap.md), update all of these that moved:
 
 - **Current state** — only if the slice changed what the app *is*: a screen

@@ -45,7 +45,7 @@ binding rules are in [`AGENTS.md`](../AGENTS.md) and, for anything that renders,
   - [The icons are ours, and they ship as one sprite](#the-icons-are-ours-and-they-ship-as-one-sprite)
   - [The flags are vendored files under `public/`, not a dependency](#the-flags-are-vendored-files-under-public-not-a-dependency)
 - [The app shell](#the-app-shell)
-  - [Every route has a `loading.tsx`, and two separate things depend on it](#every-route-has-a-loadingtsx-and-two-separate-things-depend-on-it)
+  - [Every route that reads anything has a `loading.tsx`, and two separate things depend on it](#every-route-that-reads-anything-has-a-loadingtsx-and-two-separate-things-depend-on-it)
 - [Build and deploy](#build-and-deploy)
 
 ---
@@ -976,8 +976,8 @@ writing and most model training data has not. The same applies to
 both directions: signed-out visitors away from each of the signed-in
 destinations, and signed-in ones off `/` to `/fixtures`. The second half lives
 here rather than in the landing page because reading the session during render
-would make `/` dynamic, and it is [the one route that
-prerenders](#build-and-deploy). It is also an exact path test rather than a
+would make `/` dynamic, and it is [one of the two routes that
+prerender](#build-and-deploy). It is also an exact path test rather than a
 matcher entry, since it must not reach anything below `/`.
 
 Both redirects are optimistic checks. The check that guards data is
@@ -1028,9 +1028,11 @@ its own.
 
 ### The landing page reads nothing, and everything on it is fiction
 
-`/` is the project's only public screen and its only prerendered one, and those
-two facts are the same fact: it renders no database call, no `auth()` and no
-`searchParams`, so there is nothing for a request to vary. Anything later that
+`/` is the project's only public screen, and it prerenders for the reason that
+makes it one: it renders no database call, no `auth()` and no `searchParams`, so
+there is nothing for a request to vary. It is not the only prerendered route —
+`/changelog` reads nothing either — but it is the only one where being static
+and being public are the same fact rather than two. Anything later that
 wants a live number on it — a count of matches in the database, say — costs the
 page its prerender, which is a trade to make deliberately rather than by
 accident.
@@ -1282,7 +1284,8 @@ not a boundary. Two rules follow, and both are load-bearing:
 
 **`refresh()` from `next/cache`, not `revalidatePath()`.** Almost all writing
 about Next says the latter, but `revalidatePath` invalidates a *cache*, and every
-page under `(app)` is `force-dynamic` with nothing cached to invalidate.
+page an action can be fired from is `force-dynamic` with nothing cached to
+invalidate.
 `refresh()` says what is meant — re-render the current route — and Next streams
 the new RSC payload back inside the action's own response, so one round trip
 covers the write and the redraw. Next's own guide is
@@ -1957,7 +1960,7 @@ into a screen reader while the scoreline beside it drew the local one.
 
 ### The icons are ours, and they ship as one sprite
 
-The rebrand retired Material Symbols. Thirty-four glyphs are drawn to one grammar
+The rebrand retired Material Symbols. Thirty-five glyphs are drawn to one grammar
 in [`icon-paths.tsx`](../src/components/icon-paths.tsx) as bare coordinates —
 `<path d="…">` and `<circle>`, with no `stroke` or `fill` attribute anywhere.
 
@@ -1972,7 +1975,7 @@ same mistake is a compile error.
 before the name misleads somebody.** A later slice reused the freed script name
 for [`make-icons.ts`](../scripts/make-icons.ts), which draws the app icon PNGs
 from the real Schibsted Grotesk letterform. Nothing about the icon *set* is
-generated any more — the thirty-four glyphs are committed geometry, and no script
+generated any more — the glyphs are committed geometry, and no script
 touches them.
 
 Three pieces, and the split is load-bearing:
@@ -2076,25 +2079,36 @@ item.
   letting `AppFrame` import it, which is what keeps the sidebar and its Clerk
   `<UserButton>` off the client bundle. The same move is available whenever a
   later slice needs client state wrapped around server-rendered UI.
-- **A link that leaves the app belongs in the top bar, not the sidebar.** The
-  source link is an `<a target="_blank" rel="noreferrer">` beside the theme
-  toggle, and it was tried at the sidebar's foot first. Built there as a row
+- **The bar holds what is about the app; the sidebar holds what is about the
+  football.** That is the rule underneath both of the ones the bar was actually
+  built on. The source link is an `<a target="_blank" rel="noreferrer">` beside
+  the theme toggle, and it was tried at the sidebar's foot first. Built there as a row
   borrowing `NavItem`'s height, icon column and hover fill, it read as a fifth
-  destination — which is what `<nav>` is for, and this is not one. The bar holds
-  the app's other non-navigating controls, so it is where anything chrome-like
-  goes. `ml-auto` moved off `ThemeToggle` onto a wrapping group at the same time:
-  with two controls pinned right, the arrangement is the bar's to make rather
-  than something either control asserts about itself. The URL lives in
+  destination — which is what `<nav>` is for, and this is not one. `ml-auto`
+  moved off `ThemeToggle` onto a wrapping group at the same time: with more than
+  one control pinned right, the arrangement is the bar's to make rather than
+  something any one of them asserts about itself. The URL lives in
   [`src/lib/links.ts`](../src/lib/links.ts), shared with the landing page,
   because a repository URL spelled out twice is a broken link waiting for the
   second copy to be edited. The mark itself is the one glyph in the app that is
   not ours — see `foundations.md` for the exception and its bar.
+- **`/changelog` is in the bar, and it is the first control there that
+  navigates.** Which is why the rule above is stated as subject rather than as
+  behaviour. "Non-navigating" was an accurate description of the bar for as long
+  as everything in it happened to leave the page alone, and it was never the
+  reason: a `<Link>` to a page about the app is further from the four
+  destinations than the theme toggle is, not closer. Fixtures, Players, Teams
+  and Diary are one loop over the football, and a fifth `<nav>` row would claim
+  to be part of it. It is a bare glyph with an `aria-label`, under the labelling
+  rule below.
 - **The bar's one labelled control is the suggestion box.** Everything else in
-  there is a bare glyph, because a reader who wants the theme or the repository
-  goes looking for it. A suggestion box has the opposite job — it has to be found
-  by someone who was not looking — and a box nobody notices collects nothing. The
-  label is the whole of that: it is the only run of words in a strip that is
-  otherwise four glyphs, which is loud enough on its own. It takes the left, so
+  there is a bare glyph, because a reader who wants the theme, the repository or
+  the changelog goes looking for it. A suggestion box has the opposite job — it
+  has to be found by someone who was not looking — and a box nobody notices
+  collects nothing. The label is the whole of that: it is the only run of words
+  in a strip that is otherwise five glyphs, which is loud enough on its own. The
+  count moves as the bar grows; **the *one* is the rule**, since a second label
+  halves what the first one buys. It takes the left, so
   the bar has an occupant at both ends at every width, which is what `ml-auto` on
   the right-hand group keeps apart. **This spends the bar's left-hand space**,
   which was the standing candidate for the wordmark below `md`; see the roadmap's
@@ -2147,13 +2161,25 @@ item.
   of the accessibility tree, which is what lets each branch carry its own
   `sr-only` label and gives the button a name that is always accurate without
   any JavaScript keeping the two in step.
+- **The changelog is a module, and an entry is written in the slice that earns
+  it.** [`src/lib/changelog.ts`](../src/lib/changelog.ts) is a hand-written list
+  that `/changelog` renders through `groupByMonth`, the diary's own grouping.
+  Generating it from `git log` was declined and the module's docblock holds the
+  three reasons; the one that decides it is that a commit subject is written for
+  whoever reads the repository next, so the log would need filtering *and*
+  rewriting to become this. What that costs is a second telling that can drift,
+  and the thing that stops it drifting is a step in `/slice` rather than a
+  habit. **Its dates carry no time and must not**: `new Date('2026-08-27')` is
+  UTC midnight, and London — the zone [`dates.ts`](../src/lib/dates.ts) pins
+  everything to — is never behind UTC, so the two always name the same calendar
+  day. A zone west of Greenwich would break that.
 - **Closing the drawer on navigation is a click handler, not a URL watcher.**
   `react-hooks/set-state-in-effect` rejects the effect version outright, and it
   is also wrong: tapping the already-active nav item navigates nowhere, so there
   would be no URL change to react to. `drawer-context.ts` carries the close
   function down to `NavItem` instead.
 
-### Every route has a `loading.tsx`, and two separate things depend on it
+### Every route that reads anything has a `loading.tsx`, and two separate things depend on it
 
 Next nests `loading.tsx` inside its segment's layout and wraps the page — and any
 nested layout — in a `<Suspense>` boundary. `(app)/loading.tsx` is the group's
@@ -2168,10 +2194,20 @@ without one.
   the fix is a nested `<Suspense>` rather than moving it back.
 - **A dynamic route is not prefetched unless a `loading.tsx` exists.** Next's
   prefetching guide states it as a table: static routes prefetch whole, dynamic
-  routes prefetch "no, unless `loading.js`". Every route here is
-  `force-dynamic`, so before these files `<Link>` prefetching was off across the
-  entire app. The skeleton is therefore not only what the reader sees; it is the
-  thing that makes the prefetch have something safe to cache.
+  routes prefetch "no, unless `loading.js`". Every route that reads the database
+  is `force-dynamic`, so before these files `<Link>` prefetching was off across
+  the entire app. The skeleton is therefore not only what the reader sees; it is
+  the thing that makes the prefetch have something safe to cache.
+- **`/changelog` is the exception, and it is the same rule rather than a hole in
+  it.** It reads no database, no session and no search parameters — its entries
+  are a module in the repository — so it is not `force-dynamic`, Next prerenders
+  it, and `next build` prints it as `○ (Static)`. A static route prefetches
+  whole, which is the other half of the table above, so it needs no
+  `loading.tsx` and has none. Nothing about the guard changes: `proxy.ts` runs
+  on the request rather than on the render, so a prerendered response is still
+  behind the login. **The test for whether a new route needs a `loading.tsx` is
+  therefore whether it reads anything, not whether it exists** — and the group's
+  fallback covers it either way if it later grows a read.
 - **The fallbacks copy their geometry off the real components** — the tile grid,
   a competition block and the rows in it, the index control row, `--row-h-lg`. The point
   of a skeleton is that nothing moves when it is replaced, and matching spacing by
@@ -2242,10 +2278,12 @@ the same region for that reason.
 
 To reproduce what Vercel does: `rm -rf src/generated && npm run build`. Only that
 proves the build regenerates the client rather than leaning on a stale local copy.
-Every route under `(app)` should appear as `ƒ` (dynamic) in the route summary,
-because each page carries `force-dynamic` — not because of the shell layout,
-which reads nothing since the skeletons landed. `/` is `○` (static) and should
-stay that way, since the landing page reads no database. That is a live
+Every route under `(app)` that reads the database should appear as `ƒ` (dynamic)
+in the route summary, because each of those pages carries `force-dynamic` — not
+because of the shell layout, which reads nothing since the skeletons landed. `/`
+and `/changelog` are `○` (static) and should stay that way, since neither reads
+a database: the landing page's content is fiction and the changelog's is a
+module in the repository. That is a live
 constraint, not an observation: it is why the signed-in bounce off `/` sits in the
 proxy rather than in the page, where an `auth()` call would flip it to `ƒ`.
 

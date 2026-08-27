@@ -1,7 +1,7 @@
 /**
  * GitHub's mark, and the one glyph in the app that is not ours.
  *
- * `foundations.md` fixes the icon set at Madooo's own thirty-four glyphs and
+ * `foundations.md` fixes the icon set at Madooo's own glyphs and
  * bans anything from outside it. This is the documented exception, and it is
  * narrow on purpose: the octocat is how a repository link is recognised without
  * being read, it is somebody else's mark rather than an interface glyph we could

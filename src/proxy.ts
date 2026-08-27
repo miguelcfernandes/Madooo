@@ -25,7 +25,8 @@ import { NextResponse } from 'next/server'
  * reaches `/` gets a page whose only two controls do nothing, and no other
  * navigation — the sidebar belongs to the app shell. The bounce to `/fixtures`
  * lives here rather than in the page itself because reading the session during
- * render would make `/` dynamic, and it is the one route that prerenders.
+ * render would make `/` dynamic, and it is the only *public* route that
+ * prerenders.
  *
  * This is an optimistic check, not the security boundary. Next's guide is
  * explicit that proxy "should not be used as a full session management or
@@ -39,8 +40,15 @@ import { NextResponse } from 'next/server'
  * segment to match on. Anything added under `(app)` has to be added here too, or
  * it ships unprotected.
  *
- * Note that this is longer than the sidebar: `/matches/[id]` is a destination
- * with no nav item, reached only from a fixture card.
+ * Note that this is longer than the sidebar: `/matches/[id]` is reached only
+ * from a fixture row and `/changelog` only from the top bar, so neither has a
+ * nav item to be listed under.
+ *
+ * `/changelog` is also the one entry here that is **prerendered** — it reads
+ * nothing, so Next builds it once and serves it from the CDN. That changes
+ * nothing about this file, and the reason is worth stating rather than
+ * rediscovering: proxy runs on the request, not on the render, so a static
+ * response is still gated by the check below.
  */
 const isProtectedRoute = createRouteMatcher([
   '/fixtures(.*)',
@@ -48,6 +56,7 @@ const isProtectedRoute = createRouteMatcher([
   '/players(.*)',
   '/teams(.*)',
   '/diary(.*)',
+  '/changelog(.*)',
 ])
 
 export default clerkMiddleware(async (auth, req) => {

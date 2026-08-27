@@ -2,7 +2,7 @@ import type { ReactElement } from 'react'
 import type { IconName } from './icon-names'
 
 /**
- * The geometry of all thirty-four glyphs, and the only place it is written down.
+ * The geometry of all thirty-five glyphs, and the only place it is written down.
  *
  * `docs/design/foundations.md` fixes the grammar every one of them obeys: a
  * 20×20 grid with a one-unit safe margin, a uniform 1.75 stroke that never
@@ -27,6 +27,34 @@ export const ICON_PATHS: Record<IconName, ReactElement> = {
     <>
       <path d="M3 10 L16.5 10" />
       <path d="M11.5 5 L16.5 10 L11.5 15" />
+    </>
+  ),
+  /* A page of dated entries: a closed sheet, a short line where a date goes and
+     two full ones under it.
+
+     **The third drawing for `/changelog`, and the first that reads.** The set
+     had no mark for "what changed", and the two before this each failed in
+     their own way. `notifications` was a near-miss that promised an alert. A
+     `history` clock — a ring with a gap and an arrowhead perched on it — read
+     as a rendering fault rather than a decision, which is what an open contour
+     with something in the break always looks like. A megaphone closed the
+     contour and fixed that, and was still wrong: it announces, where this page
+     is read.
+
+     Three interior lines, not four. The version with two date-and-entry pairs
+     says "a list" more literally and puts five strokes in a twelve-unit box,
+     which silts up at the 22px this actually ships at. One short line is enough
+     to say the rows are dated.
+
+     It has two near neighbours and is told from both by construction:
+     `two_pager` carries a spine, so it reads as an open book, and `edit_note`
+     is ruled lines with no sheet around them. */
+  article: (
+    <>
+      <path d="M4 2.5 L16 2.5 L16 17.5 L4 17.5 Z" />
+      <path d="M6.5 7 L10 7" />
+      <path d="M6.5 10.5 L13.5 10.5" />
+      <path d="M6.5 14 L13.5 14" />
     </>
   ),
   calendar_today: (
