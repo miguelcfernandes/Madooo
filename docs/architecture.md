@@ -71,6 +71,7 @@ what they cover. Link to them instead.
   - [Responsive rules are in `foundations.md` and are binding](#responsive-rules-are-in-foundationsmd-and-are-binding)
   - [Hovering a filled surface and hovering a tint were resolved differently](#hovering-a-filled-surface-and-hovering-a-tint-were-resolved-differently)
   - [The dialog is the platform's, and so are the fields](#the-dialog-is-the-platforms-and-so-are-the-fields)
+  - [The hint floats without being a dialog](#the-hint-floats-without-being-a-dialog)
   - [Things the toolchain does that the source does not show](#things-the-toolchain-does-that-the-source-does-not-show)
   - [The season's calendar is pinned to London; a kickoff time is the reader's](#the-seasons-calendar-is-pinned-to-london-a-kickoff-time-is-the-readers)
   - [The icons are ours, and they ship as one sprite](#the-icons-are-ours-and-they-ship-as-one-sprite)
@@ -1969,6 +1970,42 @@ The players index added the other two — a text input and a `<select>`, in
   boundary, and a second one where it is not needed only invites the idea that
   every client-side file wants one. `icon.tsx` has the same shape.
 
+### The hint floats without being a dialog
+
+[`hint.tsx`](../src/components/hint.tsx) is the app's second floating layer and
+the only one that is not a `<dialog>`. `/fixtures` draws it on a live fixture the
+provider has published no lineup for; `foundations.md` owns the argument for why
+that row and no other.
+
+**It is an absolutely positioned `<span>`, and the three alternatives were all
+worse here.** A `<dialog>` gives the top layer, a focus trap and Escape for free
+— which is exactly why the note and suggestion dialogs use one — but a modal that
+takes focus and inerts the page to show one sentence is the wrong weight, and a
+non-modal `<dialog>` positions itself, which is the one thing this needs to
+control. The native Popover API is click-only, so it cannot answer hover. CSS
+anchor positioning would place it without JavaScript and is not yet safe to
+depend on.
+
+What the `<span>` costs is a `z-10`, and it is load-bearing rather than
+defensive: later rows in the same `<ul>` paint after this one in document order
+and would otherwise cut the panel in half. Nothing between it and the root
+creates a stacking context, so `z-10` is measured against the page.
+
+**Two details that look like preferences and are not.** The open/close handlers
+test `event.pointerType`, because a tap fires `pointerenter` *and* `click` — open
+on every enter and the click that follows toggles it straight back shut, so only
+a mouse gets the hover. And the panel is rendered at all times with the trigger's
+`aria-describedby` pointing at it, hidden only by a class: a description that
+existed only while a pointer was over the glyph is a description a screen reader
+never reaches, and `aria-describedby` computes its text from a hidden element by
+design.
+
+Escape and outside-press are bound on `document` rather than on the element, and
+only while it is open. Neither event is guaranteed to reach the element — a hint
+opened by hovering has focus somewhere else entirely, and a press elsewhere on
+the page is by definition not on it — so a page of forty rows binds nothing until
+one is open.
+
 ### Things the toolchain does that the source does not show
 
 - **Tailwind 4 and Clerk share a cascade via a named layer.** `globals.css`
@@ -2071,7 +2108,7 @@ into a screen reader while the scoreline beside it drew the local one.
 
 ### The icons are ours, and they ship as one sprite
 
-The rebrand retired Material Symbols. Thirty-five glyphs are drawn to one grammar
+The rebrand retired Material Symbols. Thirty-six glyphs are drawn to one grammar
 in [`icon-paths.tsx`](../src/components/icon-paths.tsx) as bare coordinates —
 `<path d="…">` and `<circle>`, with no `stroke` or `fill` attribute anywhere.
 

@@ -100,7 +100,7 @@ always a semantic token.**
 The rebrand to "Field Notes" is **built**, and `foundations.md` describes it.
 Marine is the only colour the brand owns and has six permitted places; the type
 is Schibsted Grotesk and DM Mono; radius is zero everywhere; the icons are our
-own thirty-five glyphs rather than Material Symbols. The board it was agreed on
+own thirty-six glyphs rather than Material Symbols. The board it was agreed on
 is superseded by the document, which is the rule this project has kept
 throughout: **a board records what was agreed, `foundations.md` records what has
 landed, and the second wins.**

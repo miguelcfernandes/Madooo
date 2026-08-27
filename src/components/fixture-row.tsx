@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Badge, CALLED_OFF_BADGE, LINEUPS_BADGE, LIVE_BADGE } from './badge'
 import { CrestChip } from './crest-chip'
+import { Hint } from './hint'
 import { KickoffTime } from './kickoff-time'
 import { WatchedMark } from './watched-mark'
 import { calledOffLabel, isInProgress } from '@/lib/match-status'
@@ -47,11 +48,37 @@ import type { Fixture } from '@/lib/fixtures'
  *
  * Then the two that are new: a fixture with no score and a squad is one you can
  * judge, and a fixture with no score and no squad is one to wait for.
+ *
+ * **The live branch is the one place this row explains itself**, and the case it
+ * explains is the only one on the page that is genuinely puzzling. A fixture
+ * that has not kicked off has no team sheet because it is early, which the day
+ * and the clock in the left margin already say. A fixture being *played* with no
+ * team sheet contradicts what a reader knows about football: eleven names were
+ * read out an hour ago, so the missing one is our data source rather than the
+ * clubs. The row cannot open and nothing else on it says why.
+ *
+ * It is drawn for that case alone, and deliberately not for the fifty-five other
+ * rows on a Saturday morning that are also waiting. Repeating it on all of them
+ * is what "Team news is not out yet" already did once on every card, and what
+ * the "Lineups out" badge exists to have stopped.
  */
 function Outcome({ match, openable }: { match: Fixture; openable: boolean }) {
   const calledOff = calledOffLabel(match.status)
   if (calledOff !== null) return <Badge label={calledOff} classes={CALLED_OFF_BADGE} />
-  if (isInProgress(match.status)) return <Badge label="Live" classes={LIVE_BADGE} />
+
+  if (isInProgress(match.status)) {
+    return (
+      <span className="flex items-center gap-1.5">
+        <Badge label="Live" classes={LIVE_BADGE} />
+        {openable ? null : (
+          <Hint label="Why team news is not out">
+            Team news is not out yet. The data provider has not published a lineup for this
+            match, so there is nobody to rate.
+          </Hint>
+        )}
+      </span>
+    )
+  }
 
   if (match.homeGoals === null || match.awayGoals === null) {
     if (openable) return <Badge label="Lineups out" classes={LINEUPS_BADGE} />

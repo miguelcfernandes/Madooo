@@ -654,11 +654,48 @@ and the inverse fill already says it here.
 | Token | Value | Where |
 | --- | --- | --- |
 | — | none | Cards, tiles, rows, chips — the default |
-| `--shadow-3` | `0 8px 24px rgba(0,0,0,.18)` | Dialogs and toasts only |
+| `--shadow-3` | `0 8px 24px rgba(0,0,0,.18)` | Dialogs, toasts and the hint panel |
 
 `--shadow-1` and `--shadow-2` retired with the rebrand. If something looks like
 it needs to float, it needs a rule instead. Dark deepens the alpha to `.8`,
 because a soft shadow is invisible on a ground this dark.
+
+**That column read "dialogs and toasts only" until the hint arrived, and the
+widening is a reading of the rule rather than an exception to it.** The list was
+an inventory of the things that float, not a closed set; the sentence under it is
+the rule, and what it forbids is a *card, tile or row* — something that sits in
+the page — reaching for a shadow to look important. A hint panel is drawn over
+the rows below it, in a layer of its own, and is the third object in the app for
+which "this floats" is simply true. If a fourth appears, the question to ask is
+whether it is in the page or over it, and a thing in the page still gets a rule.
+
+### There is one floating explanation
+
+A **hint** is a 26px small icon button carrying `info`, and the panel it reveals:
+`--surface` behind a `--border` outline with `--shadow-3`, `--text-body` inside,
+hanging below the glyph and centred on it. No motion — the inventory above is
+complete, and this is not on it.
+
+**It exists for one thing and its scope is the design.** `/fixtures` draws it on
+a match that is being *played* and still has no team sheet — the one state on
+that page a reader cannot explain from what is on screen, since the row will not
+open and eleven names were read out an hour ago. Every other waiting fixture says
+nothing, which is the same argument that took "Team news is not out yet" off
+twenty-eight cards and left the "Lineups out" badge to mark the positive state.
+
+**A design whose answer to an unclear screen is a tooltip has stopped writing
+labels**, and this page says elsewhere that a fact worth stating is stated in
+words on the page. What earns this one is that the fact is *conditional and
+rare*: it is true of one row in a hundred, and putting it in the row would mean
+finding room for a sentence in a column two characters wide. A second hint is a
+new decision to argue on its own terms, not a precedent this section grants.
+
+Hover, tap, click and focus all open it, and that is three inputs rather than
+three ideas — a mouse hovers, a phone taps, a keyboard tabs. Escape closes it
+from wherever focus is. The panel is always in the accessible tree and the glyph
+always `aria-describedby` it, because hover is not something a screen reader
+does: a description that appeared only under a pointer would be a description
+that reader never gets.
 
 `--focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--brand)` — **a 2px marine
 ring with a surface-coloured gap**, so it stays legible against whatever it sits
@@ -735,7 +772,7 @@ and colours the border and label. There is no third "neutral" state — unselect
 
 ## Iconography
 
-**Madooo's own set.** Thirty-five glyphs, drawn to one grammar, shipped as inline
+**Madooo's own set.** Thirty-six glyphs, drawn to one grammar, shipped as inline
 SVG. Material Symbols retired with the rebrand: it was chosen to sit with the
 Google Slides look this design replaces, and its rounded terminals and generous
 curves read soft against a zero-radius, squared system.
@@ -782,7 +819,8 @@ the first place. The list is `FILLABLE` in
 `add_comment` · `arrow_forward` · `article` · `calendar_today` · `check` ·
 `chevron_left` ·
 `chevron_right` · `close` · `dark_mode` · `delete` · `edit_note` ·
-`expand_more` · `grid_view` · `groups` · `how_to_reg` · `inbox` · `light_mode` ·
+`expand_more` · `grid_view` · `groups` · `how_to_reg` · `inbox` · `info` ·
+`light_mode` ·
 `lock_open` · `menu` · `more_horiz` · `notifications` · `search` · `settings` ·
 `share` · `sports` · `sports_soccer` · `stadium` · `star` · `trending_down` ·
 `trending_up` · `trophy` · `two_pager` · `view_agenda` · `view_list` ·
@@ -849,7 +887,26 @@ a bell promises an alert, and the changelog is a page you go and read.
 The bar for adding one is that the meaning is genuinely absent, not that the
 existing glyph is slightly off — a set that grows on every screen's preference
 stops being a vocabulary. What is cheap is the drawing; what is expensive is a
-reader having to learn thirty-five marks instead of twenty.
+reader having to learn thirty-six marks instead of twenty.
+
+**`info` is the thirty-sixth, and it is the cheap case of that rule rather than
+the hard one.** It was drawn for the hint on a live fixture with no team sheet,
+and nothing in the thirty-five meant "there is an explanation here": `article` is
+a page you go and read, `more_horiz` is the rest of a list, `notifications`
+promises an alert. Each is a near-miss, which this section says is worse than an
+absence. It took one drawing rather than three, because the three tests were
+already written down when it was drawn — the word is right, the silhouette is
+closed, and it neither announces nor sells.
+
+**What it did cost is the two clearances inside the ring**, and they are the
+lesson `view_agenda`'s 4.5-unit gap taught, applied at the other end of the
+scale. A stroke spreads 0.875 units either side of its path, so the dot's radius
+is 0.5 against `more_horiz`'s 1 — still a solid blob 2.75 units across, and still
+the only radius that leaves white between the dot and the stem. That gap is 1.15
+units, under a pixel at 14px and the tightest in the set. It reads where two
+anonymous rectangles at the same distance fused, and the difference is that a
+reader already knows this shape: `view_agenda` had to *say* "two panels", where
+a dot over a stem only has to be recognised.
 
 **It took three drawings, and each one failed a different test — which is the
 useful part.** `notifications` failed on *meaning*: a bell promises an alert. A

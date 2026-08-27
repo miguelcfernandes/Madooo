@@ -2,7 +2,7 @@ import type { ReactElement } from 'react'
 import type { IconName } from './icon-names'
 
 /**
- * The geometry of all thirty-five glyphs, and the only place it is written down.
+ * The geometry of all thirty-six glyphs, and the only place it is written down.
  *
  * `docs/design/foundations.md` fixes the grammar every one of them obeys: a
  * 20×20 grid with a one-unit safe margin, a uniform 1.75 stroke that never
@@ -130,6 +130,35 @@ export const ICON_PATHS: Record<IconName, ReactElement> = {
     <>
       <path d="M3 4 L17 4 L17 16.5 L3 16.5 Z" />
       <path d="M3 11.5 L7 11.5 L8.2 13.5 L11.8 13.5 L13 11.5 L17 11.5" />
+    </>
+  ),
+  /* A ring with a tittle and a stem — the thirty-sixth, drawn for the hint on a
+     live fixture whose lineup has not been published. Nothing in the thirty-five
+     meant "there is an explanation here": `article` is a page you go and read,
+     `more_horiz` is the rest of a list, and `notifications` promises an alert —
+     each a near-miss, which foundations says is worse than an absence.
+
+     It passes the three tests a new glyph has to pass. The word is right, the
+     silhouette is closed, and it neither announces nor sells.
+
+     **The two clearances are what the drawing is actually about, and both were
+     tuned at 14px rather than at 100.** The dot's radius is 0.5 against
+     `more_horiz`'s 1: a stroke spreads 0.875 either side, so even at 0.5 the dot
+     is a solid blob 2.75 units across, and `more_horiz`'s radius inside a ring
+     would leave no white at all. That buys 1.15 units between the dot and the
+     stem — under a pixel at 14, and the smallest gap in the set that still reads
+     as two marks rather than one bar. The ring's own inner edge sits 1.05 units
+     off each end of the figure, so the `i` is centred in the counter rather than
+     touching it.
+
+     The gap is far tighter than the 4.5 units `view_agenda` needed between its
+     two panels, and the difference is that a reader already knows this shape: a
+     dot over a stem is legible at a size where two anonymous rectangles fuse. */
+  info: (
+    <>
+      <circle cx="10" cy="10" r="7" />
+      <circle cx="10" cy="6.3" r="0.5" />
+      <path d="M10 9.7 L10 14.1" />
     </>
   ),
   light_mode: (

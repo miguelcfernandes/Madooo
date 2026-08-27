@@ -75,6 +75,11 @@ export type ChangelogEntry = Omit<Written, 'date'> & { date: Date }
 const WRITTEN: Written[] = [
   {
     date: '2026-08-27',
+    title: 'Why a live match has no players to rate',
+    note: 'A match under way with no team sheet now carries a mark you can hover or tap, saying the data provider has not published one.',
+  },
+  {
+    date: '2026-08-27',
     title: 'Verdicts and notes save the first time',
     note: 'A verdict or note written after the app had been sitting in another tab could fail without saving; it now saves, and a note that does fail says so instead of disappearing.',
   },

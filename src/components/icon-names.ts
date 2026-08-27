@@ -32,6 +32,7 @@ export const ICON_NAMES = [
   'groups',
   'how_to_reg',
   'inbox',
+  'info',
   'light_mode',
   'lock_open',
   'menu',

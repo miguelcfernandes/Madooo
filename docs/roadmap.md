@@ -41,7 +41,7 @@ which is the opposite of an instruction to build something. The tell is
 grammatical: a remark states what *is* true and survives being read a month
 later, while a plan uses imperatives — "add X", "set up Y".
 
-**Last updated:** 2026-08-27 (a changelog for signed-in readers)
+**Last updated:** 2026-08-27 (a live fixture with no lineup says why)
 
 > **The rebrand is built.** **"Field Notes"** — Schibsted Grotesk and DM Mono on
 > a marine brand colour, zero radius everywhere, one shadow, and glyphs of our
@@ -144,7 +144,7 @@ screen, since every read filters by season; they were the author's own test data
   colour and type reference sheets went with the palette they documented. The
   tokens are CSS, in [`src/app/globals.css`](../src/app/globals.css)
 - Schibsted Grotesk and DM Mono come from `next/font/google`. There is no third
-  font: the icons are thirty-five SVG glyphs of our own, drawn in
+  font: the icons are thirty-six SVG glyphs of our own, drawn in
   [`src/components/icon-paths.tsx`](../src/components/icon-paths.tsx) and served
   from one sprite per document
 - `.env.local` holds `API_FOOTBALL_KEY`, `SEASON`, `LEAGUES`, `DATABASE_URL`,
@@ -378,12 +378,17 @@ the squash-one-commit-per-slice flow, which is why they name several.
   note text — `take: 1` and a `length` answer a yes-or-no question — and
   `countNotes` went with its only caller.
 
-- **A changelog for signed-in readers.** `/changelog`, reached from a bell in
-  the top bar, over a hand-written module backfilled to the day the app opened. It replaces the temporary sidebar note deleted in `24a228b` with the
+- **A changelog for signed-in readers.** `/changelog`, reached from an
+  `article` glyph in the top bar, over a hand-written module backfilled to the day the app opened. It replaces the temporary sidebar note deleted in `24a228b` with the
   version that is maintained rather than thrown away, and the build loop in
   [`AGENTS.md`](../AGENTS.md) gained the step that keeps it from drifting: an
   entry is written in the slice that earns it, so the page can never describe
   code that is not deployed.
+
+- **A live fixture with no lineup says why.** A `Hint` beside the Live badge on
+  `/fixtures` — a 26px `info` button opening a panel that names the data provider
+  as the reason there is nobody to rate. `info` is the set's thirty-sixth glyph,
+  and the panel is the third thing in the app allowed `--shadow-3`.
 
 ## Not built, and why
 
@@ -560,11 +565,14 @@ Not code, and not to be left to launch day.
       is not a token: the slashed zero is far more frequent than the open
       decision about it assumed. That decision has since been made — the slash
       stays; see "Not built".
-- [ ] **Render all thirty-five glyphs at ~100px and look at them.** `lock_open`
+- [ ] **Render all thirty-six glyphs at ~100px and look at them.** `lock_open`
       shipped with its shackle arcing *down through the lock body* — an SVG
       sweep-flag error, invisible at 14px and unmistakable enlarged, caught only
       because something happened to blow it up. The other thirty-three have never
       had that treatment, and it is the only way this class of error surfaces.
+      `info` is a second exception beside `article`: it was drawn at 100px and at
+      14px before it shipped, and its dot-to-stem clearance was set by the second
+      of those rather than the first.
 
       `article` is the exception and the evidence: `/changelog` went through
       three drawings, and the `history` clock among them was retired because
