@@ -15,9 +15,9 @@
  *
  * So this is a second telling, and the discipline that keeps it honest is that
  * **an entry is written in the same commit as the thing it describes**. That is
- * a step in `/slice`, not a convention to remember. The payoff is the property
- * a database-backed changelog could not have: this ships with the deploy, so it
- * cannot describe code that is not live.
+ * a step in the loop in `AGENTS.md`, not a convention to remember. The payoff is
+ * the property a database-backed changelog could not have: this ships with the
+ * deploy, so it cannot describe code that is not live.
  *
  * **Not everything that happened is in here**, and the omissions are the point.
  * Infrastructure a reader cannot see — the schema, the deploy region, the sync's

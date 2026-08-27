@@ -125,31 +125,155 @@ Decided:
   `/fixtures/players`
 - Hosting on **Vercel**
 
-## Conventions
+## How work runs
 
-- **Commit messages carry no `Co-Authored-By` trailer.**
-- Commit at every working state; each commit should run.
-- Build in vertical slices — one thin feature end to end, verified in the
-  browser, then the next. Do not build whole layers speculatively.
-- **A feature can be proposed in a sentence and built without a plan agreed
-  first.** That was not always so, and the two things that made it safe are worth
-  naming, because they are also what would make it unsafe again: the gate
-  (`tsc --noEmit`, lint, test, build) runs on every slice, and the docs are kept
-  true so the next session starts where this one finished. Plan mode is still the
-  right move when the shape of the work is genuinely open.
-- **Stop and ask when the decision is the author's rather than a judgement
-  call**: an unsettled product rule, a schema change or migration, anything that
-  touches the non-negotiables above, and any change to what a screen promises a
-  user. Two failed attempts at the same failure is also a stop, not a third try.
-- **Never deploy.** Vercel builds from `main`, so pushing `main` *is* the
-  production deploy — it is the author's to run, along with `/slice finish`,
-  which is what pushes it. Work stops at a branch that is ready to land.
+**The author does not read the diff.** There is no review handed back, no
+browser check waiting on them and no plan agreed before building. Scoping a
+feature, choosing its shape, writing it, testing it, documenting it and getting
+it to a branch that is ready to land are all the assistant's. One thing is not.
+
+**Never merge to `main` until the author says so.** Vercel builds from `main`,
+so the merge *is* the production deploy. Work runs up to a ready branch and
+stops there; when the author gives the word, the assistant runs the merge and
+the push itself. **The word is given per landing and never carries forward** —
+"yes" to this branch is not "yes" from now on, and questions about the work are
+not the word.
+
+That gate is the only one, and the rest of this section exists because of it.
+With no second reader, the checks below are the whole of what stands between a
+mistake and production.
+
+### The loop
+
+**1. Branch first, before any file changes.**
+
+```
+git switch -c <short-kebab-summary>
+```
+
+Retrofitting a branch after committing to `main` is the failure this ordering
+exists to prevent.
+
+**2. Read before writing.** The relevant guide in `node_modules/next/dist/docs/`
+for anything Next-specific, the [`architecture.md`](docs/architecture.md)
+sections covering the subsystems the work touches, and
+[`foundations.md`](docs/design/foundations.md) for anything that renders.
+
+**3. Write tests where they earn their place** — not "if applicable". Pure
+functions, with a real payload as input; the sync mapper, the selection policy
+and the pages' pure helpers are the cases that exist so far. **Fixtures are read
+from the captured payloads in `scratch/` at test runtime**, never JSON typed
+from memory and never JSON pasted into the test file. The reason is specific: if
+the same understanding writes both the mapper and its fixture, they agree with
+each other and are both wrong. Do not test Prisma, Next's rendering, Clerk, or
+schema migrations and wiring, which have no meaningful assertion surface.
+
+**4. Run the gate — all of it, not a subset.**
+
+```
+npx tsc --noEmit
+npm run lint
+npm test            # if tests exist
+npm run build       # if routes or rendering were touched
+```
+
+`tsc --noEmit` is the highest-value feedback loop in this stack. Do not skip it
+because the build passed.
+
+**5. Commit at every working state.** Each commit must run. No `Co-Authored-By`
+trailer and no AI attribution of any kind.
+
+**6. Read `git diff main...HEAD` against the fixed criteria.** This is a
+checklist, not a review — the same understanding that wrote the code is reading
+it, so it cannot judge whether the design is right. What it can do is run
+specific queries over the accumulated whole, including the debug line added
+three fixes ago and the files you forgot you touched:
+
+- Secrets or connection strings outside `.env.local`.
+- A hardcoded season year or league id.
+- `LEAGUES` read from anywhere under `src/app/`.
+- Any API-Football call reachable from a page render.
+- An unchecked `errors` field on a provider response.
+- Provider JSON shape leaking past the sync boundary.
+- A raw hex or px value in product code rather than a semantic token.
+
+**7. Update the docs, as the last step.** Last deliberately: the docs describe
+the work *as built*, which is only known once the diff has been read, and they
+commit on the branch so they land with the slice rather than as a stray commit
+afterwards. Three files, and **each one states its own writing rules in its own
+preamble** — read them there rather than from a copy here, which is how the copy
+would drift:
+
+- [`docs/roadmap.md`](docs/roadmap.md) — what moved in the project's progress.
+- [`docs/architecture.md`](docs/architecture.md) — what is now true of the
+  system. Prune before you add, in that order.
+- [`src/lib/changelog.ts`](src/lib/changelog.ts) — one entry, dated the day the
+  slice lands, when the slice changed something a reader would notice. Not every
+  slice earns one.
+
+**8. Stop at the branch and report.** Say what the work does and what the author
+would see on screen if they looked — the URL and what should be on it. Then
+wait. Do not merge.
+
+### Landing it, once the author has said so
+
+```
+git switch main
+git pull --ff-only
+git merge --squash <branch>
+git commit                     # one readable commit for the whole slice
+git push
+git branch -D <branch>
+```
+
+The branch is never pushed. It exists so work in progress can be committed
+freely without `main` ever holding a broken state; once the squash commit lands
+it has no further job, and nothing else consumes it — there is no PR in this
+flow.
+
+`--ff-only` is deliberate. `main` should only ever move forward by these squash
+commits, so if it cannot fast-forward, something has gone wrong and the merge
+should stop rather than quietly manufacture a merge commit.
+
+**The squash commit message is the only lasting record of the slice** — what it
+does, what it cost, and what was deliberately left out. None of that is
+recoverable from the individual commits, and it is why the roadmap holds one
+line per step rather than an essay per step. It grew to 1,300 lines once by
+holding the essays.
+
+`branch -D`, not `-d`: a squash merge leaves no merge ancestry, so git does not
+believe the branch is merged. The refusal is not worth heeding here — the squash
+commit contains every change the branch made, and only the intermediate commits
+go.
+
+### When to stop rather than push on
+
+- **Two failed attempts at the same failure.** Report it; do not attempt a third
+  fix.
+- **Never weaken an assertion, loosen a type, or add a cast to make something go
+  green.** A failing test is sometimes correctly reporting that the approach is
+  wrong. If that is the reading, say so plainly and stop.
+- **A decision that is the author's rather than a judgement call**: an unsettled
+  product rule, anything touching the non-negotiables above, and any change to
+  what a screen promises a user. Everything else — the schema's shape, the
+  structure, what to test, which library, how to build it — is the assistant's
+  to decide and does not need asking.
+
+Plan mode is still the right move when the shape of the work is genuinely open,
+but a feature can be proposed in a sentence and built without a plan agreed
+first. The two things that make that safe are also the two that would make it
+unsafe again: the gate runs on every slice, and the docs are kept true so the
+next session starts where this one finished.
+
+## Other conventions
+
+- Build in vertical slices — one thin feature end to end, then the next. Do not
+  build whole layers speculatively.
 - Secrets live in `.env.local`, which is gitignored. Never echo their values.
 - **A doc correction is never local.** When a claim in one document turns out to
-  be wrong, grep the other docs — `AGENTS.md`, `docs/*.md`, `docs/design/`,
-  `.claude/skills/` — for the same claim and fix it everywhere, then report
-  every file touched. Docs drift, and a fix applied in one place leaves the
-  project contradicting itself.
+  be wrong, grep the other docs — `AGENTS.md`, `docs/*.md`, `docs/design/` — for
+  the same claim and fix it everywhere, then report every file touched. Docs
+  drift, and a fix applied in one place leaves the project contradicting itself.
 
 ## Known noise
 

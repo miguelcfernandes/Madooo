@@ -9,6 +9,36 @@ what was deliberately not built, and what is still undecided is in
 binding rules are in [`AGENTS.md`](../AGENTS.md) and, for anything that renders,
 [`design/foundations.md`](design/foundations.md).
 
+**Adding to this file: prune before you add.** In that order, always — the
+pruning pass is what stops the file growing by pure accretion, and doing it
+second turns it into a formality nobody performs.
+
+1. **Delete what the slice made false.** Every section it touched, read for
+   claims the diff contradicts.
+2. **Delete what has done its job.** An entry earns its place by changing how
+   the *next* piece of work goes. Once the thing it warned about has been built,
+   or the decision it explained has been superseded, it is history — and git
+   holds history better than a file every session reads.
+3. **Then add**, filing each new fact under the subsystem heading it belongs to,
+   beside its neighbours. Never append a section named after a slice; headings
+   name subsystems. If a new fact amends an existing entry, rewrite that entry in
+   the present tense rather than adding a sentence beginning "Since 6.1…" — a
+   chronology of amendments is the thing this structure exists to avoid.
+
+**What earns an entry:** a gotcha hit along the way, a shortcut taken
+deliberately, something left unmapped, a constraint discovered in a payload, a
+toolchain behaviour the source does not show. Whether it could be recovered from
+the code is not the test — plenty of it could be, given enough reading, and the
+point is that the next slice does not have to go looking. The test is whether it
+makes later work go differently. If nothing does, write nothing; padding buries
+the entries that matter.
+
+**Two things that are never entries:** restatements of the `AGENTS.md`
+non-negotiables, which are already binding, and anything already recorded in
+[`design/foundations.md`](design/foundations.md) or
+[`api-football-findings.md`](api-football-findings.md), which are the sources for
+what they cover. Link to them instead.
+
 ## Contents
 
 - [Database and Prisma](#database-and-prisma)
@@ -2249,8 +2279,8 @@ item.
   three reasons; the one that decides it is that a commit subject is written for
   whoever reads the repository next, so the log would need filtering *and*
   rewriting to become this. What that costs is a second telling that can drift,
-  and the thing that stops it drifting is a step in `/slice` rather than a
-  habit. **Its dates carry no time and must not**: `new Date('2026-08-27')` is
+  and the thing that stops it drifting is a step in the build loop in
+  [`AGENTS.md`](../AGENTS.md) rather than a habit. **Its dates carry no time and must not**: `new Date('2026-08-27')` is
   UTC midnight, and London — the zone [`dates.ts`](../src/lib/dates.ts) pins
   everything to — is never behind UTC, so the two always name the same calendar
   day. A zone west of Greenwich would break that.

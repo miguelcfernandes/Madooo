@@ -11,6 +11,36 @@ commit message is the account of the slice — written once, at the moment the
 reasoning was fresh, and better placed there than restated in a file every
 session reads.
 
+**Updating this file, when a slice lands.** Update every one of these that
+moved, and nothing else:
+
+- **Current state** — only if the slice changed what the app *is*: a screen
+  gained, a screen's job changed, a line of the inventory moved. Never a
+  paragraph narrating the slice.
+- **Built** — one line. The commit hash is filled in when the slice lands on
+  `main`, which is the author's word to give.
+- **Not built, and why** — what the slice deliberately left out: one sentence of
+  what, one of why. Delete any entry this slice built, or settled against.
+- **Launch checklist**, if a box moved.
+- **Long-term remarks** — a far higher bar, stated at that section. Most slices
+  add nothing.
+- **Open decisions** — remove what the slice settled, add what it opened.
+- **Last updated** date.
+
+**Nothing else goes here.** Not what was learned, not why an approach was
+chosen, not what went wrong on the way. All of that is either a fact about the
+system, which belongs in [`architecture.md`](architecture.md) under its
+subsystem, or the story of the work, which belongs in the squash commit.
+
+**Do not plan the next slice here, or in `architecture.md`.** No task lists, no
+ordering, no "first do X then Y". The next slice is scoped when it is asked for,
+against the app as it stands then; a plan written now would be written blind and
+would quietly become the plan by default. "Not built, and why" is the exception
+that proves it — it records what was *declined* and the argument for declining,
+which is the opposite of an instruction to build something. The tell is
+grammatical: a remark states what *is* true and survives being read a month
+later, while a plan uses imperatives — "add X", "set up Y".
+
 **Last updated:** 2026-08-27 (a changelog for signed-in readers)
 
 > **The rebrand is built.** **"Field Notes"** — Schibsted Grotesk and DM Mono on
@@ -93,8 +123,8 @@ screen, since every read filters by season; they were the author's own test data
 - Prisma 7.9.1 against Neon Postgres, via the `@prisma/adapter-pg` driver adapter
 - Clerk 7.x for auth, with Google and email/password enabled, on a production
   instance bound to `madooo.app`
-- Pushed to `github.com:miguelcfernandes/Madooo`, on a `slice/*` branch flow
-  squash-merged into `main`
+- Pushed to `github.com:miguelcfernandes/Madooo`, one short-lived branch per
+  slice, squash-merged into `main` once the author says it can land
 - Deployed on Vercel from `main`, built with `prisma generate && next build`;
   Production reads the production Neon branch, Preview the development one.
   [`vercel.json`](../vercel.json) pins the functions to `lhr1`, the region both
@@ -350,9 +380,10 @@ the squash-one-commit-per-slice flow, which is why they name several.
 
 - **A changelog for signed-in readers.** `/changelog`, reached from a bell in
   the top bar, over a hand-written module backfilled to the day the app opened. It replaces the temporary sidebar note deleted in `24a228b` with the
-  version that is maintained rather than thrown away, and `/slice` gained the
-  step that keeps it from drifting: an entry is written in the slice that earns
-  it, so the page can never describe code that is not deployed.
+  version that is maintained rather than thrown away, and the build loop in
+  [`AGENTS.md`](../AGENTS.md) gained the step that keeps it from drifting: an
+  entry is written in the slice that earns it, so the page can never describe
+  code that is not deployed.
 
 ## Not built, and why
 
@@ -572,8 +603,23 @@ Not code, and not to be left to launch day.
 ## Long-term remarks
 
 Standing constraints that were agreed explicitly, cannot be read off the code,
-and outlive any one slice. Each names what would resolve it. A high bar — an
-empty list is the expected state.
+and outlive any one slice. A high bar — an empty list is the expected state, and
+an entry qualifies only if all three hold:
+
+1. It was **explicitly agreed with the author**. Not inferred, not assumed
+   because it seemed sensible while implementing.
+2. It **cannot be derived from the code**. If reading the repo would tell you,
+   the repo is already the better record. This is where these differ from
+   `architecture.md` entries, which are a convenience — being recoverable from
+   the code does not disqualify one of those.
+3. It **outlives the next slice**. It shapes work several steps away, or it
+   constrains everything until something specific changes.
+
+Each entry names its own exit: `<remark>, can be resolved when X is implemented`.
+That clause is what makes the section prunable — an entry goes on the evidence
+of X existing, rather than on somebody's judgement that it feels stale. An entry
+nobody can write an exit clause for is not a long-term remark; it is an open
+decision, and belongs in that section instead.
 
 - **There is no screen reference at all, and every screen must be designed
   without one.** The Claude Design export was desktop-only — no breakpoints, no
