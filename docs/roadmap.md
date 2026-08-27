@@ -64,8 +64,8 @@ rebuilt past its drawing:
   LIVE; one with no squad says so and does not navigate.
 - `/matches/[id]` — a scoreline card over both matchday squads, each club's
   eleven above its bench. Every player row carries three verdict chips and a note
-  button, and a "Your verdicts" panel sits under both benches. A failed write
-  draws a "Not saved" line with a retry rather than silently reverting.
+  button, and a "Your verdicts" panel sits under both benches. Either write
+  failing draws a "Not saved" line with a retry rather than silently reverting.
 - `/diary` — four tiles over three tabs in `?view=`: **All** and **With notes**
   list judgements newest-first, dated by when they were written; **Matches**
   lists a row per match recorded in, dated by kickoff, naming the MVP. Every list
@@ -191,6 +191,26 @@ the squash-one-commit-per-slice flow, which is why they name several.
 - **A note can be edited in the middle.** Reported through the suggestion box:
   "only one letter can be added or backspaced before the cursor automatically
   moves to the very end."
+- **Why the write failed, found at last.** Reported from outside a second time,
+  with the message `c718dd8` added: a STANDOUT that said "that did not save —
+  something went wrong". `c718dd8` had left this open — *"not fixed: why the
+  write fails for that reader"* — and it turned out not to be our code at all.
+  Clerk's `__session` cookie expires after 60 seconds, and `@clerk/backend`
+  **refuses to renew it on anything that is not a GET**, in both the handshake
+  and the refresh-token path. A Server Action is a POST, so a tap made a moment
+  too late was reported as signed-out, redirected to `/` by `proxy.ts`, and came
+  back as a 404 the RSC client cannot read. It healed on the next page load
+  because that is a GET, and it never reached a log because the action never ran.
+  Every write now refreshes the session first.
+
+  **The clue that pointed the wrong way is worth keeping.** It was reported as
+  starting to work "when the lineups updated", which reads as a data problem and
+  is the reverse: `refresh()` inside the action is the only thing that re-renders
+  a match page, so the lineups could not move until a save had already
+  succeeded. Cause and effect were the other way round from how it looked.
+
+  The same slice caught the note, which had no error handling at all and lost
+  what the reader had typed in exactly the way `c718dd8` had fixed for the chips.
 - **The app icon is the real letterform at last.** `icon.png`, `apple-icon.png`
   and `favicon.ico` were the last thing on the screen still carrying the
   previous design — a white M on a *black rounded* square, which is the wrong

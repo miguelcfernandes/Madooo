@@ -32,6 +32,7 @@ binding rules are in [`AGENTS.md`](../AGENTS.md) and, for anything that renders,
   - [The tests read `scratch/`, which is gitignored](#the-tests-read-scratch-which-is-gitignored)
   - [The schedule is a GitHub Actions workflow](#the-schedule-is-a-github-actions-workflow)
 - [Auth and routing](#auth-and-routing)
+  - [Clerk will not renew a session on a POST, and every write is one](#clerk-will-not-renew-a-session-on-a-post-and-every-write-is-one)
   - [The landing page reads nothing, and everything on it is fiction](#the-landing-page-reads-nothing-and-everything-on-it-is-fiction)
   - [A location goes in the URL; a preference goes in `localStorage`](#a-location-goes-in-the-url-a-preference-goes-in-localstorage)
   - [The league is a slug in the URL, and is neither our id nor the provider's](#the-league-is-a-slug-in-the-url-and-is-neither-our-id-nor-the-providers)
@@ -1026,6 +1027,67 @@ closes in either direction. What could not be shared is where an unrecognised
 Players, so `backLink` takes the fallback as an argument and each screen passes
 its own.
 
+### Clerk will not renew a session on a POST, and every write is one
+
+**This cost two rounds of investigation and presented both times as a database
+problem, so it is written down at length.** Readers reported that tagging a
+player sometimes said "that did not save"; it was intermittent, it healed on its
+own, and it left nothing behind — no 4xx, no 5xx, no server exception, and, in
+Vercel's error aggregation over the whole window, not one entry on
+`/matches/[id]`.
+
+The cause is a rule inside `@clerk/backend`. Clerk's `__session` cookie is a JWT
+that expires after **60 seconds**; the account behind it is good for weeks, and
+`clerk-js` mints a fresh cookie on a timer. When a request arrives carrying an
+expired one, Clerk has two ways to recover — the handshake redirect and a
+refresh-token exchange — and **both are refused for anything that is not a GET**:
+
+```js
+isRequestEligibleForHandshake() {
+  if (method !== 'GET') return false
+```
+```js
+if (request.method !== 'GET') refreshError = NonEligibleNonGet
+```
+
+The reasoning is sound: a handshake is a redirect, and bouncing a POST through
+one loses the body. But **a Server Action is a POST to the page's own URL**, so a
+write that arrives a moment too late gets no recovery at all. Clerk reports that
+one request as signed-out, `proxy.ts` believes it and redirects to `/`, and the
+RSC client — handed a page where it expected an action result — rejects. Probed
+against production, the whole chain is three hops:
+
+```
+POST /matches/1  (Next-Action, stale cookie)
+  → 307  location: /
+  → 404  x-nextjs-action-not-found: 1   "Server action not found."
+```
+
+Which is why nothing was ever logged. The action did not run, so there was
+nothing to log, and the next page load — a GET — renewed the cookie silently and
+made the problem disappear before anyone could catch it.
+
+**It happens to some readers and not others because the renewal is a timer, and
+browsers throttle timers in tabs that are not in front.** A reader with the match
+on one screen and this app on another sits in exactly the state where the cookie
+lapses between taps. That is also why it was first reported by someone watching a
+stream rather than by anyone developing the app.
+
+**The fix is [`fresh-session.ts`](../src/components/fresh-session.ts), called
+before every write.** `getToken()` returns the cached token when it is still
+current, so the case that is not broken costs no network at all; when the cached
+token has expired it fetches a new one, and writing that into the cookie is the
+same path `clerk-js` uses for its own timer. Before the write rather than on a
+timer of our own, because a timer of our own would be throttled by the rule that
+caused this — a tap is the reader's gesture and is not throttled.
+
+**Anything else that writes has to call it too.** There is no interceptor and
+deliberately so: a wrapper around every Server Action would have to live in
+`actions.ts`, which may export nothing but actions, and a client-side `fetch`
+patch would be invisible at the call site. Two writes exist —
+`verdict-controls.tsx` and `player-controls.tsx` — and both call it on the line
+above the action.
+
 ### The landing page reads nothing, and everything on it is fiction
 
 `/` is the project's only public screen, and it prerenders for the reason that
@@ -1397,6 +1459,25 @@ splits the two cases on `error instanceof TypeError`, which is what `fetch`
 rejects with when the request never completed — that separates the reader's
 connection from our server, which is the only distinction the message can
 usefully draw.
+
+**The note went uncaught for a slice longer than the chips did, and that was the
+worse half of the bug.** `player-controls.tsx` awaited `setNote` with nothing
+around it, so a failed note did exactly what a failed verdict used to: the text
+appeared, the transition ended, `useOptimistic` discarded it and the line
+vanished, indistinguishable from a note that saved and was then deleted — except
+that the reader had typed sentences rather than tapped a chip. Both writes now
+catch, and the line itself is one component,
+[`save-failure.tsx`](../src/components/save-failure.tsx), because what is being
+shared is mostly the wording: "that did not save" is a promise about the state of
+a reader's diary, and two spellings of it free to drift apart is a worse outcome
+than the markup saved. The note's console line deliberately carries the row id
+and not the text — a verdict is one of three words, and a note is a private
+diary entry.
+
+**What was actually failing is [Clerk's refusal to renew a session on a
+POST](#clerk-will-not-renew-a-session-on-a-post-and-every-write-is-one), and both
+writes now refresh before sending.** Catching the failure is what made it
+nameable; it did not make it rarer.
 
 **A repeat tap on a chip that is already lit is ignored while its write is in
 flight.** The chip is the only feedback, and a lit chip does not say whether it

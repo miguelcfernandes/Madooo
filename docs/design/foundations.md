@@ -319,8 +319,9 @@ verdict vocabulary, and the two never appear side by side: verdict words live on
 player rows, `LIVE` on a scoreline.
 
 **`--alert`** is that red again, for a write that did not save. It draws the
-"That did not save" line under a squad row's verdict chips when the round trip
-fails, and it is emphatically not `--flop` — a judgement and a failure are
+"That did not save" line under a squad row when the round trip fails — under the
+verdict chips, and under the note, since a row holds two writes and either can
+fail — and it is emphatically not `--flop` — a judgement and a failure are
 different facts, and unlike `LIVE` these two *do* appear side by side, on the
 same row, inches apart. A shared token would leave a red line under a red chip
 with no way to tell which red meant what.

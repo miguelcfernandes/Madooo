@@ -2,7 +2,9 @@
 
 import { useOptimistic, useState, useTransition } from 'react'
 
+import { refreshSession } from './fresh-session'
 import { Icon } from './icon'
+import { SaveFailure } from './save-failure'
 import { setVerdict } from '@/lib/actions'
 import type { IconName } from './icon-names'
 import type { JudgementTag } from '@/lib/verdicts'
@@ -117,6 +119,10 @@ export function VerdictControls({ matchSquadId, playerName, tag }: Props) {
     startTransition(async () => {
       setShown(value)
       try {
+        // Bring the session cookie up to date first, or a tap made in a
+        // background tab is turned away before it reaches the action at all.
+        // `fresh-session.ts` is the whole of that argument.
+        await refreshSession()
         await setVerdict(matchSquadId, value)
       } catch (error) {
         /*
@@ -209,29 +215,7 @@ export function VerdictControls({ matchSquadId, playerName, tag }: Props) {
       </div>
 
       {failed === null ? null : (
-        /*
-          `role="status"` announces this without stealing focus, which is what a
-          reader tapping down a team sheet needs — `alert` would interrupt them
-          mid-row. It also has to be the element that *appears*, not one that was
-          already here holding an empty string, or nothing is announced at all.
-
-          `text-alert`, not `text-flop`. They resolve to the same red, and
-          foundations is explicit that this is not a reason to share a token: a
-          verdict and a failure are different facts, and the two are side by side
-          on this very row, where a shared name would be read as a FLOP.
-        */
-        <p role="status" className="text-caption text-alert">
-          {failed.offline
-            ? 'That did not save — check your connection.'
-            : 'That did not save — something went wrong.'}{' '}
-          <button
-            type="button"
-            onClick={() => write(failed.value)}
-            className="t-hover cursor-pointer underline underline-offset-2 hover:text-text focus-visible:focus-ring"
-          >
-            Try again
-          </button>
-        </p>
+        <SaveFailure offline={failed.offline} onRetry={() => write(failed.value)} />
       )}
     </div>
   )

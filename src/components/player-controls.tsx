@@ -2,7 +2,9 @@
 
 import { startTransition, useCallback, useId, useOptimistic, useRef, useState } from 'react'
 
+import { refreshSession } from './fresh-session'
 import { Icon } from './icon'
+import { SaveFailure } from './save-failure'
 import { setNote } from '@/lib/actions'
 import { NOTE_MAX_LENGTH } from '@/lib/verdicts'
 import type { ReactNode } from 'react'
@@ -44,6 +46,22 @@ export function PlayerControls({ matchSquadId, playerName, note, children }: Pro
   const [shown, setShown] = useOptimistic(note)
   const [open, setOpen] = useState(false)
 
+  /*
+    The note whose write failed, kept so the retry can re-send it, and how it
+    failed, because the two failures want different words. A `useState` and not
+    a `useOptimistic`, for the reason the chips give: every other piece of state
+    here is a guess about what the server will say and is thrown away when it
+    answers, and this is a record of what the server *did* say.
+
+    **Nothing caught this before, which made a lost note worse than a lost
+    verdict.** `c718dd8` fixed exactly this for the chips a row's width away and
+    the note was left as it was: the text appeared, the transition ended,
+    `useOptimistic` discarded it and the line vanished — indistinguishable from
+    a note that saved and was then deleted, except that the reader had typed
+    sentences rather than tapped a chip.
+  */
+  const [failed, setFailed] = useState<{ value: string; offline: boolean } | null>(null)
+
   function save(draft: string) {
     // Trimmed here as well as in the action, and neither is redundant: the
     // action cannot trust a value that crossed the network, and this side needs
@@ -51,9 +69,30 @@ export function PlayerControls({ matchSquadId, playerName, note, children }: Pro
     // from what appears a moment later.
     const text = draft.trim()
 
+    // Clear the previous complaint before making a new attempt, or a retry that
+    // works would leave its own error message sitting under a note that saved.
+    setFailed(null)
+
     startTransition(async () => {
       setShown(text === '' ? null : text)
-      await setNote(matchSquadId, text)
+      try {
+        // Bring the session cookie up to date first, or a note written in a
+        // background tab is turned away before it reaches the action at all.
+        // `fresh-session.ts` is the whole of that argument.
+        await refreshSession()
+        await setNote(matchSquadId, text)
+      } catch (error) {
+        // `TypeError` is what `fetch` rejects with when the request never
+        // completed; anything else travelled to the server and came back. The
+        // same split the chips make, for the same reason.
+        setFailed({ value: text, offline: error instanceof TypeError })
+
+        // The note itself is deliberately not logged. A verdict is one of three
+        // words and naming it in a console line costs nothing, but a note is
+        // what the reader actually wrote, and a diary is private — the id says
+        // which row to look at without copying its contents anywhere.
+        console.error('[madooo] note did not save', { matchSquadId, playerName, error })
+      }
     })
   }
 
@@ -101,6 +140,16 @@ export function PlayerControls({ matchSquadId, playerName, note, children }: Pro
         <p className="col-start-2 col-end-[-1] border-l-2 border-border pl-3 text-body whitespace-pre-line text-muted">
           {shown}
         </p>
+      )}
+
+      {failed === null ? null : (
+        // Indented to the name like the note is, and a wrapper rather than
+        // classes on `SaveFailure` itself: this is the one place the line lands
+        // in a grid rather than a flex column, and the placement is this row's
+        // business rather than the message's.
+        <div className="col-start-2 col-end-[-1]">
+          <SaveFailure offline={failed.offline} onRetry={() => save(failed.value)} />
+        </div>
       )}
 
       {open ? (
