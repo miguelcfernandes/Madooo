@@ -79,6 +79,36 @@ export function usePreference(key: string): string | null {
 }
 
 /**
+ * Whether this browser has never stored anything under `key`.
+ *
+ * **The same machinery as `usePreference`, with the server snapshot the other
+ * way round, and the inversion is the whole reason it is a separate hook.** A
+ * preference defaults to the unstored value because that is the honest answer
+ * before the browser has spoken — a reader who chose Grid sees Rows for one
+ * frame, and the list is right either way. A one-time notice cannot do that: if
+ * "nothing stored" rendered on the server, every reader who had already
+ * dismissed it would watch it flash in and out on every single visit, which is
+ * a worse fault than the one it is trying to avoid.
+ *
+ * So the server says `false` — *not* the first time — and the notice appears
+ * only once the browser has confirmed otherwise. The cost is the mirror image of
+ * `usePreference`'s and much cheaper: a first-time reader sees the notice a
+ * frame late, and nobody else sees it at all.
+ *
+ * It shares `subscribe` with the rest of this module deliberately, which is what
+ * makes a `writePreference` from the dismiss button reach this hook: the
+ * `storage` event fires in other documents only, so the notify has to come
+ * through the listener set both halves are registered in.
+ */
+export function useFirstTime(key: string): boolean {
+  return useSyncExternalStore(
+    subscribe,
+    () => read(key) === null,
+    () => false,
+  )
+}
+
+/**
  * Save a preference and tell every hook reading that key.
  *
  * The notify happens whether or not the write succeeded, which is deliberate: if

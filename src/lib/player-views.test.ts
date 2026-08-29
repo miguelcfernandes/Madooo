@@ -7,13 +7,21 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { PLAYER_VIEWS, parseView } from './player-views'
+import { DEFAULT_ENTRIES_VIEW, PLAYER_VIEWS, parseView } from './player-views'
 
 describe('PLAYER_VIEWS', () => {
   it('opens on the diary', () => {
     // `parseView` falls back to index 0, so the order is load-bearing.
     expect(PLAYER_VIEWS[0].slug).toBe('diary')
-    expect(PLAYER_VIEWS[0].where).toEqual({})
+    expect(PLAYER_VIEWS[0]).toBe(DEFAULT_ENTRIES_VIEW)
+    expect(DEFAULT_ENTRIES_VIEW.where).toEqual({})
+  })
+
+  it('reads no entries for the elevens view, and every other one does', () => {
+    // The discriminant the page branches on: `elevens` runs a different query,
+    // and the union is what makes handing it to `playerEntries` a compile error.
+    const kinds = Object.fromEntries(PLAYER_VIEWS.map((view) => [view.slug, view.kind]))
+    expect(kinds).toEqual({ diary: 'entries', notes: 'entries', elevens: 'elevens' })
   })
 
   it('gives every view a distinct slug', () => {
@@ -29,7 +37,7 @@ describe('PLAYER_VIEWS', () => {
     // The same reading `DIARY_VIEWS` takes: a cleared note is never stored as
     // an empty string, so `{ not: null }` is the whole of the test.
     const notes = PLAYER_VIEWS.find((view) => view.slug === 'notes')
-    expect(notes?.where).toEqual({ note: { not: null } })
+    expect(notes?.kind === 'entries' && notes.where).toEqual({ note: { not: null } })
   })
 })
 
@@ -45,5 +53,14 @@ describe('parseView', () => {
 
   it('takes the first of a repeated parameter', () => {
     expect(parseView(['notes', 'diary']).slug).toBe('notes')
+  })
+
+  // The profile draws the elevens tab only when the player is in one, so a
+  // stale `?view=elevens` has to land somewhere — and `offered` is what makes
+  // that the diary rather than a tab with nothing behind it and no way out.
+  it('falls back when the view exists but was not offered', () => {
+    const withoutElevens = PLAYER_VIEWS.filter((view) => view.kind !== 'elevens')
+    expect(parseView('elevens').slug).toBe('elevens')
+    expect(parseView('elevens', withoutElevens).slug).toBe('diary')
   })
 })

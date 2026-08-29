@@ -41,7 +41,7 @@ which is the opposite of an instruction to build something. The tell is
 grammatical: a remark states what *is* true and survives being read a month
 later, while a plan uses imperatives — "add X", "set up Y".
 
-**Last updated:** 2026-08-27 (a live fixture with no lineup says why)
+**Last updated:** 2026-08-29 (team of the week)
 
 > **The rebrand is built.** **"Field Notes"** — Schibsted Grotesk and DM Mono on
 > a marine brand colour, zero radius everywhere, one shadow, and glyphs of our
@@ -105,11 +105,31 @@ rebuilt past its drawing:
   five sorts and a rows-or-cards toggle, the last three remembered in
   `localStorage`.
 - `/players/[id]` and `/teams/[id]` — profiles, each over four tallies and a
-  split bar, with the way back carried in `?from=`.
+  split bar, with the way back carried in `?from=`. A player's profile carries
+  a third tab, **Teams of the week**, drawn only for the few players who are in
+  one; it lists them as the same pitch cards the list draws.
 - `/changelog` — what has changed in the app, newest first, cut into calendar
   months. Reached from a bell in the top bar and from nowhere else. The entries
   are a hand-written module in the repository, so this is the one route under
   `(app)` that reads nothing, and the only prerendered screen behind the login.
+- `/team-of-the-week` — **TOTW** in the sidebar, above Diary, and the first
+  screen that makes something *out of* the diary rather than listing it. The
+  index opens a dismissible modal on a reader's first visit, pointing at the
+  suggestion box for anything that looks wrong, over a grid of saved
+  elevens, each **drawn as its own pitch** rather than
+  described in a row: up to three across, headed by the name the reader gave it,
+  footed by the span it covers and the competitions it was drawn from — flags,
+  or the words "All competitions" — and the whole card opens it. `/new` is the
+  builder: a span of days and a set of competitions in the URL, the pool of
+  everyone marked MVP or standout in them down the right in four position
+  blocks, and a pitch on the left that fills as names are tapped. The
+  competitions open **unticked**, split into the big five and the rest, with a
+  Select all beside them. Six formations, and the shape a saved team stood in is
+  counted off its own picks rather than stored. Saving asks for a name, offering
+  two or three it can build from the span and the competition.
+  `/team-of-the-week/[id]` is the graphic — a pitch drawn in rules on two
+  neutral surfaces, with club colours and a star on the MVPs — over the eleven
+  read back as a list, and a delete behind a confirmation.
 
 Every screen renders in light or dark, light-first for everyone, toggled from the
 top bar. The bar also carries a labelled "Suggest a feature" button: what is
@@ -390,6 +410,9 @@ the squash-one-commit-per-slice flow, which is why they name several.
   as the reason there is nobody to rate. `info` is the set's thirty-sixth glyph,
   and the panel is the third thing in the app allowed `--shadow-3`.
 
+- **Team of the week.** An eleven picked out of the reader's own diary over a
+  span of days, and the pitch graphic it exists to produce.
+
 ## Not built, and why
 
 Things left out on purpose, each with the argument that kept it out. This is the
@@ -478,6 +501,33 @@ either built or decided against for good.
   diary still offers "Back to fixtures".
 - **No `(season, kickoff)` index.** The semi-join is selective, and a speculative
   index is a migration with no measurement behind it.
+
+**Team of the week**
+
+- **A saved eleven cannot be edited, only deleted and picked again.** Editing is
+  a second write with its own validation and its own way of failing halfway, and
+  a team takes about a minute to pick. If the same eleven is being rebuilt with
+  one man changed often enough for anyone to notice, that is when it earns the
+  action.
+- **No note on one.** The name and the span say what it is; a second free-text
+  field on a private artefact is one nobody has asked for.
+- **Picking is a tap, never a drag.** Drag-and-drop needs a pointer, a keyboard
+  equivalent that is a second implementation of the same feature, and a library.
+  It would also be buying a decision the reader is not making, since this app
+  holds no position finer than the four letters — sliding a defender along the
+  back four moves nothing.
+- **The graphic carries no wordmark, and this is the one worth revisiting.** It
+  is drawn to be screenshotted and shared, and it leaves the app carrying no sign
+  of where it came from. What kept it off is that a watermark on your own private
+  diary entry is the app advertising itself in the middle of somebody's page,
+  which is the opposite of the restraint `foundations.md` opens with — and the
+  block header's marine rule already speaks in the brand's voice. It is the
+  author's call rather than a judgement one, because it changes what a screen
+  says about the product.
+- **Nothing exports an image.** The reader screenshots it, which every phone and
+  desktop already does well; rendering a PNG server-side would be `next/og`, a
+  second drawing of the same pitch in satori's subset of CSS, and two graphics
+  free to drift apart.
 
 **Verdicts**
 

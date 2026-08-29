@@ -37,7 +37,8 @@ model League {
   country       String
   logo          String?
 
-  matches Match[]
+  matches     Match[]
+  totwScopes  TeamOfTheWeekLeague[]
 }
 
 model Team {
@@ -192,6 +193,7 @@ model MatchSquad {
   rating  Float?
 
   judgements Judgement[]
+  totwPicks  TeamOfTheWeekPick[]
 
   @@unique([matchId, playerId])
   @@index([playerId])
@@ -203,8 +205,9 @@ model User {
   email     String?
   createdAt DateTime @default(now())
 
-  judgements  Judgement[]
-  suggestions Suggestion[]
+  judgements     Judgement[]
+  suggestions    Suggestion[]
+  teamsOfTheWeek TeamOfTheWeek[]
 }
 
 /// Something a user asked us to build or change, sent from the top bar.
@@ -252,4 +255,113 @@ model Judgement {
 
   @@unique([userId, matchSquadId])
   @@index([userId, createdAt])
+}
+
+/// One team of the week: an eleven a user picked out of their own diary, over a
+/// span of days.
+///
+/// **The formation is not a column, because it is not a fact this table has to
+/// hold.** A saved team is eleven picks, each pointing at a squad row that
+/// carries a position, so the shape — 4-3-3, 3-5-2 — is the count of those
+/// positions and is derived on read. A stored `"4-3-3"` would be a second
+/// statement of the same thing, free to disagree with the picks under it, and it
+/// would break every saved team on the day a formation was taken out of the
+/// table the builder offers.
+model TeamOfTheWeek {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// What the reader called it. Required, because every card in the list is
+  /// headed by it and a nameless one would be a card with a hole in it — the
+  /// dialog that writes this always opens with a suggestion already in the box,
+  /// so there is no path to an empty name that is not deliberate.
+  ///
+  /// The length limit is `TOTW_NAME_MAX_LENGTH`, enforced by the action — a
+  /// product rule rather than a schema one, the same split `Judgement.note` and
+  /// `Suggestion.body` make. A hand-added CHECK does insist it is not blank.
+  name String
+
+  /// Configuration, exactly as `Match.season` is. Implied by the days below,
+  /// and stored anyway so this table can be filtered the way every other screen
+  /// filters — by season, not by a date range that has to be derived first.
+  season Int
+
+  /// The span, inclusive, as London calendar days — `"2026-08-17"`, the same
+  /// key `/fixtures` is indexed by. Strings rather than timestamps because a
+  /// day is what the reader chose: a `DateTime` would need a zone to be read
+  /// back in, and there is exactly one right answer for every reader, which is
+  /// the zone `dates.ts` already pins. A hand-added CHECK requires from <= to,
+  /// which on ISO day keys is chronological order.
+  fromDay String
+  toDay   String
+
+  createdAt DateTime @default(now())
+
+  picks   TeamOfTheWeekPick[]
+  leagues TeamOfTheWeekLeague[]
+
+  /// The index the list page's only query is written around.
+  @@index([userId, createdAt])
+}
+
+/// A competition this team of the week was picked from.
+///
+/// **A row per competition rather than an `Int[]` column**, because the list
+/// page draws each one's flag and would otherwise have to resolve names against
+/// a second query it does not otherwise need. It is also the shape that cannot
+/// hold an id no league has.
+///
+/// **The set is what the reader ticked, not a claim about coverage.** There is
+/// no "all competitions" flag: a team drawn from every league the app held that
+/// day stores every one of them, and the list says "All" only while that set is
+/// still every league there is. When an eighth league arrives, an older team
+/// starts listing seven flags instead — which is the truth about it, and is
+/// exactly what a stored boolean would have got wrong.
+model TeamOfTheWeekLeague {
+  teamOfTheWeekId Int
+  teamOfTheWeek   TeamOfTheWeek @relation(fields: [teamOfTheWeekId], references: [id], onDelete: Cascade)
+  leagueId        Int
+  league          League        @relation(fields: [leagueId], references: [id])
+
+  /// No surrogate key: the pair *is* the row, and the composite primary key is
+  /// what makes a competition impossible to list twice.
+  @@id([teamOfTheWeekId, leagueId])
+}
+
+/// One player in one team of the week.
+///
+/// Points at `MatchSquad` rather than at `Player`, for `Judgement`'s reason: a
+/// team of the week is a verdict on *performances*, so a pick is the performance
+/// that earned the place, and pointing at the squad row makes it structurally
+/// impossible to pick somebody who was not in a matchday squad. It also carries
+/// the club, the shirt number and the position the graphic draws, with no second
+/// lookup.
+model TeamOfTheWeekPick {
+  id              Int           @id @default(autoincrement())
+  teamOfTheWeekId Int
+  teamOfTheWeek   TeamOfTheWeek @relation(fields: [teamOfTheWeekId], references: [id], onDelete: Cascade)
+
+  matchSquadId Int
+  matchSquad   MatchSquad @relation(fields: [matchSquadId], references: [id], onDelete: Cascade)
+
+  /// MVP or STANDOUT, **frozen at the moment the team was saved** rather than
+  /// read back off the judgement.
+  ///
+  /// The one piece of denormalisation in the schema, and it is deliberate: a
+  /// team of the week is a thing the reader made and may have screenshotted, so
+  /// editing a verdict in the diary afterwards must not silently restar
+  /// somebody on a graphic that has already left the app. The judgement is a
+  /// live opinion; this is a record of what that opinion was that week.
+  tag JudgementTag
+
+  /// Where this pick sits in the eleven, 0–10, goalkeeper first and then the
+  /// lines up the pitch. Only the order *within* a line is a decision — which
+  /// line a pick belongs to comes from `MatchSquad.position`, so this is a
+  /// left-to-right placement rather than a second opinion about position.
+  order Int
+
+  /// One place per performance, and one performance per place.
+  @@unique([teamOfTheWeekId, matchSquadId])
+  @@unique([teamOfTheWeekId, order])
 }

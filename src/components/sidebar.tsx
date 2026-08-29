@@ -3,13 +3,37 @@ import { NavItem } from './nav-item'
 import type { IconName } from './icon-names'
 
 /**
- * The four destinations, in the order the design puts them. Fixtures is the
- * app's front door; Players, Teams and Diary are placeholders until step 7.
+ * The destinations, in the order the design puts them. Fixtures is the app's
+ * front door; Players, Teams and Diary followed in step 7.
+ *
+ * **`trophy` rather than a new glyph.** Foundations is firm that a screen
+ * needing a mark the set does not have should get a new drawing rather than the
+ * nearest existing one, because a near-miss teaches the wrong word — and this
+ * was checked against that bar rather than assumed past it. A team of the week
+ * is an *award the reader gives out*, which is what a trophy means; the glyph
+ * was in the set and drawn by nobody, and the meaning was not absent.
+ *
+ * **TOTW is the app's only abbreviated nav label**, at the author's request, and
+ * it is the one place a row here is not simply the name of the screen it opens.
+ * It buys the row back the width that "Team of the week" spent, and it is what
+ * the thing is called by the people who use it. It costs an `sr-only`
+ * expansion: four letters read aloud are four letters, and the accessible name
+ * still opens with the visible one, which is what WCAG's label-in-name rule
+ * asks.
  */
-const DESTINATIONS: { href: string; icon: IconName; label: string }[] = [
+const DESTINATIONS: { href: string; icon: IconName; label: React.ReactNode }[] = [
   { href: '/fixtures', icon: 'view_agenda', label: 'Fixtures' },
   { href: '/players', icon: 'groups', label: 'Players' },
   { href: '/teams', icon: 'stadium', label: 'Teams' },
+  {
+    href: '/team-of-the-week',
+    icon: 'trophy',
+    label: (
+      <>
+        TOTW<span className="sr-only"> — team of the week</span>
+      </>
+    ),
+  },
   { href: '/diary', icon: 'two_pager', label: 'Diary' },
 ]
 

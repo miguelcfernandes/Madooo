@@ -74,6 +74,11 @@ export type ChangelogEntry = Omit<Written, 'date'> & { date: Date }
  */
 const WRITTEN: Written[] = [
   {
+    date: '2026-08-28',
+    title: 'Pick a team of the week',
+    note: 'Choose a run of days and the competitions that count, then build an eleven out of everyone you marked MVP or standout in them, in the formation you want. Name it, and it is drawn on a pitch you can screenshot — your list shows every one you have picked, and a player who is in any of them says so on his own profile.',
+  },
+  {
     date: '2026-08-27',
     title: 'Why a live match has no players to rate',
     note: 'A match under way with no team sheet now carries a mark you can hover or tap, saying the data provider has not published one.',

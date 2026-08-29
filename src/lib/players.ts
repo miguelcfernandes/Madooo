@@ -9,7 +9,7 @@
  */
 
 import { prisma } from './prisma'
-import type { PlayerView } from './player-views'
+import type { EntriesView } from './player-views'
 import type { VerdictCounts } from './verdict-split'
 
 /**
@@ -115,7 +115,7 @@ export async function playerEntries(
   playerId: number,
   season: number,
   userId: number,
-  view: PlayerView,
+  view: EntriesView,
 ) {
   return prisma.judgement.findMany({
     where: { userId, matchSquad: { playerId, match: { season } }, ...view.where },
@@ -287,7 +287,13 @@ export async function playerJudgements(season: number, userId: number) {
 export async function leaguesInSeason(season: number) {
   return prisma.league.findMany({
     where: { matches: { some: { season, squadEntries: { some: {} } } } },
-    select: { id: true, name: true },
+    // `country` is here for `/team-of-the-week/new`, which marks each
+    // competition in its filter with the national flag `flagClass` derives from
+    // it. `/players` selects the same rows and ignores the column: one query
+    // answering "which competitions have players this season" is better than two
+    // that differ by a column and can drift apart on the predicate, which is the
+    // part that is actually hard to get right.
+    select: { id: true, name: true, country: true },
     orderBy: { name: 'asc' },
   })
 }

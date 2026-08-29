@@ -49,6 +49,7 @@ what they cover. Link to them instead.
   - [A relation can be counted whole and read filtered in one query](#a-relation-can-be-counted-whole-and-read-filtered-in-one-query)
   - [Prisma resolves `distinct` and a nested `take` in Node, so "latest row per group" is raw SQL](#prisma-resolves-distinct-and-a-nested-take-in-node-so-latest-row-per-group-is-raw-sql)
   - [The diary is ordered by when an entry was written](#the-diary-is-ordered-by-when-an-entry-was-written)
+  - [A team of the week stores no formation, because its picks are one](#a-team-of-the-week-stores-no-formation-because-its-picks-are-one)
   - [The connection strings pin `sslmode=verify-full`](#the-connection-strings-pin-sslmodeverify-full)
 - [Sync and the provider boundary](#sync-and-the-provider-boundary)
   - [A scheduled run asks our own table, not the provider, what to read](#a-scheduled-run-asks-our-own-table-not-the-provider-what-to-read)
@@ -67,11 +68,13 @@ what they cover. Link to them instead.
   - [A location goes in the URL; a preference goes in `localStorage`](#a-location-goes-in-the-url-a-preference-goes-in-localstorage)
   - [The league is a slug in the URL, and is neither our id nor the provider's](#the-league-is-a-slug-in-the-url-and-is-neither-our-id-nor-the-providers)
 - [Writing data](#writing-data)
+  - [A saved eleven is proved against the diary, never taken from the caller](#a-saved-eleven-is-proved-against-the-diary-never-taken-from-the-caller)
 - [Design tokens and CSS](#design-tokens-and-css)
   - [Responsive rules are in `foundations.md` and are binding](#responsive-rules-are-in-foundationsmd-and-are-binding)
   - [Hovering a filled surface and hovering a tint were resolved differently](#hovering-a-filled-surface-and-hovering-a-tint-were-resolved-differently)
   - [The dialog is the platform's, and so are the fields](#the-dialog-is-the-platforms-and-so-are-the-fields)
   - [The hint floats without being a dialog](#the-hint-floats-without-being-a-dialog)
+  - [A card that is a link puts the link in its heading and stretches it](#a-card-that-is-a-link-puts-the-link-in-its-heading-and-stretches-it)
   - [Things the toolchain does that the source does not show](#things-the-toolchain-does-that-the-source-does-not-show)
   - [The season's calendar is pinned to London; a kickoff time is the reader's](#the-seasons-calendar-is-pinned-to-london-a-kickoff-time-is-the-readers)
   - [The icons are ours, and they ship as one sprite](#the-icons-are-ours-and-they-ship-as-one-sprite)
@@ -487,6 +490,56 @@ in" is answered by the fixed `Europe/London` zone that file owns, and a second
 file *formatting* against a zone of its own is one too many. `KickoffTime` is not
 that second file: it reports the browser's zone and hands it back to `dates.ts`,
 which still does every piece of formatting in the app.
+
+### A team of the week stores no formation, because its picks are one
+
+`TeamOfTheWeek` holds a user, a season, two London day keys and nothing else
+about the shape of the side. `TeamOfTheWeekPick` holds the squad row, an `order`
+of 0–10, and the tag. **The formation is counted off the picks on read** —
+`linesOf` groups them by `MatchSquad.position` and `formationOf` reads the three
+numbers off the result — so `4-3-3` is derived rather than stored.
+
+Two things follow, and both are the reason:
+
+- **There is no second statement of the shape to disagree with the players in
+  it.** A stored `"4-3-3"` beside four defenders would be a row that is wrong in
+  a way nothing could detect.
+- **The list of formations may grow and may not shrink, but shrinking it would
+  break nothing already saved.** A team drawn under a formation later withdrawn
+  still renders exactly as it did; the reader simply cannot rebuild it. That is
+  a much smaller cost than a stored name nothing can parse, which is what the
+  obvious schema would have had.
+
+**`tag` is the one piece of denormalisation in the schema, and it is
+deliberate.** The graphic stars its MVPs, and the judgement it came from is a
+live opinion the reader may change tomorrow — so a saved eleven copies the tag
+rather than joining to it. A team of the week is a thing somebody may already
+have screenshotted; editing a verdict in the diary must not silently restar
+somebody on it.
+
+**The competitions it was picked from are rows, and there is no "all" flag.** A
+team drawn from every league the app held stores every one of them, and the list
+says "All competitions" only while that set is still every league there is. When
+an eighth arrives, an older team starts listing seven flags instead — which is
+the truth about it. A stored boolean would have begun lying on the day a league
+was added, and that is the whole argument for the join table over a column.
+
+The comparison it needs is a count, so both screens that draw a team fetch
+`leaguesInSeason` alongside it rather than after it.
+
+**`name` is required, and the migration that added it is three statements.** A
+plain `ADD COLUMN ... NOT NULL` cannot run against a table with rows in it, and a
+`DEFAULT` would leave every existing team sharing one name *and* the default
+sitting on the column where the next insert could lean on it. So: add nullable,
+fill, then require. Anything later that adds a required column to a populated
+table wants the same shape.
+
+The days are `String` day keys, not timestamps, for the reason `dayKey` exists:
+a day is what the reader chose, and a `DateTime` would need a zone to be read
+back in. Two CHECK constraints added by hand hold what the action also checks —
+that the span runs forwards, and that an `order` is one of the eleven places.
+On ISO day keys a text comparison *is* chronological order, which is the whole of
+the first one.
 
 ### The connection strings pin `sslmode=verify-full`
 
@@ -1189,6 +1242,26 @@ between visits and clutters a link that was never about it. Each index keeps its
 three in `localStorage` and its search box in React state, since a search term is
 neither: it is worth nothing on the next visit.
 
+**A default in the URL is not always the useful value, and the team-of-the-week
+builder holds both kinds.** Its span defaults to the last seven days, because a
+default that is a fact about the world rather than about the reader needs no
+remembering — the argument that let `/fixtures` retire its cookie. Its
+competitions deliberately default to *none*: the filter opens unticked and is
+filled by hand, which costs an empty pool on arrival and buys a control that
+stays honest as the number of leagues grows. The page does not run the pool query
+at all in that state, and the builder says which silence it is drawing — "tick a
+competition" rather than "nobody was marked", which are different facts.
+
+**A third kind of state joined with the team-of-the-week builder, and it is
+neither of these.** The eleven being picked, and the formation it is being picked
+into, are an *artefact under construction*: nobody bookmarks a half-filled side,
+and nobody wants last week's restored on the next visit, so it is neither a
+location nor a preference. It lives in React state until it is saved, and then it
+is rows. The test that placed it is the same one: the URL holds what the server
+had to query — the span and the competitions, which decide the pool — and the
+formation changes nothing the server knows about, so putting it there would have
+bought a navigation that threw the picks away to redraw an identical page.
+
 **There were briefly three stores, and the third is gone.** `/fixtures` kept a
 `madooo-league` cookie holding the competition last opened, on the rule that a
 preference the server must know *before* it renders cannot live in
@@ -1231,6 +1304,37 @@ timezone, where the value cannot change while the page is open and `subscribe`
 is therefore a noop. The primitive rule still binds; nothing else in this section
 does. See [the dates
 entry](#the-seasons-calendar-is-pinned-to-london-a-kickoff-time-is-the-readers).
+
+**A preference and a one-time notice want opposite defaults, which is why
+`useFirstTime` exists beside `usePreference`.** Both read the same key space
+through the same subscription; what differs is the *server* snapshot. A
+preference answers "nothing stored" before the browser speaks, so a reader who
+chose Grid sees Rows for one frame and the list is right either way. A notice
+cannot: "nothing stored" on the server would open the modal for everybody,
+including every reader who had already dismissed it, on every visit. So `useFirstTime` reports `false` on the server and the
+notice appears only once the browser has confirmed otherwise — a first-time
+reader sees it a frame late, and nobody else sees it at all.
+
+The two share `subscribe` deliberately: `writePreference` notifies a
+module-level listener set, because the `storage` event fires in *other* documents
+only. A hook with its own subscription would not hear the dismiss button in its
+own tab.
+
+**A dialog whose closing is a write does not route through `onClose`.** The other
+three dialogs close and let a `close` handler reset a boolean their parent owns,
+which is right for them — the worst a missed one costs is a control that needs a
+second press. The team-of-the-week notice records that it was seen, and a
+dismissal that failed to record would reopen the modal on every visit for ever,
+so each of its three exits — the button, the backdrop, and Escape by way of
+`onCancel` — writes the flag directly. It never calls `close()` either: writing
+the flag unmounts the component, and React removing an open `<dialog>` takes it
+out of the top layer.
+
+It also holds a local `dismissed` flag beside the stored one. `writePreference`
+swallows a storage failure by design and notifies its listeners regardless, so in
+a private window `useFirstTime` would keep answering `true` and the dialog would
+refuse to close at all — the local flag is what makes the gesture work now, with
+only its survival across a reload depending on storage.
 
 A stored value is **exactly as untrusted as a URL parameter** — it outlives
 deploys, it is editable in devtools, and it can name a league that no longer has
@@ -1534,6 +1638,48 @@ direct children of the `<li>` and the grid still places them. The verdict chips
 are handed to it as `children` rather than imported, which keeps
 `VerdictControls` free of any knowledge of notes. Anything later that wants
 optimism across two separated parts of one row takes the same shape.
+
+### A saved eleven is proved against the diary, never taken from the caller
+
+`saveTeamOfTheWeek` takes two day keys and eleven squad-row ids, and almost all
+of it is the check that those ids are real. **One query does the whole proof**:
+the judgements this user holds on those rows, tagged MVP or STANDOUT, in the
+configured season, inside the span being saved. Eleven ids in and eleven rows
+back, or nothing is written. The tag is then read *out of that result* rather
+than accepted as an argument — the graphic stars its MVPs, so a tag from the
+caller would let a POST award one to anybody.
+
+The shape is checked the same way and against the same list the builder offers:
+count the lines through `lineOf`, and ask `isFormation`. That is what stops a
+saved team being six goalkeepers, and it is the only place `FORMATIONS` is
+consulted on the write side.
+
+**The name and the competitions cannot be proved that way, so they are checked
+for shape.** They are the reader's own words and the reader's own choice, and
+nothing in the database can confirm either — so the action asks only what it can:
+a name that is not blank and fits `TOTW_NAME_MAX_LENGTH`, and at least one
+competition that exists. The league ids get a `count` against `League` rather
+than being trusted to the foreign key, because a violation inside a nested create
+arrives as a thrown Prisma error and this action reports its refusals.
+
+**A cap, not a rate limit**, and the difference from `sendSuggestion`'s window is
+the point. Both are unbounded inserts reachable by POST, so both need a bound.
+This one has a second job — the list page draws every team it holds — and a
+ceiling answers both while being the version a reader can act on: delete one and
+make another.
+
+**`deleteTeamOfTheWeek` does not `refresh()` and must not, and the way that fails
+is worth knowing.** `refresh()` re-renders the *current* route, and the current
+route is the team that has just been deleted — a page whose query now returns
+null and calls `notFound()`. Called inside the same transition as the client's
+`router.push`, React waits on both, the refresh never settles, and the dialog
+sits on "Deleting…" for ever while the server has quietly done the work.
+
+The push alone is correct. Next holds dynamic routes in the client router cache
+for zero seconds by default and every route here that reads anything is
+`force-dynamic`, so the list is fetched again rather than replayed. **The general
+rule is that an action which destroys the thing its own route draws has nothing
+to re-render**, and the screen that changed is somewhere else.
 
 ---
 
@@ -2005,6 +2151,25 @@ only while it is open. Neither event is guaranteed to reach the element — a hi
 opened by hovering has focus somewhere else entirely, and a press elsewhere on
 the page is by definition not on it — so a page of forty rows binds nothing until
 one is open.
+
+### A card that is a link puts the link in its heading and stretches it
+
+The team-of-the-week list makes each pitch a link to the eleven it draws.
+Wrapping the card in an `<a>` would have made the link's accessible name the
+span, the formation and eleven player names read out in one breath — so the link
+is in the block header, and `after:absolute after:inset-0` on it covers the card.
+The `<li>` is `relative`, which is what the pseudo-element resolves against.
+
+**`after:z-10` is the part that is not obvious, and it was missing at first.**
+The stretched pseudo-element and the pitch below it are both positioned with no
+`z-index`, so they paint in DOM order and the field — a later sibling — covered
+the whole overlay. The card looked like a link, hovered like nothing and
+swallowed every click, with nothing in the console. Any future card built this
+way needs the same lift.
+
+The hover is `has-[a:hover]:border-border-strong` on the card rather than a
+`group`: what is being hovered is the link inside, and the card has no hover
+state of its own to hang one on.
 
 ### Things the toolchain does that the source does not show
 

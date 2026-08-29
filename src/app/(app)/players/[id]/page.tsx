@@ -3,14 +3,16 @@ import { notFound } from 'next/navigation'
 import { requireDbUser } from '@/lib/auth'
 import { backLink, teamHref } from '@/lib/back'
 import { season } from '@/lib/env'
-import { playerEntries, playerHeader, playerTotals } from '@/lib/players'
-import { PLAYER_VIEWS, parseView } from '@/lib/player-views'
+import { leaguesInSeason, playerEntries, playerHeader, playerTotals } from '@/lib/players'
+import { DEFAULT_ENTRIES_VIEW, PLAYER_VIEWS, parseView } from '@/lib/player-views'
 import { positionLabel } from '@/lib/squad'
+import { countPlayerElevens, playerElevens } from '@/lib/totw'
 import { PageHeader } from '@/components/page-header'
 import { PlayerEntry } from '@/components/player-entry'
 import { PLAYER_TILES, StatTiles } from '@/components/stat-tiles'
 import { ShirtTile } from '@/components/shirt-tile'
 import { TabStrip } from '@/components/tab-strip'
+import { TotwCard } from '@/components/totw-card'
 import { VerdictSplit } from '@/components/verdict-split'
 
 /**
@@ -40,23 +42,55 @@ export default async function PlayerPage({ params, searchParams }: PageProps<'/p
   if (!Number.isInteger(playerId)) notFound()
 
   const currentSeason = season()
-  const current = parseView(view)
 
-  // A profile shows one user's judgements, so both reads below need our own
+  // The view the URL asked for, before the tabs are known. It has to be parsed
+  // first because it decides which of the reads below are worth making, and it
+  // is settled again once they land — see `current`.
+  const wanted = parseView(view)
+
+  // A profile shows one user's judgements, so the reads below need our own
   // `User.id`. The upsert behind this is memoised per request and the shell
   // layout already calls it, so it costs one indexed lookup.
   const user = await requireDbUser()
 
-  // All three together rather than the header first: the 404 below is reachable
-  // only by typing a URL, and making every real profile wait a second round trip
-  // to rule it out would be paying for the rare case on every request. The two
-  // tallies simply come back empty for a player who does not exist.
-  const [header, totals, entries] = await Promise.all([
+  // All of them together rather than the header first: the 404 below is
+  // reachable only by typing a URL, and making every real profile wait a second
+  // round trip to rule it out would be paying for the rare case on every
+  // request. The tallies simply come back empty for a player who does not exist.
+  //
+  // **The entries are read even when the elevens tab is the one asked for**, and
+  // that is deliberate rather than an oversight. Whether that tab is *drawn* is
+  // not known until the count lands, so a request for it can still fall back to
+  // the diary — and fetching the entries only after finding out would make the
+  // page two round trips deep to save one small indexed read on the rarest tab
+  // in the app.
+  const [header, totals, entries, elevenCount, elevens, allLeagues] = await Promise.all([
     playerHeader(playerId, currentSeason),
     playerTotals(playerId, currentSeason, user.id),
-    playerEntries(playerId, currentSeason, user.id, current),
+    playerEntries(
+      playerId,
+      currentSeason,
+      user.id,
+      // The diary, when the URL asked for a tab that reads no entries — which
+      // is exactly the view the fallback below lands on, so this read is the
+      // right one whenever it is used at all.
+      wanted.kind === 'entries' ? wanted : DEFAULT_ENTRIES_VIEW,
+    ),
+    countPlayerElevens(playerId, currentSeason, user.id),
+    // These two are wanted by one tab and no other, so they are asked for only
+    // when it is the tab in question.
+    wanted.kind === 'elevens' ? playerElevens(playerId, currentSeason, user.id) : [],
+    wanted.kind === 'elevens' ? leaguesInSeason(currentSeason) : [],
   ])
   if (header === null) notFound()
+
+  // **The elevens tab is drawn only when there is something behind it**, which
+  // is the one conditional tab in the app: almost nobody is in a team of the
+  // week, and a tab that was always there would be an empty room on nearly every
+  // profile. A stale `?view=elevens` then lands on the diary, because `parseView`
+  // is asked again against the tabs that exist rather than the whole table.
+  const views = elevenCount === 0 ? PLAYER_VIEWS.filter((one) => one.kind !== 'elevens') : PLAYER_VIEWS
+  const current = parseView(view, views)
 
   // The club and shirt he was last named under. Absent for a player in the
   // database with no squad row this season — every match of the season exists as
@@ -106,7 +140,7 @@ export default async function PlayerPage({ params, searchParams }: PageProps<'/p
 
       <TabStrip
         label="View"
-        tabs={PLAYER_VIEWS.map((candidate) => ({
+        tabs={views.map((candidate) => ({
           // The origin rides along, so switching tabs does not lose the way back.
           href: `/players/${header.id}?view=${candidate.slug}${
             typeof from === 'string' ? `&from=${encodeURIComponent(from)}` : ''
@@ -116,7 +150,16 @@ export default async function PlayerPage({ params, searchParams }: PageProps<'/p
         }))}
       />
 
-      {entries.length === 0 ? (
+      {current.kind === 'elevens' ? (
+        // The same card the list draws, in the same grid, because it is the same
+        // object — a smaller preview here would be a second idea of what a team
+        // of the week looks like.
+        <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {elevens.map((team) => (
+            <TotwCard key={team.id} team={team} leagueCount={allLeagues.length} />
+          ))}
+        </ul>
+      ) : entries.length === 0 ? (
         // Each view carries its own sentence, so "no notes on this player" does
         // not read as "nothing on this player" to someone who has tagged him ten
         // times.

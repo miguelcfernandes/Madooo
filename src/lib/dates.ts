@@ -243,13 +243,28 @@ export function dayLabel(moment: Date): string {
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
-/** The day after a key, rolling months and years over. */
-function nextDayKey(key: string): string {
+/**
+ * A day key moved by whole days, rolling months and years over.
+ *
+ * **Calendar arithmetic, never `+ n * 86_400_000`.** A London day is 23 hours
+ * long on 29 March 2026 and 25 on 25 October, so adding a fixed day length to
+ * an instant lands on the wrong side of the boundary twice a year. This never
+ * touches an instant at all: it takes the key apart, adds to the day *number*,
+ * and lets `Date.UTC` normalise the out-of-range parts — so 31 January + 1 is
+ * 1 February with no calendar table, and 31 December rolls the year.
+ *
+ * Exported for the team-of-the-week builder, whose default span is the last
+ * seven days and which therefore has to count backwards from today.
+ */
+export function shiftDayKey(key: string, days: number): string {
   const [year, month, day] = key.split('-').map(Number)
-  // `Date.UTC` normalises out-of-range parts, so 31 January + 1 is 1 February
-  // without a calendar table, and 31 December rolls the year.
-  const next = new Date(Date.UTC(year, month - 1, day + 1))
-  return `${next.getUTCFullYear()}-${pad(next.getUTCMonth() + 1)}-${pad(next.getUTCDate())}`
+  const moved = new Date(Date.UTC(year, month - 1, day + days))
+  return `${moved.getUTCFullYear()}-${pad(moved.getUTCMonth() + 1)}-${pad(moved.getUTCDate())}`
+}
+
+/** The day after a key. */
+function nextDayKey(key: string): string {
+  return shiftDayKey(key, 1)
 }
 
 /**
@@ -274,6 +289,18 @@ function londonMidnight(key: string): Date {
   const utcMidnight = Date.UTC(year, month - 1, day)
   const guess = utcMidnight - offsetMinutes(new Date(utcMidnight)) * 60_000
   return new Date(utcMidnight - offsetMinutes(new Date(guess)) * 60_000)
+}
+
+/**
+ * The half-open span of UTC instants covering a run of London days, from the
+ * start of `first` to the end of `last` — both inclusive as days.
+ *
+ * Built on `dayRange` rather than beside it, so the two cannot disagree about
+ * where a day starts: a span is the first day's opening instant and the day
+ * *after* the last one's, which is `dayRange(last).to` exactly.
+ */
+export function daySpan(first: string, last: string): { from: Date; to: Date } {
+  return { from: dayRange(first).from, to: dayRange(last).to }
 }
 
 /**

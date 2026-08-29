@@ -387,6 +387,56 @@ capitalised, which is what a club code on a saturated colour needs. At 64px they
 are `--text-title` instead: 11px of type in a 64px square reads as a smudge in
 the corner rather than as the identity of the screen it heads.
 
+### A pitch is a diagram, not a picture — and its only colour is the clubs'
+
+The team-of-the-week graphic is the one drawing in the app of a thing that exists
+in the world, and it is drawn to this page's rules rather than to a photograph's.
+**No green.** Rule three says colour means a verdict, a club, the brand or
+interactive state, and grass is none of them; rule eight bans the texture,
+pattern and gradient that would make it look like grass anyway.
+
+So the field is `--surface-sunken` and its markings are 1px borders in
+`--surface` — white lines on grey in light, light lines on near-black in dark.
+Two neutral semantics, no token added, and the inversion is what makes a
+rectangle read as a pitch without a colour being spent on it. Four markings: a
+halfway line, a centre circle and a penalty area at each end. A fifth begins to
+be a scale drawing.
+
+**The colour on it is the clubs', through the exception above**, and one star.
+Every player on a team of the week was marked MVP or standout, so a badge on all
+eleven would say nothing; the star marks the ones the reader called the best
+player in a match, in `--mvp`, and it is the only glyph in the set with an inside
+to fill. Eleven club colours and a verdict is the whole palette of the thing
+somebody would screenshot.
+
+**The centre circle joins the switch and the radio** as a thing that is round
+because it is round, not because a box was softened. See Shape.
+
+**Its header is the one block header in the app that is not capitalised.** Every
+other one names a *kind* of thing — "Starting XI", a competition, an index's
+sort — and a micro-label is one of the two places this page allows uppercase.
+This one holds the name the reader gave the eleven, and shouting somebody's own
+words back at them is rule six broken outright. It takes `--text-label` instead,
+sentence case, with the formation opposite it in `--text-data`. The strip is
+otherwise unchanged: `--surface-alt` under the 2px marine rule, like all the
+others.
+
+**A footer strip under the field**, on a saved eleven only: the span it covers in
+`--text-caption`, and the competitions it was drawn from at the other end. It is
+what makes the graphic self-describing once it has left the app — a screenshot
+carries the name, the days and the competitions and needs no caption written
+around it. The builder draws no footer, because the form six inches above it is
+still saying both.
+
+**One drawing at two sizes, and the smaller one is where the names give way.**
+The same pitch is the page and the card in a list of saved elevens, at whatever
+width a column gives it — there is no second, simpler "preview" pitch to keep in
+step. A place shares the line's width rather than claiming a fixed one, so five
+across always fit; what shortens is the name under the tile, which wraps to two
+lines and then ends in an ellipsis. That is what caps the list at three columns:
+a fourth leaves about 49px a name, and a graphic whose whole job is that you can
+read who is in it has stopped doing it.
+
 ### Theming
 
 Light is the default and needs no attribute. Dark is `data-theme="dark"` on
@@ -562,7 +612,9 @@ Borders: `--border-w 1px`, `--border-w-strong 2px`.
 **There is no radius token, and its absence is the specification.** Buttons,
 fields, cards, chips, tiles, dialogs, toasts, badges, crest chips, flag marks:
 all square. The switch and the radio keep their circles because they are not
-boxes.
+boxes, and the pitch's centre circle joins them for the same reason — the
+exception is for a thing that is genuinely round, never for a box with its
+corners taken off.
 
 `--radius-sm`, `--radius-md`, `--radius-lg` and `--radius-pill` all retired, and
 were deleted rather than set to zero. Eighty `rounded-md` classes resolving to
@@ -644,6 +696,57 @@ marine, because it is a state rather than an action; see **The brand as an
 action**. Its glyph does
 **not** fill — the fill rule means "on" for the states listed under Iconography,
 and the inverse fill already says it here.
+
+### One dialog opens by itself, and it is allowed to because it is once
+
+The app says something about itself in exactly one place: a modal on a reader's
+first visit to `/team-of-the-week`, telling them the screen is new and where to
+report it when it is wrong. It is the ordinary dialog — `--surface` behind a
+`--border` outline with `--shadow-3`, a titled header strip, a body, and one
+filled button in a footer — and nothing about its *appearance* is new.
+
+**What is new is that nothing was pressed to open it**, and that is a thing to do
+approximately never. Every other dialog here answers a button. What earns this
+one is that it happens once in the life of a browser, so the interruption is paid
+for a single time; a dismissible aside on the page was built first and was the
+wrong shape, because something that has to be read before it is useful cannot be
+something the eye can skip. A second self-opening dialog is a new argument to
+have, not a precedent this grants.
+
+**It takes no colour beyond the button's**, because there is none it could
+honestly take: an announcement is not a verdict, not a club, and not the brand
+naming a block, and `--info` was retired precisely so a second cool colour could
+not creep back for this kind of thing. And no glyph — there is no picture of
+"this is new" worth drawing, and "use a word" is a choice here rather than a
+shortage.
+
+### The checkbox
+
+The 16px box in the control table, drawn at last by the team-of-the-week
+competition filter. A `--border-strong` outline on `--surface`; checked, it fills
+with `--surface-inverse` and shows `check` in `--text-inverse`.
+
+**Ink rather than marine, for the segmented toggle's reason** — it is a state,
+not an action, and this page keeps those apart on purpose.
+
+**Native underneath.** The real `<input type="checkbox">` is `sr-only` beside the
+box that is drawn, which reads its state through a sibling selector. That is what
+keeps the keyboard, the accessible name and — the reason it matters here — the
+browser's own form serialisation, which is what lets a filter of these live in
+the URL and still submit as an ordinary form.
+
+**A group of them opens empty and is filled deliberately**, with a *Select all*
+and a *Clear* at the far end of its label's line — both bordered at
+`--control-h`, because they only rearrange the boxes below them and the screen's
+one filled button is its actual action. Where a group is long enough to want
+dividing, the subheadings are `--text-caption` rather than a second run of
+micro-labels: the group's own label is already capitalised, and two levels of
+caps in one card read as two headings competing.
+
+The group is labelled with `role="group"` and `aria-labelledby` rather than
+`<fieldset>` and `<legend>`, and that is what buys the buttons their place on the
+label's line — a legend that contained them would read them out as part of the
+group's name.
 
 ---
 

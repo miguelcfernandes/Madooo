@@ -56,6 +56,7 @@ const isProtectedRoute = createRouteMatcher([
   '/players(.*)',
   '/teams(.*)',
   '/diary(.*)',
+  '/team-of-the-week(.*)',
   '/changelog(.*)',
 ])
 

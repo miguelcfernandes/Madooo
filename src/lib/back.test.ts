@@ -4,6 +4,23 @@ import { DIARY_VIEWS } from './diary-views'
 import { PLAYER_VIEWS } from './player-views'
 
 describe('backLink', () => {
+  // A saved eleven names eleven players, so it is an origin for a profile the
+  // same way a squad list is. Added when the team-of-the-week page started
+  // linking to players, which until then passed a `?from` nothing could read.
+  it('returns to the eleven a player was clicked in', () => {
+    expect(backLink('/team-of-the-week/9')).toEqual({
+      href: '/team-of-the-week/9',
+      label: 'Back to the eleven',
+    })
+  })
+
+  it('does not take a team-of-the-week path that is not one eleven', () => {
+    // The list itself links to no player, so it can never be a `?from` — and
+    // anything that merely starts the same way is rebuilt as nothing.
+    expect(backLink('/team-of-the-week').href).toBe('/players')
+    expect(backLink('/team-of-the-week/9/edit').href).toBe('/players')
+  })
+
   it('reads a match back', () => {
     expect(backLink('/matches/12')).toEqual({ href: '/matches/12', label: 'Back to the match' })
   })

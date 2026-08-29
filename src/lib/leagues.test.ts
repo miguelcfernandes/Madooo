@@ -21,7 +21,7 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { flagClass, groupByLeague, leagueRank, leagueSlug } from './leagues'
+import { flagClass, groupByLeague, isTopLeague, leagueRank, leagueSlug, splitByStanding } from './leagues'
 import type { LeagueSection } from './leagues'
 import type { ApiFootballEnvelope, RawFixture } from './api-football/types'
 
@@ -140,6 +140,45 @@ describe('leagueRank', () => {
 
   it('is unaffected by casing or diacritics', () => {
     expect(leagueRank({ name: 'PREMIER LEAGUE' })).toBe(leagueRank({ name: PREMIER_LEAGUE }))
+  })
+})
+
+describe('splitByStanding', () => {
+  it('puts the big five on top, in the order the map ranks them', () => {
+    const { top } = splitByStanding(SECTIONS)
+    expect(top.map((league) => league.name)).toEqual([
+      PREMIER_LEAGUE,
+      LA_LIGA,
+      SERIE_A,
+      BUNDESLIGA,
+      LIGUE_1,
+    ])
+  })
+
+  it('puts the rest below, also in rank order', () => {
+    const { other } = splitByStanding(SECTIONS)
+    expect(other.map((league) => league.name)).toEqual([PRIMEIRA_LIGA, ALLSVENSKAN])
+  })
+
+  it('loses nobody', () => {
+    const { top, other } = splitByStanding(SECTIONS)
+    expect(top.length + other.length).toBe(SECTIONS.length)
+  })
+
+  // The clause that keeps the filter legal against AGENTS.md's first
+  // constraint, the same one `leagueRank` is tested against: an eighth league
+  // costs no edit. It ranks last, lands under "Other", and still draws.
+  it('sends a competition the map does not name to the other group', () => {
+    expect(isTopLeague({ name: 'Eredivisie' })).toBe(false)
+    const { top, other } = splitByStanding([...SECTIONS, { id: 8, name: 'Eredivisie', country: 'Netherlands' }])
+    expect(top).toHaveLength(5)
+    expect(other.map((league) => league.name)).toEqual([PRIMEIRA_LIGA, ALLSVENSKAN, 'Eredivisie'])
+  })
+
+  it('does not reorder what it was handed', () => {
+    const before = SECTIONS.map((league) => league.id)
+    splitByStanding(SECTIONS)
+    expect(SECTIONS.map((league) => league.id)).toEqual(before)
   })
 })
 

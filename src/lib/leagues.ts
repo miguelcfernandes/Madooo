@@ -152,6 +152,69 @@ export function leagueRank(league: { name: string }): number {
   return LEAGUE_ORDER.get(searchKey(league.name)) ?? Number.MAX_SAFE_INTEGER
 }
 
+/**
+ * How many competitions the team-of-the-week filter puts under "Top
+ * competitions", counting down `LEAGUE_ORDER` from the top.
+ *
+ * Five, and the five it names are the ones the phrase means in football: the
+ * Premier League, La Liga, Serie A, the Bundesliga and Ligue 1. That the map
+ * already ranks them 1 to 5 is not a coincidence — the order claims "most
+ * followed", and this is the same claim with a line drawn across it.
+ *
+ * **Reusing the rank is what keeps a league from costing code.** A checkbox
+ * group with a hand-written list of top leagues would be a second place naming
+ * competitions, and the eighth league would have to be added to it. Here an
+ * unranked league sorts last and lands under "Other", which is what a new
+ * competition should do until somebody decides otherwise — one line in
+ * `LEAGUE_ORDER`, and nothing here.
+ */
+const TOP_LEAGUES = 5
+
+/**
+ * The order competitions are listed in, wherever a list of them is drawn.
+ *
+ * One comparator rather than the same two lines written out at each call site:
+ * the rank decides, and the alphabet only ever separates two competitions
+ * `LEAGUE_ORDER` does not name. `localeCompare` so a name with diacritics sorts
+ * where a reader would look for it.
+ */
+export function compareLeagues(a: { name: string }, b: { name: string }): number {
+  const order = leagueRank(a) - leagueRank(b)
+  return order !== 0 ? order : a.name.localeCompare(b.name)
+}
+
+/**
+ * Whether a competition is one of the big five.
+ *
+ * Structural on `{ name }`, like `leagueRank` — anything with a name satisfies
+ * it, and the flattening is `searchKey`'s, so a provider recasing "Serie A"
+ * costs nothing.
+ */
+export function isTopLeague(league: { name: string }): boolean {
+  return leagueRank(league) <= TOP_LEAGUES
+}
+
+/**
+ * The competitions split into the two groups the filter draws, each in
+ * `LEAGUE_ORDER`.
+ *
+ * **It sorts, unlike `groupByMonth` and like `groupByLeague`**, and for
+ * `groupByLeague`'s reason: which competition leads a list is a question no
+ * `ORDER BY` can answer, so the one opinion about it lives here. The tiebreak is
+ * the same alphabet, and it only ever decides between two leagues the map does
+ * not name — both of which are in "Other" by definition.
+ */
+export function splitByStanding<T extends { name: string }>(
+  leagues: readonly T[],
+): { top: T[]; other: T[] } {
+  const ranked = [...leagues].sort(compareLeagues)
+
+  return {
+    top: ranked.filter(isTopLeague),
+    other: ranked.filter((league) => !isTopLeague(league)),
+  }
+}
+
 /** What a section heading needs of a league: a key, a name, and its flag's country. */
 export interface LeagueSection extends LeagueIdentity {
   id: number
@@ -196,11 +259,5 @@ export function groupByLeague<T>(
     else open.items.push(item)
   }
 
-  return [...groups.values()].sort((a, b) => {
-    const order = leagueRank(a.league) - leagueRank(b.league)
-    // The alphabet only ever decides between two leagues this map does not
-    // name. `localeCompare` rather than `<` so a competition with diacritics
-    // sorts where a reader would look for it.
-    return order !== 0 ? order : a.league.name.localeCompare(b.league.name)
-  })
+  return [...groups.values()].sort((a, b) => compareLeagues(a.league, b.league))
 }

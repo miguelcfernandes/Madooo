@@ -20,6 +20,8 @@
 import { refresh } from 'next/cache'
 
 import { requireDbUser } from './auth'
+import { daySpan, isDayKey } from './dates'
+import { season } from './env'
 import { prisma } from './prisma'
 import {
   normaliseSuggestion,
@@ -27,6 +29,14 @@ import {
   SUGGESTION_WINDOW_MS,
   type SuggestionResult,
 } from './suggestions'
+import {
+  isFormation,
+  lineOf,
+  normaliseName,
+  TOTW_LIMIT_PER_USER,
+  type Line,
+  type TotwResult,
+} from './totw-picks'
 import { isJudgementTag, NOTE_MAX_LENGTH, type JudgementTag } from './verdicts'
 import type { Prisma } from '@/generated/prisma/client'
 
@@ -48,6 +58,13 @@ import type { Prisma } from '@/generated/prisma/client'
  * Returns the operations rather than running them, so a caller can put them in
  * one transaction alongside its own write.
  */
+/**
+ * How many places there are on a team sheet. Written down once, here, because
+ * the action checks it before it knows the shape — `isFormation` proves the
+ * lines add up, and this proves there are eleven of them to add.
+ */
+const ELEVEN = 11
+
 function clearTag(where: Prisma.JudgementWhereInput) {
   return [
     prisma.judgement.deleteMany({ where: { ...where, note: null } }),
@@ -256,4 +273,176 @@ export async function sendSuggestion(body: unknown): Promise<SuggestionResult> {
   await prisma.suggestion.create({ data: { userId: user.id, body: text } })
 
   return { ok: true }
+}
+
+/**
+ * Save an eleven the reader has picked out of their own diary.
+ *
+ * **The whole of this function is the check that the eleven is real**, and that
+ * is the point rather than ceremony. Every export here is a public POST
+ * endpoint, so a saved team is not "what the builder sent" — it is a claim about
+ * eleven performances that has to be provable against this user's own
+ * judgements. The one query below proves all of it at once: each squad row is
+ * one this account marked MVP or STANDOUT, in the configured season, inside the
+ * span being saved. Eleven ids in, eleven rows back, or nothing is written.
+ *
+ * The name and the chosen competitions cannot be proved that way — they are the
+ * reader's own words and the reader's own choice — so they are validated for
+ * shape instead: a name that is not blank and fits, and at least one competition
+ * that exists.
+ *
+ * **The tag is read out of that proof, never taken from the caller.** The
+ * graphic stars its MVPs, so a tag accepted as an argument would let a POST
+ * award one to anybody. It is then *stored* rather than re-read on every render
+ * — see `TeamOfTheWeekPick.tag` in the schema for why a saved team is a snapshot
+ * and not a live view of the diary.
+ *
+ * **The shape is checked too, and against the same list the builder offers.**
+ * Counting the lines and asking `isFormation` is what stops a saved team being
+ * six goalkeepers; it is also why nothing stores a formation string, since the
+ * counts *are* the formation.
+ *
+ * `refresh()` is deliberately absent, for `sendSuggestion`'s reason: the route
+ * this fires from is the builder, which draws a pool rather than a saved team,
+ * so re-rendering it would re-run one query to produce identical HTML. The
+ * client navigates to the new team instead, which is what the returned id is
+ * for.
+ */
+export async function saveTeamOfTheWeek(
+  name: unknown,
+  fromDay: unknown,
+  toDay: unknown,
+  leagueIds: unknown,
+  matchSquadIds: unknown,
+): Promise<TotwResult> {
+  const user = await requireDbUser()
+
+  // The name. `normaliseName` is the whole of the rule — the dialog opens with a
+  // suggestion already in the box, so a blank one arriving here is a request
+  // that did not come from it.
+  const title = normaliseName(name)
+  if (title === null) return { ok: false, reason: 'invalid' }
+
+  // The span. `isDayKey` is shape *and* existence — see its own comment — and
+  // the ordering test is the same one the `totw_span_runs_forwards` CHECK
+  // makes, held here so the refusal is a message rather than a 500.
+  if (typeof fromDay !== 'string' || !isDayKey(fromDay)) return { ok: false, reason: 'invalid' }
+  if (typeof toDay !== 'string' || !isDayKey(toDay)) return { ok: false, reason: 'invalid' }
+  if (fromDay > toDay) return { ok: false, reason: 'invalid' }
+
+  // The eleven, as ids. Distinctness is checked here rather than left to
+  // `@@unique([teamOfTheWeekId, matchSquadId])`, because a constraint violation
+  // inside a nested create arrives as a thrown Prisma error and this returns
+  // its refusals.
+  if (!Array.isArray(matchSquadIds)) return { ok: false, reason: 'invalid' }
+  if (matchSquadIds.length !== ELEVEN) return { ok: false, reason: 'invalid' }
+  if (!matchSquadIds.every((id) => Number.isInteger(id) && id > 0)) {
+    return { ok: false, reason: 'invalid' }
+  }
+  const ids: number[] = matchSquadIds
+  if (new Set(ids).size !== ids.length) return { ok: false, reason: 'invalid' }
+
+  // The competitions the pool was drawn from. At least one, because a pool
+  // narrowed to no competition holds nobody and could not have produced an
+  // eleven — so an empty list here contradicts the picks arriving with it.
+  if (!Array.isArray(leagueIds) || leagueIds.length === 0) return { ok: false, reason: 'invalid' }
+  if (!leagueIds.every((id) => Number.isInteger(id) && id > 0)) {
+    return { ok: false, reason: 'invalid' }
+  }
+  const leagues = [...new Set<number>(leagueIds)]
+
+  // Every id has to be a competition we hold. The foreign key would catch it
+  // too, as a thrown error inside a nested create — and this action reports its
+  // refusals rather than throwing them.
+  const known = await prisma.league.count({ where: { id: { in: leagues } } })
+  if (known !== leagues.length) return { ok: false, reason: 'invalid' }
+
+  // The ceiling. A count in the same request as the write, exactly as the
+  // suggestion box's window is, and inexact under concurrency for the same
+  // reason and to the same degree: what it defends against is a loop.
+  const held = await prisma.teamOfTheWeek.count({ where: { userId: user.id } })
+  if (held >= TOTW_LIMIT_PER_USER) return { ok: false, reason: 'limit' }
+
+  const currentSeason = season()
+  const { from, to } = daySpan(fromDay, toDay)
+
+  const judged = await prisma.judgement.findMany({
+    where: {
+      userId: user.id,
+      tag: { in: ['MVP', 'STANDOUT'] },
+      matchSquadId: { in: ids },
+      matchSquad: { match: { season: currentSeason, kickoff: { gte: from, lt: to } } },
+    },
+    select: { matchSquadId: true, tag: true, matchSquad: { select: { position: true } } },
+  })
+
+  // Fewer rows than ids means at least one pick is not this user's, not a
+  // verdict of the right kind, or not in the span. Which one it was is not
+  // worth telling apart: every branch is a request the builder cannot make.
+  if (judged.length !== ids.length) return { ok: false, reason: 'invalid' }
+
+  const proof = new Map(judged.map((row) => [row.matchSquadId, row]))
+  const counts: Record<Line, number> = { G: 0, D: 0, M: 0, F: 0 }
+
+  for (const id of ids) {
+    const row = proof.get(id)
+    // Unreachable given the length check above, and written out anyway: it is
+    // what narrows the lookup away from `undefined` without a cast.
+    if (row === undefined) return { ok: false, reason: 'invalid' }
+    const line = lineOf(row.matchSquad.position)
+    if (line === null) return { ok: false, reason: 'invalid' }
+    counts[line] += 1
+  }
+
+  if (!isFormation(counts)) return { ok: false, reason: 'invalid' }
+
+  const saved = await prisma.teamOfTheWeek.create({
+    data: {
+      userId: user.id,
+      name: title,
+      season: currentSeason,
+      fromDay,
+      toDay,
+      // The chosen competitions as they were at the moment of saving. Nothing
+      // re-derives them later: which leagues a reader ticked is a fact about the
+      // picking and cannot be recovered from the eleven, whose clubs may come
+      // from one league whatever was on.
+      leagues: { create: leagues.map((leagueId) => ({ leagueId })) },
+      picks: {
+        // `order` is the index the client sent, which is the only thing about
+        // the incoming order that is trusted — and it can only decide where a
+        // player stands *within* their own line, since the line itself is read
+        // off the squad row above.
+        create: ids.map((matchSquadId, order) => ({
+          matchSquadId,
+          order,
+          tag: proof.get(matchSquadId)?.tag ?? 'STANDOUT',
+        })),
+      },
+    },
+    select: { id: true },
+  })
+
+  return { ok: true, id: saved.id }
+}
+
+/**
+ * Delete one of this user's teams of the week.
+ *
+ * `deleteMany` with the owner in the filter rather than `delete` by id: a
+ * `delete` that matches nothing throws, and scoping by `userId` in the same
+ * `where` means somebody else's id deletes nothing and reports the same silence
+ * as an id that never existed.
+ *
+ * No `refresh()` and no `redirect()`. The route this fires from is the team
+ * being deleted, so there is nothing left to re-render; the client navigates to
+ * the list, which is the one screen that has changed. A `redirect()` here would
+ * throw `NEXT_REDIRECT` into the caller's own `try`, which is where the
+ * suggestion box's catch-everything pattern would swallow it.
+ */
+export async function deleteTeamOfTheWeek(id: unknown): Promise<void> {
+  const user = await requireDbUser()
+  if (!Number.isInteger(id)) return
+
+  await prisma.teamOfTheWeek.deleteMany({ where: { id: id as number, userId: user.id } })
 }

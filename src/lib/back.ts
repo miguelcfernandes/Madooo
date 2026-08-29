@@ -1,9 +1,9 @@
 /**
  * Where "Back" goes on a screen reached from more than one place.
  *
- * A player profile is opened from a squad list, from the "Your verdicts" panel
- * and from the diary, so no single parent is the right destination and the
- * design's own "← Back" names none. The origin therefore travels in the URL —
+ * A player profile is opened from a squad list, from the "Your verdicts" panel,
+ * from the diary and from a saved team of the week, so no single parent is the
+ * right destination and the design's own "← Back" names none. The origin therefore travels in the URL —
  * `/players/44?from=/diary?filter=mvp` — and this module turns it back into a
  * link. A server component cannot call `history.back()`, and putting the origin
  * in the URL keeps the page a server component, which is the same reason the
@@ -48,6 +48,15 @@ const PLAYER = /^\/players\/(\d+)$/
 const TEAM = /^\/teams\/(\d+)$/
 
 /**
+ * One saved team of the week, which names eleven players and is therefore an
+ * origin for a profile the way a squad list is.
+ *
+ * The list page is not a shape here and does not need to be: nothing on it links
+ * to a player, so no `?from` can ever carry it.
+ */
+const ELEVEN = /^\/team-of-the-week\/(\d+)$/
+
+/**
  * Where the reader came from, or `fallback` if we cannot tell.
  *
  * `unknown` rather than `string` because this is handed the raw value out of
@@ -72,6 +81,11 @@ export function backLink(from: unknown, fallback: BackLink = PLAYERS): BackLink 
 
   const team = TEAM.exec(path)
   if (team !== null) return { href: `/teams/${team[1]}`, label: 'Back to the club' }
+
+  const eleven = ELEVEN.exec(path)
+  if (eleven !== null) {
+    return { href: `/team-of-the-week/${eleven[1]}`, label: 'Back to the eleven' }
+  }
 
   const player = PLAYER.exec(path)
   if (player !== null) {
