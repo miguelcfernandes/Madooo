@@ -410,8 +410,8 @@ the squash-one-commit-per-slice flow, which is why they name several.
   as the reason there is nobody to rate. `info` is the set's thirty-sixth glyph,
   and the panel is the third thing in the app allowed `--shadow-3`.
 
-- **Team of the week.** An eleven picked out of the reader's own diary over a
-  span of days, and the pitch graphic it exists to produce.
+- **Team of the week.** `61f794b`. An eleven picked out of the reader's own diary
+  over a span of days, and the pitch graphic it exists to produce.
 
 ## Not built, and why
 
