@@ -55,13 +55,27 @@ deep in the JS/TS ecosystem.
    same way.
 
    **`LEAGUES` is read by the sync alone.** Every page discovers its leagues from
-   our own `League` table, so nothing under `src/app/` may read it; a page that
-   did would have two sources for which leagues exist.
+   our own `League` table, so no *page* may read it; a page that did would have
+   two sources for which leagues exist.
 2. **Never call API-Football on page load.** A scheduled sync job writes into our
-   own Postgres; the app only ever reads our own tables. The request budget this
+   own Postgres; pages only ever read our own tables. The request budget this
    once protected is no longer scarce, but the rule is not really about quota: a
    page that reaches a third party waits on it, fails with it, and is rate-limited
    by its own traffic.
+
+   **Both rules have exactly one exempt file: `src/app/api/cron/sync/route.ts`.**
+   It is the scheduled sync, which is a Vercel cron job and therefore lives under
+   `src/app/` like any other route. Nothing else there may import
+   `lib/api-football`, `lib/sync` or `lib/sync-run`, or read `LEAGUES`, directly
+   or through anything else.
+
+   This used to enforce itself: `API_FOOTBALL_KEY` and `LEAGUES` existed only in
+   GitHub Actions, so a page that reached the provider threw the first time it
+   ran. The schedule moved to Vercel for punctuality — GitHub dropped six of ten
+   scheduled runs — and the variables came with it. **The guarantee is now a rule
+   rather than a missing credential**, which is why it is written here, in
+   `docs/architecture.md` and beside `apiFootballKey()`. A `no-restricted-imports`
+   lint rule over `src/app/**` is the ten-line fix if it is ever broken once.
 3. **One translation boundary.** The sync job is the only code that sees
    API-Football's JSON shape. It maps their payloads onto our schema. Everything
    else reads our schema, so a provider change touches one place.
@@ -191,8 +205,10 @@ three fixes ago and the files you forgot you touched:
 
 - Secrets or connection strings outside `.env.local`.
 - A hardcoded season year or league id.
-- `LEAGUES` read from anywhere under `src/app/`.
-- Any API-Football call reachable from a page render.
+- `LEAGUES` read from anywhere under `src/app/` but the cron route.
+- Any API-Football call reachable from a page render. The cron route may reach
+  the provider; nothing else under `src/app/` may, including through an import
+  of `lib/sync`, `lib/sync-run` or `lib/api-football`.
 - An unchecked `errors` field on a provider response.
 - Provider JSON shape leaking past the sync boundary.
 - A raw hex or px value in product code rather than a semantic token.

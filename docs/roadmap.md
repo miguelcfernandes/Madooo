@@ -41,7 +41,7 @@ which is the opposite of an instruction to build something. The tell is
 grammatical: a remark states what *is* true and survives being read a month
 later, while a plan uses imperatives — "add X", "set up Y".
 
-**Last updated:** 2026-08-29 (team of the week)
+**Last updated:** 2026-08-29 (the schedule moves to Vercel Cron)
 
 > **The rebrand is built.** **"Field Notes"** — Schibsted Grotesk and DM Mono on
 > a marine brand colour, zero radius everywhere, one shadow, and glyphs of our
@@ -172,10 +172,11 @@ screen, since every read filters by season; they were the author's own test data
   keys, which are what a laptop must use; it carries no `DATABASE_TARGET`, so
   everything run there hits development unless the variable is put in front of
   one command. `.env.example` documents the full set and where each copy lives
-- [`.github/workflows/sync.yml`](../.github/workflows/sync.yml) runs the sync on
-  a timer against the production branch, out of two repository secrets
-  (`DATABASE_URL`, `API_FOOTBALL_KEY`) and two repository variables (`SEASON`,
-  `LEAGUES`)
+- A Vercel cron job runs the sync against the production branch every ten
+  minutes, 09:00 to 01:00 UTC — [`vercel.json`](../vercel.json) pointing at
+  [`/api/cron/sync`](../src/app/api/cron/sync/route.ts), which is the only route
+  allowed to reach API-Football. It needs Vercel's **Pro** plan: Hobby caps crons
+  at once a day and rejects anything more frequent at deploy time
 
 ## Built
 
@@ -413,6 +414,11 @@ the squash-one-commit-per-slice flow, which is why they name several.
 - **Team of the week.** `61f794b`. An eleven picked out of the reader's own diary
   over a span of days, and the pitch graphic it exists to produce.
 
+- **The schedule moves to Vercel Cron.** The sync runs from
+  `/api/cron/sync` instead of GitHub Actions, which was dropping six of ten
+  scheduled runs. The run itself moved to `src/lib/sync-run.ts` so the CLI and
+  the route are two callers of one run.
+
 ## Not built, and why
 
 Things left out on purpose, each with the argument that kept it out. This is the
@@ -587,6 +593,20 @@ either built or decided against for good.
   not `8:00 pm`. Nothing else in the app localises.
 - **The 2024 season stays on the development branch.** It is dev data on a dev
   branch and production never sees it.
+- **No lint rule stops a page importing the sync.** Now that `API_FOOTBALL_KEY`
+  is in the deployed environment, `no-restricted-imports` over `src/app/**` is
+  what would enforce the second non-negotiable mechanically. Left out because the
+  rule is written in four places and the project has one author — it is ten lines
+  the first time it is broken.
+- **The sync did not go to a second Vercel project.** Giving it its own project
+  would have kept the key out of the public app entirely, so the guarantee stayed
+  environmental rather than becoming a rule. Declined for the cost: this
+  repository would build twice on every merge, and two environments would have to
+  be kept in step.
+- **No lock table for the cron.** `maxDuration` at 480 seconds under a 600-second
+  cadence is what stops two runs overlapping. A lease row in Postgres would do it
+  properly, and is what to build if the cadence ever goes below the run's worst
+  case.
 
 ## Launch checklist
 
@@ -927,14 +947,3 @@ must stay out of the Vercel build, are in
   that is visible enough to be worth solving is a thing to look at with the user
   menu open in dark.
 
-- **Nothing keeps the scheduled sync alive through a quiet 60 days.** GitHub
-  disables a scheduled workflow after 60 days without repository activity. It
-  emails first and the re-enable is a button, so this is not a silent failure —
-  but it is a failure whose trigger is the author *not* working, which is exactly
-  when nobody is looking at the repository. During the build it cannot happen;
-  after launch, a season runs from August to May and a two-month gap in commits
-  is ordinary. The options are to accept it and answer the email, or to give the
-  workflow something that counts as activity. Deliberately not built in 10.2,
-  because a job whose purpose is to keep another job running is worth choosing on
-  purpose rather than adding by reflex. *Resolved by deciding either way once the
-  first quiet month has actually happened.*

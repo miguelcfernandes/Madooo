@@ -78,10 +78,12 @@ export function season(): number {
  * `apiFootballKey()` is, which is why it sits beside it and why the function is
  * named `syncLeagues` rather than `leagues`.
  *
- * That asymmetry is also why a Vercel environment needs only DATABASE_URL_DEV
- * and SEASON, and stays that way: the scheduled sync runs from GitHub Actions
- * rather than from a route handler, so neither this nor `apiFootballKey()` ever
- * has to exist in the deployed environment.
+ * **This and `apiFootballKey()` now do exist in the deployed environment**,
+ * because the scheduled sync is a route rather than a GitHub Actions workflow.
+ * They used to be absent from Vercel entirely, which enforced the rule above by
+ * making a page that broke it throw on its first run. That enforcement is gone
+ * and the rule is not: the cron route is the only file under `src/app/` allowed
+ * to reach either of them. See `docs/architecture.md` → Database and Prisma.
  *
  * Parsed as strictly as `season()`, for the same reason: a bad value must
  * present as a configuration error rather than as "the API returned nothing".
@@ -102,7 +104,13 @@ export function syncLeagues(): number[] {
   return ids
 }
 
-/** API-Football credential, sent as the `x-apisports-key` header. */
+/**
+ * API-Football credential, sent as the `x-apisports-key` header.
+ *
+ * Reachable from `src/app/api/cron/sync/route.ts` and from nothing else under
+ * `src/app/` — the second non-negotiable, and see `syncLeagues()` above for why
+ * it is now a rule rather than an absent variable.
+ */
 export function apiFootballKey(): string {
   return required('API_FOOTBALL_KEY')
 }

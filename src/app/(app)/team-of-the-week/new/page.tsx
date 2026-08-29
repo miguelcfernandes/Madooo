@@ -35,8 +35,9 @@ export default async function NewTeamOfTheWeek({
   const user = await requireDbUser()
 
   // The competitions the filter offers come from our own `League` table, never
-  // from `LEAGUES` — nothing under `src/app/` may read that, or the app would
-  // have two sources for which competitions exist.
+  // from `LEAGUES` — no page may read that, or the app would have two sources
+  // for which competitions exist. The cron route is the single exemption, and
+  // it writes the table rather than reading it to draw anything.
   const leagues = await leaguesInSeason(currentSeason)
 
   const { fromDay, toDay } = parseSpan(params.from, params.to, dayKey(new Date()))

@@ -61,7 +61,7 @@ what they cover. Link to them instead.
   - [The same person can be in one match squad twice](#the-same-person-can-be-in-one-match-squad-twice)
   - [Anything a page needs from a round string lives in `src/lib/rounds.ts`](#anything-a-page-needs-from-a-round-string-lives-in-srclibroundsts)
   - [The tests read `scratch/`, which is gitignored](#the-tests-read-scratch-which-is-gitignored)
-  - [The schedule is a GitHub Actions workflow](#the-schedule-is-a-github-actions-workflow)
+  - [The schedule is a Vercel cron job](#the-schedule-is-a-vercel-cron-job)
 - [Auth and routing](#auth-and-routing)
   - [Clerk will not renew a session on a POST, and every write is one](#clerk-will-not-renew-a-session-on-a-post-and-every-write-is-one)
   - [The landing page reads nothing, and everything on it is fiction](#the-landing-page-reads-nothing-and-everything-on-it-is-fiction)
@@ -125,23 +125,28 @@ working. But a local `/fixtures` shows seven competitions on a Saturday where
 production would show four, so it is the wrong place to judge how busy a day
 looks.
 
-`DATABASE_TARGET` exists in exactly two places — Vercel's Production environment
-and the sync workflow — and **they have to agree.** Moving one without the other
-leaves the deployment reading a branch nothing syncs, which presents as a season
-that quietly stopped rather than as an error.
+**`DATABASE_TARGET` now exists in one place**, Vercel's Production environment,
+and the pair that used to have to agree is no longer a pair: the scheduled sync
+runs *inside* that environment, so it reads the branch the deployment reads by
+construction. While the schedule lived in GitHub Actions this was two settings in
+two systems, and moving one without the other left the deployment reading a
+branch nothing synced — which presents as a season that quietly stopped rather
+than as an error. That failure is now unreachable, which is the clearest thing
+the move to Vercel Cron bought.
 
-**The scheduled sync fills production and nothing else.** So the production
-connection string has a second home: a `DATABASE_URL` secret in GitHub Actions —
-see [The schedule is a GitHub Actions
-workflow](#the-schedule-is-a-github-actions-workflow).
+**The scheduled sync fills production and nothing else** — see [The schedule is a
+Vercel cron job](#the-schedule-is-a-vercel-cron-job). The production connection
+string therefore has exactly one home, where until the move it had a second as a
+`DATABASE_URL` secret in GitHub Actions.
 
 **Nothing fills the development branch on a timer.** It is filled by hand, with
 `npm run sync -- --due` from a laptop, which is what already happens while
 working on the sync. The cost is real and accepted: a preview deployment shows
 whatever development last saw, which can be weeks old. The alternative was a
 second scheduled leg, and Neon's compute — not API-Football's quota — is what
-made it not worth it; the workflow's own cadence comment explains why keeping a
-branch awake is the expensive part.
+made it not worth it; the cadence note under [The schedule is a Vercel cron
+job](#the-schedule-is-a-vercel-cron-job) explains why keeping a branch awake is
+the expensive part.
 
 **The two branches are not two copies of one thing.** Production was filled from
 the provider rather than copied, so it holds only the configured season.
@@ -156,9 +161,31 @@ front of that one command and never in `.env.local`. `prisma.config.ts` prints
 the branch it is about to touch on every Prisma command, which is the line to
 read before letting it proceed.
 
-`API_FOOTBALL_KEY` is deliberately absent from Vercel, and present in Actions.
-Nothing may call API-Football during a page render, and withholding the key makes
-any code that tries fail loudly rather than quietly spend the day's quota.
+**`API_FOOTBALL_KEY` and `LEAGUES` now live in Vercel's Production environment,
+and this is the one thing the move to Vercel Cron cost.** Until the schedule moved
+there, the key existed only in GitHub Actions, and the second non-negotiable —
+nothing may call API-Football during a page render — enforced itself: code that
+tried threw at `apiFootballKey()` the first time it ran, loudly, at the moment
+the mistake was made. The scheduled sync now runs as a route in this deployment,
+so the key has to be here, and **the guarantee is a stated rule rather than an
+absent credential.**
+
+The rule, stated: **[`src/app/api/cron/sync/route.ts`](../src/app/api/cron/sync/route.ts)
+is the only file under `src/app/` that may reach the provider.** Nothing else
+there may import `lib/api-football`, `lib/sync` or `lib/sync-run`, directly or
+through anything else. It is a rule because a page that reaches a third party
+waits on it, fails with it, and is rate-limited by its own traffic — not because
+the key is secret.
+
+The alternatives were weighed and declined. A lint rule
+(`no-restricted-imports` over `src/app/**`) would put the check back in the gate
+mechanically and remains a ten-line addition if this is ever broken once; it was
+left out because the rule is written in three places and the project has one
+author. A second Vercel project holding the key — the public app keeping none of
+it — would have kept the guarantee environmental and absolute, at the cost of
+building this repository twice on every merge and two environments to keep in
+step. The diff checklist in `AGENTS.md` carries the query that would catch a
+breach.
 
 ### Prisma 7 differs from most writing about it
 
@@ -573,9 +600,11 @@ reads it.** The asymmetry is the point: the sync *writes* `League` rows, while
 every read side *discovers* leagues from Postgres — `leaguesWithMatches`,
 `leaguesInSeason`, `parseLeague`. A page reading the variable would have two
 sources for which leagues exist and could disagree with its own database, so
-`syncLeagues()` is named for its one caller and sits beside `apiFootballKey()`,
-which is withheld from the deployed app for the same kind of reason. Adding a
-league is a variable and a sync run; no page and no Vercel environment is told.
+`syncLeagues()` is named for its callers and sits beside `apiFootballKey()`,
+which is governed by the same rule. Both now exist in the deployed environment,
+because the scheduled sync runs there — so what keeps a page off them is the rule
+stated under [Database and Prisma](#database-and-prisma) rather than a missing
+variable. Adding a league is still a variable and a sync run; no page is told.
 
 `syncSeasonFixtures` takes one league and the CLI runs the loop, so a failure
 names the competition that failed rather than reporting a count. **`--round N`
@@ -923,79 +952,81 @@ test reaches has to import its neighbours relatively — including
 `../generated/prisma/enums`, which is the one generated module a pure helper has
 reason to touch.
 
-### The schedule is a GitHub Actions workflow
+### The schedule is a Vercel cron job
 
-[`.github/workflows/sync.yml`](../.github/workflows/sync.yml) runs `npm run sync
--- --due` every 10 minutes from 09:00 to 01:00 UTC — 96 runs a day, the last
-at 00:57. It adds no runtime code: it
-checks out, installs, generates the Prisma client and runs the existing CLI.
+[`vercel.json`](../vercel.json) points `*/10 0,9-23 * * *` at
+[`/api/cron/sync`](../src/app/api/cron/sync/route.ts), which runs `--due` — 96
+runs a day, 09:00 to 01:00 UTC, the last at 00:50. The route adds no logic of its
+own: it checks a secret, parses query parameters and calls
+[`runSync`](../src/lib/sync-run.ts), which is the same run
+[`scripts/sync.ts`](../scripts/sync.ts) performs from a laptop.
 
-**It is in Actions rather than Vercel Cron** for the reason that shaped
-`apiFootballKey()` in the first place: the key is withheld from the deployed
-environment, so a page that reached API-Football fails loudly at the moment the
-mistake is made. A cron route under `src/app/` would need `API_FOOTBALL_KEY` and
-`LEAGUES` on Vercel, and the guarantee would stop being environmental and become
-a lint rule somebody has to keep running.
+**It was a GitHub Actions workflow until it wasn't, and the reason is measured
+rather than aesthetic.** GitHub's scheduled events fire late under load and are
+*dropped* under enough of it — their own documentation says so. Over one
+afternoon on a `*/15` cadence, **four of ten due slots fired at all**, and those
+four ran 3 to 13 minutes behind; the 42-minute worst case was two skipped slots
+and a third run three minutes late. Vercel's cron is per-minute precise on Pro.
+Nothing was ever lost to a dropped slot — `--due` derives its own work from
+`Match.hydratedAt`, so the next run does whatever the skipped one would have —
+but freshness is the entire product here: a match that finished forty minutes ago
+and is not yet judgeable is the failure a diary notices.
 
-**It writes the production branch** — `DATABASE_URL`, with
-`DATABASE_TARGET: production` set at job level rather than on the sync step,
-because `prisma generate` resolves the connection string too. This is the only
-file in the project that sets `DATABASE_TARGET`, and it is set here because this
-is the branch the deployment reads. The two follow each other: syncing one branch
-while Vercel reads the other leaves the app exactly as stale as no schedule at
-all.
+**This requires the Pro plan, and not for performance.** Hobby caps cron jobs at
+*once per day* with ±59 minutes of precision, and a more frequent expression
+**fails at deploy time** rather than running badly. Pro allows once a minute.
 
-Four repository settings under `Settings → Secrets and variables → Actions`
-carry the configuration. `DATABASE_URL` and `API_FOOTBALL_KEY` are secrets;
-`SEASON` and `LEAGUES` are **variables**, because they are configuration and
-nothing about them is sensitive. That is what makes the fifth league a field in
-a web form rather than a commit. The consequence: **`LEAGUES` and `SEASON` have
-two homes**, `.env.local` and the repository variables, and they can disagree —
-the laptop's copy governs a hand-run sync, the variables govern every scheduled
-one.
+**Ten minutes is bounded by Neon from both sides.** Its compute suspends after
+five minutes idle, so anything under five keeps the database awake all day and
+burns the allowance — that is the floor. The same suspend is why ten beats
+fifteen: each run keeps the compute warm, so a tighter cadence more often spares
+a page load the cold start.
 
-Four things in that file are load-bearing rather than taste:
+**The minutes are `*/10` rather than the old `7,17,27,…` offsets.** Those offsets
+existed because the top of the hour is when the most workflows on GitHub come due
+at once and queued jobs get dropped from the crowd. Vercel schedules per minute
+and has no such crowd, so the offsets were carrying a reason that had stopped
+being true.
 
-- **`concurrency` is the lock, and Postgres cannot be.** A Postgres advisory
-  lock is scoped to a session, and Neon's pooler hands sessions out per
-  transaction, so ours would be released underneath us. The thing being guarded
-  is two *runs*, which is something GitHub can see and the database cannot.
-  `cancel-in-progress: false` lets a slow run finish; GitHub keeps at most one
-  run pending behind it and cancels older pending ones, so overruns cannot build
-  a backlog.
-- **`npm run db:generate` is a required step.** The Prisma client is gitignored
-  build output and there is no `postinstall` hook. It is also why the env sits at
-  job level rather than on the sync step: `prisma generate` needs a database URL
-  of its own, for the reason under [Build and
-  deploy](#build-and-deploy).
-- **Workflow inputs reach the shell through `env:`**, never interpolated into
-  the `run:` body — that is how an input becomes arbitrary shell. The argument
-  builder uses full `if` blocks rather than `[ … ] && args+=(…)`, because a
-  `run:` block executes under `bash -e` and a trailing `&&` chain whose test is
-  false returns 1.
-- **`npm test` and `prisma migrate deploy` are deliberately absent.** The suite
-  reads captured payloads from `scratch/`, which a fresh clone does not have;
-  migrations stay a deliberate act from a laptop.
+Four things are load-bearing rather than taste:
 
-The costs, stated: Actions' cron fires late under load, the development
-connection string gains a second home, and **GitHub disables a scheduled
-workflow after 60 days without repository activity** — it emails first, and the
-re-enable is a button.
+- **`maxDuration = 480` is the concurrency lock.** Two runs at once would both
+  read the same due fixtures and both write them. Actions held that off with
+  `concurrency:`; Vercel Cron has nothing equivalent, and Postgres cannot help —
+  an advisory lock is scoped to a session and Neon's pooler hands sessions out
+  per transaction, so ours would be released underneath us. But the schedule
+  fires every 600 seconds, and a run that cannot outlive 480 of them cannot
+  overlap the next. The platform enforces it and no lock table has to exist.
+  **Anything that shortens the cadence has to shorten this with it.**
+- **`CRON_SECRET` is what makes the route not a public endpoint.** Vercel sends
+  it as `Authorization: Bearer …` on scheduled invocations. An *unset* secret is
+  a 500 rather than an open door — a misconfiguration to report, not a caller to
+  wave through.
+- **A non-2xx is the failure signal**, and it is this route's version of the
+  CLI's exit code. A failed league or fixture is still counted and stepped over
+  rather than thrown, but the invocation reports failure at the end, or a
+  competition unreadable for a week would look like a quiet afternoon.
+- **Crons run against production deployments only.** That is what keeps a preview
+  from syncing anything, and it is why `DATABASE_TARGET` needs no second home:
+  the route reads Production's environment because it *is* Production.
 
-**Late is the smaller half of that first cost; dropped is the larger.** Measured
-over one afternoon on the original `*/15`, four of ten due slots fired at all,
-and the four that did ran 3 to 13 minutes behind. The 42-minute worst case that
-prompted the move to ten minutes was not one late run — it was two skipped slots
-and a third run three minutes late. GitHub's own documentation says a scheduled
-event may be delayed under load and that *"if the load is sufficiently high
-enough, some queued jobs may be dropped"*, so this is the documented behaviour
-rather than a misconfiguration. Nothing is lost when a slot is dropped: `--due`
-derives its own work from `Match.hydratedAt`, so the next run does whatever the
-skipped one would have. Only freshness suffers, which is why the answer is a
-tighter cadence and offset minutes rather than a retry.
+**The cost, stated: `API_FOOTBALL_KEY` and `LEAGUES` now exist in the deployed
+environment** — see [Database and Prisma](#database-and-prisma) for the rule that
+replaced the guarantee they used to provide by being absent. Two smaller costs
+went away with the workflow: the production connection string no longer has a
+second home, and GitHub no longer disables the schedule after 60 days without
+repository activity.
 
-`workflow_dispatch` takes an optional `round`, `league` and `dry_run`, which puts
-the `--round N` repair tool on a button rather than requiring a laptop.
+`?round=7`, `?league=94`, `?limit=2` and `?dry-run` reach the same run from the
+route, which is what `workflow_dispatch`'s three inputs used to do — the `--round`
+repair tool stays on a request rather than requiring a laptop. `vercel crons run
+/api/cron/sync` triggers a plain `--due` from the CLI.
+
+**The route needs nothing from [`src/proxy.ts`](../src/proxy.ts).** Clerk's
+middleware runs on it — the matcher forces API routes back on — but
+`/api/cron/sync` is neither the landing page nor in `isProtectedRoute`, so the
+callback returns before reading a session. A route added under `/api` that *does*
+want protecting has to say so there.
 
 Anything narrower than a whole-season calendar read is deliberately not built.
 Ninety-six runs a day at four calendar requests each is 384 of 7,500, and re-reading
