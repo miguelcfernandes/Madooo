@@ -21,7 +21,15 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { flagClass, groupByLeague, isTopLeague, leagueRank, leagueSlug, splitByStanding } from './leagues'
+import {
+  clubMainLeagues,
+  flagClass,
+  groupByLeague,
+  isTopLeague,
+  leagueRank,
+  leagueSlug,
+  splitByStanding,
+} from './leagues'
 import type { LeagueSection } from './leagues'
 import type { ApiFootballEnvelope, RawFixture } from './api-football/types'
 
@@ -52,7 +60,17 @@ const BUNDESLIGA = leagueName('fixtures_78_2026.json')
 const LIGUE_1 = leagueName('fixtures_61_2026.json')
 const ALLSVENSKAN = leagueName('fixtures_113_2026.json')
 
+/*
+  Read out of the payload for a reason the other seven only illustrate: this
+  competition is the one whose name a person is most likely to write down wrong.
+  Everyone calls it the Champions League and the provider calls it the "UEFA
+  Champions League", so a rank keyed on the short name would name nothing, sort
+  the competition last, and look entirely correct in the diff.
+*/
+const CHAMPIONS_LEAGUE = leagueName('fixtures_2_2026.json')
+
 const ALL = [
+  CHAMPIONS_LEAGUE,
   PREMIER_LEAGUE,
   PRIMEIRA_LIGA,
   LA_LIGA,
@@ -68,6 +86,7 @@ const ALL = [
  * happened to sort by id rather than by rank would fail rather than pass.
  */
 const SECTIONS: LeagueSection[] = [
+  { id: 8, name: CHAMPIONS_LEAGUE, country: rawLeague('fixtures_2_2026.json').country },
   { id: 1, name: PREMIER_LEAGUE, country: rawLeague('fixtures_39_2026.json').country },
   { id: 2, name: PRIMEIRA_LIGA, country: rawLeague('fixtures_94_2026.json').country },
   { id: 3, name: LA_LIGA, country: rawLeague('fixtures_140_2026.json').country },
@@ -105,9 +124,10 @@ describe('leagueSlug', () => {
 })
 
 describe('leagueRank', () => {
-  it('orders the seven leagues the app holds, most followed first', () => {
+  it('orders the eight competitions the app holds, most followed first', () => {
     const ordered = [...ALL].sort((a, b) => leagueRank({ name: a }) - leagueRank({ name: b }))
     expect(ordered).toEqual([
+      CHAMPIONS_LEAGUE,
       PREMIER_LEAGUE,
       LA_LIGA,
       SERIE_A,
@@ -144,15 +164,25 @@ describe('leagueRank', () => {
 })
 
 describe('splitByStanding', () => {
-  it('puts the big five on top, in the order the map ranks them', () => {
+  it('puts the big five and the Champions League on top, in rank order', () => {
     const { top } = splitByStanding(SECTIONS)
     expect(top.map((league) => league.name)).toEqual([
+      CHAMPIONS_LEAGUE,
       PREMIER_LEAGUE,
       LA_LIGA,
       SERIE_A,
       BUNDESLIGA,
       LIGUE_1,
     ])
+  })
+
+  it('keeps Ligue 1 in the top group now that a sixth competition leads it', () => {
+    // TOP_LEAGUES counts down LEAGUE_ORDER, so the Champions League taking first
+    // would have pushed Ligue 1 out of "Top competitions" had the count stayed
+    // at five — a league losing its standing because a different one arrived.
+    const { top } = splitByStanding(SECTIONS)
+    expect(top.map((league) => league.name)).toContain(LIGUE_1)
+    expect(top).toHaveLength(6)
   })
 
   it('puts the rest below, also in rank order', () => {
@@ -170,8 +200,8 @@ describe('splitByStanding', () => {
   // costs no edit. It ranks last, lands under "Other", and still draws.
   it('sends a competition the map does not name to the other group', () => {
     expect(isTopLeague({ name: 'Eredivisie' })).toBe(false)
-    const { top, other } = splitByStanding([...SECTIONS, { id: 8, name: 'Eredivisie', country: 'Netherlands' }])
-    expect(top).toHaveLength(5)
+    const { top, other } = splitByStanding([...SECTIONS, { id: 9, name: 'Eredivisie', country: 'Netherlands' }])
+    expect(top).toHaveLength(6)
     expect(other.map((league) => league.name)).toEqual([PRIMEIRA_LIGA, ALLSVENSKAN, 'Eredivisie'])
   })
 
@@ -243,7 +273,10 @@ describe('groupByLeague', () => {
       [
         { league: unranked[0] },
         { league: unranked[1] },
-        { league: SECTIONS[0] },
+        // Named rather than taken by position: `SECTIONS[0]` was the Premier
+        // League until the Champions League was added to the front of the list,
+        // at which point this test would have quietly changed what it asserts.
+        { league: SECTIONS.find((section) => section.name === PREMIER_LEAGUE)! },
       ],
       (item) => item.league,
     )
@@ -301,13 +334,105 @@ describe('flagClass', () => {
     expect(new Set(COUNTRIES.map((country) => flagClass({ country }))).size).toBe(COUNTRIES.length)
   })
 
-  it('draws nothing for a country we have no file for', () => {
-    // API-Football's country for the Champions League, so the fifth league is
-    // as likely to hit this as to hit a flag.
-    expect(flagClass({ country: 'World' })).toBeNull()
+  it('draws nothing for the Champions League, whose country is not one', () => {
+    /*
+      No longer a hypothetical: this is the competition's own country, read out
+      of its payload like every other string here. The app draws no mark for it
+      at all — there is no flag for "World", and the Starball is a UEFA
+      trademark this project has not cleared, the same answer club crests get.
+      A test rather than a comment because the alternative failure is silent:
+      somebody vendoring a `flag-world.svg` would turn a decision into a bug.
+    */
+    expect(flagClass({ country: rawLeague('fixtures_2_2026.json').country })).toBeNull()
   })
 
   it('survives the provider recasing a country', () => {
     expect(flagClass({ country: 'ENGLAND' })).toBe(flagClass({ country: 'England' }))
+  })
+})
+
+describe('clubMainLeagues', () => {
+  /*
+    The competition ids match `SECTIONS` above, so a wrong answer names a real
+    competition in the failure message rather than a bare number.
+  */
+  const UCL = 8
+  const PL = 1
+  const LIGA = 3
+
+  /** A club's fixtures in one competition, as the query returns them: two rows. */
+  const plays = (teamId: number, leagueId: number, matches: number) => [
+    { teamId, leagueId, matches: Math.ceil(matches / 2) },
+    { teamId, leagueId, matches: Math.floor(matches / 2) },
+  ]
+
+  it('names a club by the competition it plays most of its football in', () => {
+    // Arsenal's actual shape of season: 38 league fixtures and a league phase.
+    const main = clubMainLeagues([...plays(1, PL, 38), ...plays(1, UCL, 8)], SECTIONS)
+    expect(main.get(1)).toBe(PL)
+  })
+
+  it('names a club we carry only through Europe by Europe', () => {
+    // Most of the Champions League: clubs from leagues the app does not sync,
+    // whose only competition here is this one. Filing them nowhere would be the
+    // alternative, and it would drop them off `/teams` entirely.
+    const main = clubMainLeagues(plays(2, UCL, 8), SECTIONS)
+    expect(main.get(2)).toBe(UCL)
+  })
+
+  it('does not change its mind in August, when the counts are still level', () => {
+    /*
+      The reason the rule counts the season's whole calendar rather than the
+      matches played. On the first European matchday a club has played one of
+      each, and an answer read off what has happened so far would move a club
+      between competitions for a fortnight and then move it back.
+    */
+    const main = clubMainLeagues([...plays(1, PL, 38), ...plays(1, UCL, 8)], SECTIONS)
+    expect(main.get(1)).toBe(PL)
+  })
+
+  it('breaks a genuine tie by standing rather than by row order', () => {
+    // Two competitions, the same number of fixtures, handed over in the order
+    // that would give the wrong answer to anything taking the first or the last.
+    const forwards = clubMainLeagues([...plays(3, UCL, 6), ...plays(3, LIGA, 6)], SECTIONS)
+    const backwards = clubMainLeagues([...plays(3, LIGA, 6), ...plays(3, UCL, 6)], SECTIONS)
+    expect(forwards.get(3)).toBe(UCL)
+    expect(backwards.get(3)).toBe(UCL)
+  })
+
+  it('sums both sides of the fixture rather than taking one', () => {
+    /*
+      The halves are what the two `groupBy` calls return, and a rule that read
+      only one of them would call a club's 19 home league fixtures fewer than a
+      European campaign of 17 and file Arsenal under the Champions League.
+    */
+    const main = clubMainLeagues(
+      [
+        { teamId: 4, leagueId: PL, matches: 19 },
+        { teamId: 4, leagueId: PL, matches: 19 },
+        { teamId: 4, leagueId: UCL, matches: 17 },
+      ],
+      SECTIONS,
+    )
+    expect(main.get(4)).toBe(PL)
+  })
+
+  it('answers for every club it was given, and invents none', () => {
+    const main = clubMainLeagues([...plays(1, PL, 38), ...plays(2, UCL, 8)], SECTIONS)
+    expect([...main.keys()].sort()).toEqual([1, 2])
+  })
+
+  it('is empty for a club with no fixtures at all', () => {
+    expect(clubMainLeagues([], SECTIONS).size).toBe(0)
+  })
+
+  it('still answers when the competition is one the caller could not name', () => {
+    /*
+      `/players` passes only the competitions that have squad rows, so a league
+      whose season has not kicked off is absent from the names it hands over.
+      The counts still decide; the names only ever break a tie.
+    */
+    const main = clubMainLeagues([...plays(5, PL, 38), ...plays(5, 99, 8)], SECTIONS)
+    expect(main.get(5)).toBe(PL)
   })
 })

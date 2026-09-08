@@ -49,7 +49,7 @@ config({ path: '.env.local', quiet: true })
 
 import { createServer, type IncomingMessage } from 'node:http'
 
-import { leagueRank } from '../src/lib/leagues'
+import { clubMainLeagues, leagueRank } from '../src/lib/leagues'
 
 /**
  * Not 4321, which was the first choice and the wrong one: that is **Astro's
@@ -104,6 +104,14 @@ function parseArgs(argv: string[]): Options {
  * and `/fixtures` disagreeing about which league leads would be a small thing
  * that still costs a moment's doubt every time the tool is opened. It is pure
  * and Prisma-free, which is what makes it importable from a script at all.
+ *
+ * **Inside a section, the clubs with the most fixtures come first.** A club that
+ * plays 38 times is a club the author will see all season, and one that plays
+ * twice may never be worth a colour at all — so the top of a section is the part
+ * of the competition anyone will actually read. It mattered most before
+ * `withoutQualifying` landed, when the Champions League arrived as 81 clubs
+ * rather than 36; it stays because the ordering is right whatever the section
+ * holds, and a cup with early rounds could bring the case back.
  */
 function byLeague(clubs: Club[]): [string, Club[]][] {
   const groups = new Map<string, Club[]>()
@@ -111,6 +119,10 @@ function byLeague(clubs: Club[]): [string, Club[]][] {
     const open = groups.get(club.leagueName)
     if (open === undefined) groups.set(club.leagueName, [club])
     else open.push(club)
+  }
+
+  for (const members of groups.values()) {
+    members.sort((a, b) => b.fixtures - a.fixtures || a.name.localeCompare(b.name))
   }
 
   return [...groups.entries()].sort(([a], [b]) => {
@@ -130,6 +142,8 @@ interface Club {
   colour: string | null
   leagueId: number
   leagueName: string
+  /** Matches this season across every competition. Sorts the section. */
+  fixtures: number
 }
 
 /* --------------------------------------------------------------- reading -- */
@@ -139,20 +153,25 @@ interface Club {
  *
  * The league comes from `Match`, because `Team` has no league column — a club
  * belongs to a competition only by having played in it, which is also what makes
- * the same query right when a club is promoted. This is `clubLeagues` in
- * [`teams/directory.ts`](../src/lib/teams/directory.ts) folded together with
- * `clubIdentities`, rather than imported: those two are shaped for a page that
- * needs verdict tallies alongside, and this needs neither.
+ * the same query right when a club is promoted. `clubLeagues` and
+ * `clubMainLeagues` are the app's own pair, imported rather than restated: this
+ * page filing Arsenal under a different competition from `/teams` would be a
+ * quiet way to paint the wrong section's chip.
+ *
+ * **It used to take the last grouping row and note that "a club has one league
+ * in one season".** That stopped being true with the Champions League, and it
+ * stopped quietly — the two groupings disagree and the later write won, so
+ * `--all` would have shuffled clubs between headings on a whim.
  */
 async function readClubs(): Promise<Club[]> {
   const { season } = await import('../src/lib/env')
+  const { clubLeagues } = await import('../src/lib/clubs')
   const { prisma } = await import('../src/lib/prisma')
 
   const currentSeason = season()
 
-  const [home, away, leagues, teams] = await Promise.all([
-    prisma.match.groupBy({ by: ['homeTeamId', 'leagueId'], where: { season: currentSeason } }),
-    prisma.match.groupBy({ by: ['awayTeamId', 'leagueId'], where: { season: currentSeason } }),
+  const [appearances, leagues, teams] = await Promise.all([
+    clubLeagues(currentSeason),
     prisma.league.findMany({ select: { id: true, name: true } }),
     prisma.team.findMany({
       where: {
@@ -167,12 +186,15 @@ async function readClubs(): Promise<Club[]> {
   ])
 
   const leagueName = new Map(leagues.map((league) => [league.id, league.name]))
+  const leagueOf = clubMainLeagues(appearances, leagues)
 
-  // A club plays home and away, so both groupings name it. Last write wins and
-  // they agree — a club has one league in one season.
-  const leagueOf = new Map<number, number>()
-  for (const row of home) leagueOf.set(row.homeTeamId, row.leagueId)
-  for (const row of away) leagueOf.set(row.awayTeamId, row.leagueId)
+  // Every competition's matches together, which is what `byLeague` sorts a
+  // section on. Summed across both sides of the fixture, the same as the rule's
+  // own counting.
+  const fixtures = new Map<number, number>()
+  for (const row of appearances) {
+    fixtures.set(row.teamId, (fixtures.get(row.teamId) ?? 0) + row.matches)
+  }
 
   const clubs: Club[] = []
   for (const team of teams) {
@@ -190,6 +212,7 @@ async function readClubs(): Promise<Club[]> {
       colour: team.colour,
       leagueId,
       leagueName: leagueName.get(leagueId) ?? 'Unknown competition',
+      fixtures: fixtures.get(team.id) ?? 0,
     })
   }
 
@@ -388,7 +411,7 @@ function clubRow(club: Club): string {
       <span class="chip chip-lg" data-chip>${escapeHtml(club.code ?? club.name.slice(0, 3).toUpperCase())}</span>
       <span class="club-name">
         ${escapeHtml(club.name)}
-        <small>${club.apiFootballId}</small>
+        <small>${club.apiFootballId} &middot; ${club.fixtures} ${club.fixtures === 1 ? 'fixture' : 'fixtures'}</small>
       </span>
       <input class="code" type="text" maxlength="4" value="${code}" aria-label="Code for ${escapeHtml(club.name)}" />
       <input class="picker" type="color" value="${swatch}" aria-label="Colour for ${escapeHtml(club.name)}" />

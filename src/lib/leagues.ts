@@ -95,8 +95,18 @@ const FLAGS = new Map([
  * The moment the fallback became an invented flag or a reserved gap, the map
  * would be part of the price of a league and the constraint would be broken.
  *
- * The unmapped case is not hypothetical. API-Football's country for the
- * Champions League is "World".
+ * **The unmapped case is now the live one rather than a hypothetical.**
+ * API-Football's country for the Champions League is "World", so it is the one
+ * competition the app holds that draws no mark at all — its heading is its name
+ * and nothing else, and `LeagueMarks` falls back to the name in words.
+ *
+ * That is a decision rather than a gap, and it is the same one that keeps club
+ * crests off every screen. The Starball is a live UEFA trademark; the US
+ * Copyright Office refused it copyright registration in 2018 for want of
+ * creativity, which settles copyright in the US and settles nothing about the
+ * mark. There is no national flag to reach for either — a competition is not a
+ * country, and the European flag would be our invention rather than a fact out
+ * of `League.country`. See `docs/design/foundations.md`.
  */
 export function flagClass(league: LeagueIdentity): string | null {
   return FLAGS.get(searchKey(league.country)) ?? null
@@ -122,6 +132,13 @@ export function flagClass(league: LeagueIdentity): string | null {
  * wants it otherwise, and the section order on `/fixtures` is the only thing in
  * the app that would change.
  *
+ * **The Champions League then took first, and moved all seven down one.** The
+ * same rule again: on a Tuesday night it is the competition most of these
+ * readers are watching, and it is the one whose clubs come from all seven of
+ * the leagues below it. The author was asked rather than told, because where a
+ * competition sits is a preference and not a fact — the alternatives were
+ * sixth, under the big five, and unranked.
+ *
  * **Why an order has to be stated at all.** Every derivable order is wrong here.
  * Alphabetical opens on La Liga forever. Earliest kickoff or most fixtures would
  * put whichever league happens to play at lunchtime above the one most readers
@@ -135,13 +152,18 @@ export function flagClass(league: LeagueIdentity): string | null {
  * already the behaviour an unset column would need.
  */
 const LEAGUE_ORDER = new Map([
-  ['premier league', 1],
-  ['la liga', 2],
-  ['serie a', 3],
-  ['bundesliga', 4],
-  ['ligue 1', 5],
-  ['primeira liga', 6],
-  ['allsvenskan', 7],
+  // "UEFA Champions League", because these keys are the provider's spelling and
+  // not a person's. Dropping the "UEFA" here would rank nothing and sort the
+  // competition last while looking correct, which is the trap `leagueRank`'s
+  // test exists to catch.
+  ['uefa champions league', 1],
+  ['premier league', 2],
+  ['la liga', 3],
+  ['serie a', 4],
+  ['bundesliga', 5],
+  ['ligue 1', 6],
+  ['primeira liga', 7],
+  ['allsvenskan', 8],
 ])
 
 /**
@@ -156,19 +178,24 @@ export function leagueRank(league: { name: string }): number {
  * How many competitions the team-of-the-week filter puts under "Top
  * competitions", counting down `LEAGUE_ORDER` from the top.
  *
- * Five, and the five it names are the ones the phrase means in football: the
- * Premier League, La Liga, Serie A, the Bundesliga and Ligue 1. That the map
- * already ranks them 1 to 5 is not a coincidence — the order claims "most
- * followed", and this is the same claim with a line drawn across it.
+ * Six: the big five, and the competition their best clubs play in midweek. That
+ * the map ranks exactly those six 1 to 6 is not a coincidence — the order claims
+ * "most followed", and this is the same claim with a line drawn across it.
+ *
+ * **It was five, and the Champions League taking first is what moved it.** The
+ * number counts down `LEAGUE_ORDER`, so leaving it at five would have kept the
+ * group at six names' worth of standing and quietly dropped Ligue 1 out of it —
+ * a competition losing its place because a different one arrived, which is not
+ * what the filter is saying. Six is the honest reading of the same order.
  *
  * **Reusing the rank is what keeps a league from costing code.** A checkbox
  * group with a hand-written list of top leagues would be a second place naming
- * competitions, and the eighth league would have to be added to it. Here an
+ * competitions, and the ninth league would have to be added to it. Here an
  * unranked league sorts last and lands under "Other", which is what a new
  * competition should do until somebody decides otherwise — one line in
  * `LEAGUE_ORDER`, and nothing here.
  */
-const TOP_LEAGUES = 5
+const TOP_LEAGUES = 6
 
 /**
  * The order competitions are listed in, wherever a list of them is drawn.
@@ -184,7 +211,8 @@ export function compareLeagues(a: { name: string }, b: { name: string }): number
 }
 
 /**
- * Whether a competition is one of the big five.
+ * Whether a competition is one of the six `TOP_LEAGUES` draws its line under —
+ * the big five and the Champions League.
  *
  * Structural on `{ name }`, like `leagueRank` — anything with a name satisfies
  * it, and the flattening is `searchKey`'s, so a provider recasing "Serie A"
@@ -213,6 +241,107 @@ export function splitByStanding<T extends { name: string }>(
     top: ranked.filter(isTopLeague),
     other: ranked.filter((league) => !isTopLeague(league)),
   }
+}
+
+/* ------------------------------------------------------- a club's league -- */
+
+/**
+ * How many matches one club has in one competition this season.
+ *
+ * Structural, so the Prisma `groupBy` in [`clubs.ts`](./clubs.ts) satisfies it
+ * without this file importing anything of Prisma's.
+ */
+export interface ClubLeagueAppearance {
+  teamId: number
+  leagueId: number
+  /** Every match of the season, played or not — see `clubMainLeagues`. */
+  matches: number
+}
+
+/**
+ * Which single competition names each club.
+ *
+ * **`Team` has no league column**, and until now it did not need one: a club
+ * reached a competition by playing in it, and with only domestic leagues synced
+ * every club had exactly one. Three call sites relied on that quietly and each
+ * picked its league a different arbitrary way — the directory took the first row
+ * back, the club profile took `findFirst` with no `orderBy`, and the colour
+ * picker took the last write. All three were correct by accident and all three
+ * were one cup competition away from being wrong.
+ *
+ * The Champions League is that cup competition. Arsenal now have two, and
+ * without a rule the club profile would have said "Premier League" on one load
+ * and "UEFA Champions League" on the next, from the same data.
+ *
+ * **The rule: a club belongs to the competition it plays most of its football
+ * in.** A domestic season is 30 to 38 fixtures and a European campaign is at
+ * most 17, so the domestic league wins for every club that has one, and it wins
+ * on the season's whole calendar rather than on the matches played so far —
+ * which is what stops the answer moving in August, when a club may genuinely
+ * have played one of each. A club we carry *only* through Europe, which is most
+ * of the Champions League, is named by Europe: that is the truth about that club
+ * as far as this database knows, and Feyenoord being filed under the
+ * competition we actually watch them in is better than filing them nowhere.
+ *
+ * **Why not the provider's own answer.** API-Football does label a competition
+ * `"League"` or `"Cup"`, but only on `/leagues`, which the sync does not call —
+ * `/fixtures` carries no such field. Buying that label would cost a column, a
+ * migration and a request per league per run, to settle a question the fixture
+ * counts already answer. If a club ever plays in two cups and no synced league,
+ * a count still has to break the tie, so the rule would be needed anyway.
+ *
+ * Ties go to `compareLeagues`, which makes the answer stable rather than
+ * dependent on the order Postgres handed the rows back.
+ */
+export function clubMainLeagues(
+  appearances: readonly ClubLeagueAppearance[],
+  leagues: readonly { id: number; name: string }[],
+): Map<number, number> {
+  const leagueName = new Map(leagues.map((league) => [league.id, league.name]))
+
+  // Summed rather than assigned: a club is grouped once per side of the fixture,
+  // so `clubLeagues` returns it twice per competition and both halves are real.
+  const played = new Map<number, Map<number, number>>()
+  for (const row of appearances) {
+    let byLeague = played.get(row.teamId)
+    if (byLeague === undefined) {
+      byLeague = new Map()
+      played.set(row.teamId, byLeague)
+    }
+    byLeague.set(row.leagueId, (byLeague.get(row.leagueId) ?? 0) + row.matches)
+  }
+
+  const main = new Map<number, number>()
+  for (const [teamId, byLeague] of played) {
+    let bestId: number | null = null
+    let bestMatches = -1
+
+    for (const [leagueId, matches] of byLeague) {
+      if (bestId === null || matches > bestMatches) {
+        bestId = leagueId
+        bestMatches = matches
+        continue
+      }
+      if (matches < bestMatches) continue
+
+      // A tie, broken by standing so that the answer does not depend on the
+      // iteration order. A league the `leagues` list does not name sorts last,
+      // which is `compareLeagues`' own rule rather than a special case here.
+      const contender = { name: leagueName.get(leagueId) ?? '' }
+      const holder = { name: leagueName.get(bestId) ?? '' }
+      if (compareLeagues(contender, holder) < 0) {
+        bestId = leagueId
+        bestMatches = matches
+      }
+    }
+
+    // Unreachable: a club only reaches `played` by having a row, and a row
+    // carries a league. Guarded rather than asserted so the map holds no
+    // invented ids.
+    if (bestId !== null) main.set(teamId, bestId)
+  }
+
+  return main
 }
 
 /** What a section heading needs of a league: a key, a name, and its flag's country. */

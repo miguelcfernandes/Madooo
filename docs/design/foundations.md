@@ -1068,7 +1068,7 @@ same kind of bar. A flag may be drawn where all four hold:
    `aria-hidden`. The accessible name is the league's name, which is already
    there.
 
-The files are four 4:3 SVGs in `public/flags/`, vendored from flag-icons under
+The files are seven 4:3 SVGs in `public/flags/`, vendored from flag-icons under
 MIT, drawn as a `background-image` at 16×12 with a 1px inset ring in `--border`.
 The ring is not decoration: England is a white field, so it has no edge on
 `--surface`, and none on any pale fill. Italy needs the same along the top and
@@ -1082,6 +1082,36 @@ a subdivision tag sequence and 🇬🇧 would be wrong.
 **Only a competition's country may claim this.** A player's nationality is a new
 claim about a person rather than about a competition, and would have to be argued
 on its own rather than inherited from here.
+
+**The Champions League draws no mark, and clause 3 is why that costs nothing.**
+API-Football's country for it is "World", so `flagClass` returns null, the
+heading is the competition's name alone, and `LeagueMarks` — which draws a row of
+flags where names would not fit — falls back to the name in words. That was
+already the behaviour before the competition arrived; nothing was added.
+
+Three things were considered and declined, and the order matters because only the
+last is about design:
+
+1. **The UEFA Starball.** The author's reading of the copyright was right and is
+   not the binding question. The US Copyright Office's Review Board refused the
+   Starball registration in 2018 for want of creativity, which is why English
+   Wikipedia tags the file public domain *in the US* — while flagging that it may
+   not be in Switzerland, where UEFA is and where the originality threshold sits
+   differently. None of that touches trademark, which is the question this
+   project declined to clear for club crests and which UEFA enforces harder than
+   most clubs do. The image itself carries a ®. So `League.logo` renders nowhere,
+   for the eighth competition exactly as for the other seven.
+2. **The European flag**, twelve gold stars on blue. It would satisfy every
+   clause but the first, and the first is the one that matters: `League.country`
+   says "World", not "Europe", so drawing Europe would be a call site choosing a
+   mark rather than data rendering itself. The Council of Europe also restricts
+   uses that suggest an affiliation, and UEFA is not the EU.
+3. **A mark of our own.** Either a Starball by another name, which is worse, or a
+   drawing that stands for nothing — and the rule above already says there is no
+   drawing of a competition that belongs in this vocabulary.
+
+A competition with no mark is the honest outcome, and it is what clause 3 was
+written to make survivable.
 
 ### GitHub's mark is a second identity mark, and the only one
 

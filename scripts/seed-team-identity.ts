@@ -23,8 +23,21 @@ config({ path: '.env.local', quiet: true })
 interface Identity {
   /** The name as API-Football spells it. Checked, not written — see below. */
   name: string
-  /** The league's own three-letter abbreviation for the club. */
-  code: string
+  /**
+   * The league's own three-letter abbreviation for the club, or `null` where
+   * nobody has given one.
+   *
+   * **Nullable for the same reason `colour` is, and it became so for the same
+   * competition.** The Champions League brought in clubs from outside the seven
+   * leagues, and not all of them have an abbreviation anyone would recognise.
+   * Inventing one is the same mistake as inventing a colour, only quieter,
+   * because a made-up three-letter code looks exactly like a real one.
+   *
+   * A null costs nothing: `teamCode` already falls back to the first three
+   * letters of the name, which is the fallback every unseeded club has always
+   * drawn. `npm run colours` is where a real code gets typed.
+   */
+  code: string | null
   /**
    * `null` where nobody has yet said what the club plays in.
    *
@@ -36,7 +49,8 @@ interface Identity {
    * fallback, which reads as missing data rather than as a fact about the club.
    *
    * A null costs the club its colour and nothing else: the script still writes
-   * the code, and `npm run colours` is the screen that fills these in.
+   * the code where there is one, and `npm run colours` is the screen that fills
+   * these in.
    */
   colour: string | null
 }
@@ -333,6 +347,40 @@ const IDENTITIES: Record<number, Identity> = {
   2172: { name: 'Degerfors IF', code: 'DEG', colour: '#e7130c' }, // deepened, see above
   2240: { name: 'Mjallby AIF', code: 'MAI', colour: '#ffd400' },
   2241: { name: 'Vasteras SK FK', code: 'VSK', colour: '#007948' },
+
+  // UEFA Champions League, 2026/27 — the thirteen clubs the app carries only
+  // through Europe. The other twenty-three in the league phase are already
+  // above, under their own leagues, and are not repeated here: this table is
+  // keyed by club, not by competition, and a club has one identity whichever
+  // competition it is drawn in.
+  //
+  // Ids read out of `scratch/fixtures_2_2026.json`. Every colour was picked by
+  // the author in `npm run colours` with the chip drawn in front of them, which
+  // puts this block with the Bundesliga's, Ligue 1's and Allsvenskan's as the
+  // best-sourced in the file rather than with the Premier League's.
+  //
+  // **Every code is null, and that is the answer rather than a gap.** These are
+  // clubs an English-speaking reader knows by name and not by abbreviation, and
+  // no competition publishes a three-letter code for them the way the Premier
+  // League does for its twenty. `teamCode` falls back to the first three letters
+  // of the name — PSV, FEY, GAL, AEK — which is both recognisable and true,
+  // where an invented code would look exactly as authoritative as a real one.
+  // The three that collide on their first word are the reason to check before
+  // inventing any: Club Brugge, Slavia Praha and Slovan Bratislava draw CLU,
+  // SLA and SLO, which are distinct.
+  197: { name: 'PSV Eindhoven', code: null, colour: '#ed1c24' },
+  209: { name: 'Feyenoord', code: null, colour: '#ff0000' },
+  327: { name: 'Bodo/Glimt', code: null, colour: '#f8dd00' },
+  550: { name: 'Shakhtar Donetsk', code: null, colour: '#f0612c' },
+  560: { name: 'Slavia Praha', code: null, colour: '#d7141a' },
+  569: { name: 'Club Brugge KV', code: null, colour: '#0078bf' },
+  575: { name: 'AEK Athens FC', code: null, colour: '#fcd20f' },
+  611: { name: 'Fenerbahçe', code: null, colour: '#ffed00' },
+  645: { name: 'Galatasaray', code: null, colour: '#a90432' },
+  656: { name: 'Slovan Bratislava', code: null, colour: '#0a689b' },
+  759: { name: 'Viking', code: null, colour: '#72121c' },
+  1026: { name: 'Lask Linz', code: null, colour: '#e50000' },
+  13976: { name: 'Sabah FA', code: null, colour: '#002b7f' },
 }
 
 async function main() {
@@ -367,19 +415,22 @@ async function main() {
       continue
     }
 
-    // A null colour writes the code and leaves `colour` exactly as it was,
+    // A null writes nothing to that column and leaves it exactly as it was,
     // rather than blanking it. That distinction is what makes this script safe
     // to run after `npm run colours` has painted a club straight into the
-    // database and before the table here has caught up: the run fills in the
-    // code and does not undo the colour. Listing the column and omitting the
-    // key is Prisma's own way of saying "do not touch this one".
-    await prisma.team.update({
-      where: { id: team.id },
-      data:
-        identity.colour === null
-          ? { code: identity.code }
-          : { code: identity.code, colour: identity.colour },
-    })
+    // database and before the table here has caught up: the run fills in what it
+    // knows and does not undo what it does not. Omitting the key is Prisma's own
+    // way of saying "do not touch this one".
+    const data: { code?: string; colour?: string } = {}
+    if (identity.code !== null) data.code = identity.code
+    if (identity.colour !== null) data.colour = identity.colour
+
+    // Both null is a club listed here and stated nowhere — a placeholder.
+    // Counted as seeded so the totals still describe the table, but not written,
+    // because an empty `update` is a round trip that changes nothing.
+    if (Object.keys(data).length > 0) {
+      await prisma.team.update({ where: { id: team.id }, data })
+    }
     seeded += 1
     if (identity.colour === null) unpainted.push(`${team.name} (${team.apiFootballId})`)
   }

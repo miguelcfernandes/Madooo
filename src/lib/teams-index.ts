@@ -13,6 +13,7 @@
  * so the two cannot describe the same row differently.
  */
 
+import { clubMainLeagues, type ClubLeagueAppearance } from './leagues'
 import { searchKey, type Ranking } from './rankings'
 
 /* ---------------------------------------------------------------- storage -- */
@@ -34,11 +35,15 @@ export const TEAMS_LAYOUT_KEY = 'madooo-teams-layout'
 
 /* ----------------------------------------------------------- query shapes -- */
 
-/** What `clubLeagues` returns: one club and the competition it played in. */
-export interface ClubLeagueRow {
-  teamId: number
-  leagueId: number
-}
+/**
+ * What `clubLeagues` returns: one club, one competition, and how many fixtures
+ * it has in it this season.
+ *
+ * Declared in [`leagues.ts`](./leagues.ts) now rather than here, because the
+ * rule that reads it is there and three screens share both. Re-exported under
+ * the name this file's own fold has always used.
+ */
+export type ClubLeagueRow = ClubLeagueAppearance
 
 /** What `clubIdentities` returns — what `crest()` needs, and no more. */
 export interface ClubIdentityRow {
@@ -141,6 +146,11 @@ export function foldTeamRows(
   const identityById = new Map(identities.map((club) => [club.id, club]))
   const leagueName = new Map(leagues.map((league) => [league.id, league.name]))
 
+  // Which competition names each club, for a club that plays in more than one.
+  // The rule and its argument are in `leagues.ts`; what matters here is that
+  // this screen, `/players` and a club's own profile all ask the same function.
+  const mainLeague = clubMainLeagues(clubs, leagues)
+
   // Summed rather than set: `clubsSeen` groups each side of the fixture
   // separately, so a club that both hosted and visited a watched match arrives
   // twice and the two halves are both real.
@@ -168,12 +178,15 @@ export function foldTeamRows(
   const drawn = new Set<number>()
 
   for (const club of clubs) {
-    // `clubLeagues` returns a club once per side of the fixture, so most arrive
-    // twice. First league wins — no club plays in two domestic leagues, so with
-    // three domestic competitions synced there is still nothing to choose
-    // between. A cup competition is the case that breaks it, and if it ever
-    // lands the directory should name one league rather than list the club
-    // twice.
+    // `clubLeagues` returns a club once per side of the fixture and once per
+    // competition, so most arrive several times over. One row each.
+    //
+    // This used to take the first row's league and say so: no club plays in two
+    // domestic leagues, so with only domestic competitions synced there was
+    // nothing to choose between, and the comment here named a cup as the case
+    // that would break it. The Champions League is that cup, and `mainLeague`
+    // is the promised answer — one competition per club rather than the club
+    // listed twice.
     if (drawn.has(club.teamId)) continue
 
     const identity = identityById.get(club.teamId)
@@ -185,14 +198,19 @@ export function foldTeamRows(
     drawn.add(club.teamId)
     const tally = tallies.get(club.teamId)
 
+    // `?? club.leagueId` is unreachable — every club in `clubs` is a key of the
+    // map, because the map is built from `clubs`. It is here so the row's
+    // non-nullable `leagueId` stays a fact rather than an assertion.
+    const leagueId = mainLeague.get(club.teamId) ?? club.leagueId
+
     rows.push({
       id: identity.id,
       name: identity.name,
       key: searchKey(identity.name),
       code: identity.code,
       colour: identity.colour,
-      leagueId: club.leagueId,
-      league: leagueName.get(club.leagueId) ?? null,
+      leagueId,
+      league: leagueName.get(leagueId) ?? null,
       seen: seenByTeam.get(club.teamId) ?? 0,
       total: tally?.total ?? 0,
       mvps: tally?.mvps ?? 0,

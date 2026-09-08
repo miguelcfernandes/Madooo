@@ -41,7 +41,7 @@ which is the opposite of an instruction to build something. The tell is
 grammatical: a remark states what *is* true and survives being read a month
 later, while a plan uses imperatives — "add X", "set up Y".
 
-**Last updated:** 2026-08-29 (the schedule moves to Vercel Cron)
+**Last updated:** 2026-09-08 (the Champions League)
 
 > **The rebrand is built.** **"Field Notes"** — Schibsted Grotesk and DM Mono on
 > a marine brand colour, zero radius everywhere, one shadow, and glyphs of our
@@ -60,10 +60,28 @@ later, while a plan uses imperatives — "add X", "set up Y".
 
 ## Current state
 
-**Seven leagues, on API-Football's Pro tier.** `SEASON=2026` and
-`LEAGUES=39,94,140,135,78,61,113`: the Premier League, the Primeira Liga, La
-Liga, Serie A, the Bundesliga, Ligue 1 and Allsvenskan. All seven calendars are
-in the database — 380 matches, 306, 380, 380, 306, 306 and 240.
+**Eight competitions, on API-Football's Pro tier.** `SEASON=2026` and
+`LEAGUES=2,39,94,140,135,78,61,113`: the UEFA Champions League, the Premier
+League, the Primeira Liga, La Liga, Serie A, the Bundesliga, Ligue 1 and
+Allsvenskan. All eight calendars are in the database — 144 matches, 380, 306,
+380, 380, 306, 306 and 240.
+
+**The Champions League is the first of these that is not a league**, and it cost
+two rules a league does not. **The app carries the competition and not the
+qualifying for it**: the provider's season is 234 fixtures by 81 clubs, of which
+90 fixtures and 45 clubs are three qualifying rounds and a play-off round played
+across July and August, by clubs that are out before the competition starts.
+`withoutQualifying` drops them at the point of writing, so 144 fixtures and 36
+clubs are what the database holds. And **a club now belongs to two competitions
+at once**, which is what `clubMainLeagues` settles: a club is named by the one it
+plays most of its football in, so Arsenal stay a Premier League club and
+Feyenoord, whom the app carries only through Europe, are a Champions League one.
+23 of the 36 were already in the app; 13 are new.
+
+Its rounds are `"League Stage - 4"` rather than `"Regular Season - 4"`, which
+`roundNumber` reads as a matchday without being told about it. It draws no mark:
+API-Football's country for it is "World", and the Starball is a UEFA trademark
+this project has not cleared any more than it has cleared club crests.
 
 **Allsvenskan is the first league here that runs on the calendar year**, and it
 is the first to join already half-played rather than on an opening weekend.
@@ -418,6 +436,15 @@ the squash-one-commit-per-slice flow, which is why they name several.
   `/api/cron/sync` instead of GitHub Actions, which was dropping six of ten
   scheduled runs. The run itself moved to `src/lib/sync-run.ts` so the CLI and
   the route are two callers of one run.
+
+- **The Champions League.** The eighth competition and the first that is not a
+  league. One variable, as every league before it — and two rules, because a cup
+  is not a league in two ways a league never showed. `withoutQualifying` in
+  [`rounds.ts`](../src/lib/rounds.ts) carries the competition and not the
+  qualifying for it; `clubMainLeagues` in
+  [`leagues.ts`](../src/lib/leagues.ts) names a club by the competition it plays
+  most of its football in, so the three screens that each used to pick
+  arbitrarily now ask one question. It draws no mark.
 
 ## Not built, and why
 
@@ -874,13 +901,32 @@ must stay out of the Vercel build, are in
   makes those three the best-sourced blocks in the file — a stronger claim than
   "checked", since nothing had to be talked out of a wrong answer first.
 
-  **So what is left open is the Premier League's twenty, and only those.** Still
-  commonly published primaries, still never checked, and now the only block in
-  the app asserting a colour nobody has confirmed. Given the rate the other
-  leagues found — five of twenty in La Liga, thirteen of eighteen in Serie A —
-  something like five of them are wrong right now, and wrong quietly.
-  *Resolved by running `npm run colours -- --all` and working down the Premier
-  League section.*
+  **What is left open is the Premier League's twenty, and only those again.**
+  They are still commonly published
+  primaries, still never checked, and still the only block in the app *asserting*
+  a colour nobody has confirmed — given the rate the other leagues found, five of
+  twenty in La Liga and thirteen of eighteen in Serie A, something like five are
+  wrong right now and wrong quietly. *Resolved by running
+  `npm run colours -- --all` and working down the Premier League section.*
+
+  **The Champions League's thirteen are settled, and they settled the way the
+  tooling intends.** Every club the app carries only through Europe arrived with
+  no colour, drew the neutral fallback rather than a guess, and was picked by the
+  author in `npm run colours` with the chip in front of them. It was 56 clubs
+  before the qualifying rounds stopped being carried, which is most of what that
+  change bought. So the file now holds a confirmed colour for every club in it
+  bar the Premier League's twenty.
+
+  **All thirteen hold `code: null`**, which is the first block in the table to do
+  so. No competition publishes three-letter codes for them the way the Premier
+  League does, so `teamCode` draws the first three letters of the name — PSV,
+  FEY, GAL — and an invented code would have looked exactly as authoritative as
+  a real one.
+
+  **`Identity.code` is nullable for the same reason `colour` is**, and the
+  Champions League is what made it so: a made-up three-letter abbreviation for a
+  club nobody abbreviates looks exactly like a real one, and `teamCode` already
+  falls back to the first three letters of the name.
 
   **A separate thing this exposed: the ink is computed and cannot be overridden.**
   `crestInk` takes whichever of black or white contrasts more, so a club cannot

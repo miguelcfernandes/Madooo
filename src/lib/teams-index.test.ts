@@ -20,11 +20,16 @@ const ARSENAL: ClubIdentityRow = { id: 1, name: 'Arsenal', code: 'ARS', colour: 
 const CHELSEA: ClubIdentityRow = { id: 2, name: 'Chelsea', code: 'CHE', colour: '#034694' }
 const PREMIER_LEAGUE = { id: 7, name: 'Premier League' }
 
-/** A club arrives once per side of the fixture, which is what the fold dedupes. */
-function played(teamId: number, leagueId = 7): ClubLeagueRow[] {
+/**
+ * A club arrives once per side of the fixture, which is what the fold dedupes.
+ *
+ * `matches` is split across the two rows because that is how the query returns
+ * it — nineteen at home and nineteen away — and `clubMainLeagues` sums them.
+ */
+function played(teamId: number, leagueId = 7, matches = 19): ClubLeagueRow[] {
   return [
-    { teamId, leagueId },
-    { teamId, leagueId },
+    { teamId, leagueId, matches },
+    { teamId, leagueId, matches },
   ]
 }
 

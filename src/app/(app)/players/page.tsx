@@ -1,4 +1,5 @@
 import { requireDbUser } from '@/lib/auth'
+import { clubLeagues } from '@/lib/clubs'
 import { season } from '@/lib/env'
 import {
   leaguesInSeason,
@@ -30,8 +31,8 @@ export const dynamic = 'force-dynamic'
  * nothing on it. That is deliberate: the point of the screen is that the search
  * box reaches a player who has never been judged.
  *
- * The six queries are each bounded and go out together, so the page waits for the
- * slowest rather than for the sum. The fold that turns three of them into rows is
+ * The seven queries are each bounded and go out together, so the page waits for
+ * the slowest rather than for the sum. The fold that turns five of them into rows is
  * pure and lives in [`players-index.ts`](../../../lib/players-index.ts) with its
  * tests.
  *
@@ -49,16 +50,22 @@ export default async function Players() {
   // one indexed lookup.
   const user = await requireDbUser()
 
-  const [squads, seen, judgements, teams, leagues, totals] = await Promise.all([
+  const [squads, seen, judgements, teams, leagues, clubs, totals] = await Promise.all([
     playersInSeason(currentSeason),
     playersSeen(currentSeason, user.id),
     playerJudgements(currentSeason, user.id),
     teamsInSeason(currentSeason),
     leaguesInSeason(currentSeason),
+    clubLeagues(currentSeason),
     playersTotals(currentSeason, user.id),
   ])
 
-  const players = foldPlayerRows(squads, seen, judgements)
+  // `clubs` is the seventh query and the only one added for the Champions
+  // League: it says which competitions each club plays in, so the fold can put
+  // a player under his club's rather than under whichever match was newest.
+  // `leagues` doubles as the tiebreak's names — a competition with no squad rows
+  // yet is absent from it and sorts last, which only ever decides a tie.
+  const players = foldPlayerRows(squads, seen, judgements, clubs, leagues)
 
   return (
     <>

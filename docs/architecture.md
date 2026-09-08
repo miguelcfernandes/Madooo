@@ -46,6 +46,7 @@ what they cover. Link to them instead.
   - [Prisma 7 differs from most writing about it](#prisma-7-differs-from-most-writing-about-it)
   - [Two columns are seeded by hand and never synced](#two-columns-are-seeded-by-hand-and-never-synced)
   - [`npm run colours` is where a club colour comes from](#npm-run-colours-is-where-a-club-colour-comes-from)
+  - [A club can be in two competitions, and one function says which names it](#a-club-can-be-in-two-competitions-and-one-function-says-which-names-it)
   - [A relation can be counted whole and read filtered in one query](#a-relation-can-be-counted-whole-and-read-filtered-in-one-query)
   - [Prisma resolves `distinct` and a nested `take` in Node, so "latest row per group" is raw SQL](#prisma-resolves-distinct-and-a-nested-take-in-node-so-latest-row-per-group-is-raw-sql)
   - [The diary is ordered by when an entry was written](#the-diary-is-ordered-by-when-an-entry-was-written)
@@ -305,6 +306,48 @@ white to also passes AA with white, so the two decisions are one. The reasoning
 is in `seed-team-identity.ts` beside the affected clubs, since a colour edited to
 suit a rendering rule inverts that file's doctrine and a future session would
 otherwise "correct" it back.
+
+### A club can be in two competitions, and one function says which names it
+
+`Team` has no `leagueId`. A club reaches a competition only by playing in it,
+which is what makes the same reading right when a club is promoted — and until
+the Champions League landed, every club had exactly one, so three screens got
+away with picking arbitrarily. The teams directory took the first row the
+`groupBy` returned, `teamHeader` used `findFirst` with no `orderBy`, and
+`playersInSeason`'s `DISTINCT ON` took the league of the player's most recent
+match.
+
+All three were correct by accident, and a cup competition breaks all three at
+once. The two `groupBy` calls return Arsenal under both the Premier League and
+the Champions League with no order promised between them, so the club profile
+would have said one on a Tuesday and the other on a Wednesday from unchanged
+data. `playersInSeason`'s was the worst of the three, because it was *stably*
+wrong: on the Wednesday after a European night every Arsenal player's league was
+the Champions League, so filtering `/players` by the Premier League dropped them
+until Saturday.
+
+[`clubMainLeagues`](../src/lib/leagues.ts) is the one answer all three now ask
+for. **A club belongs to the competition it plays most of its football in**,
+counted over the season's whole calendar rather than the matches played so far —
+which is the part that stops the answer moving in August, when a club can
+genuinely have played one of each. A domestic season is 30 to 38 fixtures against
+a European campaign's 17 at most, so a club with a domestic league always keeps
+it, and the 13 clubs the app carries only through Europe are named by Europe.
+Ties fall to `compareLeagues`, so the answer never depends on row order.
+
+[`clubs.ts`](../src/lib/clubs.ts) is the single `groupBy` pair behind it, in its
+own module because `/teams`, `/players` and `/teams/[id]` all need it and a
+second copy is exactly how they would start disagreeing. `foldPlayerRows` takes
+the club list as an optional argument and defaults it empty: a club's own roster
+passes nothing, because that screen draws one club and never filters by
+competition, and an empty list leaves every row's own league untouched.
+
+**API-Football does label a competition `"League"` or `"Cup"`, and we do not buy
+it.** The field is on `/leagues`, which the sync does not call — `/fixtures`
+carries no such thing — so it would cost a column, a migration and a request per
+league per run to answer a question the fixture counts already answer. It would
+not even remove the need for the rule: a club in two cups and no synced league
+still needs a count to break the tie.
 
 ### A relation can be counted whole and read filtered in one query
 
@@ -904,8 +947,37 @@ module; nothing ever points out of the sync.
 
 The provider's vocabulary never reaches a URL: addresses carry `?date=`, and the
 label is parsed into "Matchday 6" only where a card prints it. `roundDisplay`
-returns an unnumbered label — `"Round of 16"`, `"Final"` — unchanged rather than
-dropping it, which is what lets a cup say which stage a fixture belongs to.
+returns an unnumbered label unchanged rather than dropping it, which is what lets
+a cup say which stage a fixture belongs to.
+
+**The Champions League is the first competition that exercises that fallback,
+and what it sends is not what the fallback was written for.** Its twelve rounds
+are `"1st Qualifying Round"` through `"3rd Qualifying Round"`, `"Play-offs"`, and
+`"League Stage - 1"` to `"League Stage - 8"` — the knockout rounds appear only
+once they are drawn. So both branches of `roundNumber` were already right by
+accident and are now covered on purpose: the trailing-digit regex reads a league
+phase as matchdays without having been told the phrase "League Stage", and
+`"1st Qualifying Round"` returns null because the digit is not at the end. That
+last one is luck worth knowing about — a provider that spelled it
+`"Qualifying Round 1"` would have every qualifier drawing "Matchday 1".
+
+**The qualifying rounds are not carried at all**, which is a separate decision
+from how they would be displayed. `withoutQualifying`, in the same module, drops
+them in `syncSeasonFixtures` before a fixture or a club is written — so nothing
+downstream has to filter, and the 45 clubs knocked out in July never reach the
+`Team` table. The rule is stated in dates rather than in names: **a round that
+starts before the competition's first numbered round is qualifying for it.**
+Written on names it would have had to list the provider's spellings, and it
+would have dropped a second division's promotion play-offs, which carry the same
+label and are the best-watched fixtures of that season. `rounds.test.ts` runs it
+over all seven league seasons and asserts it touches nothing.
+
+It writes and deletes nothing else. A qualifying fixture some earlier run already
+wrote stays where it is — those rows can carry a reader's judgements, and cascade
+deletes reach `Judgement` and `TeamOfTheWeekPick`, so a sync that tidied up after
+itself would be deleting somebody's diary. The 90 rows an earlier run had put in
+the development branch were removed by hand, after checking that nothing was
+written on them.
 
 [`match-status.ts`](../src/lib/match-status.ts) is the second module of that
 shape, and it carries a wrinkle `rounds.ts` does not: **one of its groups is the
@@ -2379,6 +2451,15 @@ would want alt text a decorative mark must not have, and trips eslint's
 `no-img-element`. Root-relative `url("/flags/pt.svg")` passes through Lightning
 CSS unrewritten and resolves against `public/`, which is the point of writing it
 that way — there is nothing for the toolchain to follow and get wrong.
+
+**One competition draws no mark at all, and that is the design rather than a
+gap.** API-Football's country for the Champions League is "World", so `flagClass`
+returns null and `LeagueFlag` renders nothing — not an empty span, which would
+still be a flex item and leave a phantom 8px in the heading. `LeagueMarks` falls
+back to the competition's name in words. Both behaviours predate the competition
+by several slices, having been written for it; nothing was added to the app to
+make the eighth competition render. Why it gets no logo is in
+[`foundations.md`](design/foundations.md).
 
 **The entry that changes how later work goes:** a country and its class name live
 in two files with nothing in the language binding them. `flagClass` returning

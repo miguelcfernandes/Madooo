@@ -31,10 +31,17 @@ hasn't read yet, so you never have to name a matchday. Add `--dry-run` to see
 what it would fetch without spending a request.
 
 That's the command Madooo runs on a schedule, from
-[`.github/workflows/sync.yml`](.github/workflows/sync.yml). A fork wanting the
-same needs two repository secrets (`DATABASE_URL`, `API_FOOTBALL_KEY`) and two
-repository variables (`SEASON`, `LEAGUES`). It lives in GitHub Actions rather
-than on the host so the API key never has to exist in the deployed environment.
+[`/api/cron/sync`](src/app/api/cron/sync/route.ts) — a Vercel cron job, declared
+in `vercel.json`. A fork wanting the same needs `SEASON`, `LEAGUES`,
+`API_FOOTBALL_KEY` and `CRON_SECRET` in its Vercel Production environment, and
+Vercel's Pro plan, which is what allows a cron more frequent than daily.
+
+It used to be a GitHub Actions workflow, which kept the API key out of the
+deployed environment entirely. That was the better property and it was given up
+for punctuality: GitHub dropped six of ten scheduled runs. The guarantee that no
+page reaches the provider is now a rule rather than a missing credential — the
+cron route is the only file under `src/app/` allowed to touch either variable,
+which `AGENTS.md` states as a non-negotiable.
 
 ## The rest of the scripts
 

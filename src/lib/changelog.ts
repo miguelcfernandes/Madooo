@@ -74,6 +74,11 @@ export type ChangelogEntry = Omit<Written, 'date'> & { date: Date }
  */
 const WRITTEN: Written[] = [
   {
+    date: '2026-09-08',
+    title: 'The Champions League',
+    note: 'The competition itself, at the top of the fixtures page — the league phase and the knockout rounds after it, not the summer qualifying that decided who is in it. Clubs you already follow keep their own league on their profile and in the directories, so Arsenal are still a Premier League club; the thirteen the app now covers only through Europe are listed under it.',
+  },
+  {
     date: '2026-08-28',
     title: 'Pick a team of the week',
     note: 'Choose a run of days and the competitions that count, then build an eleven out of everyone you marked MVP or standout in them, in the formation you want. Name it, and it is drawn on a pitch you can screenshot — your list shows every one you have picked, and a player who is in any of them says so on his own profile.',

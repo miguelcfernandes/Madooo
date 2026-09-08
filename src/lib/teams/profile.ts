@@ -13,6 +13,8 @@
  * tested. This module adds none of its own.
  */
 
+import { clubLeagues } from '../clubs'
+import { clubMainLeagues } from '../leagues'
 import { prisma } from '../prisma'
 import type { VerdictCounts } from '../verdict-split'
 
@@ -20,32 +22,40 @@ import type { VerdictCounts } from '../verdict-split'
  * Who this club is, and which competition it played in.
  *
  * **A club has no league column.** `League` reaches a `Team` only through the
- * matches they share, so the competition is read off one of this club's matches
- * this season — the same reading that makes a player's club a fact about a
- * match rather than a column on him.
+ * matches they share, so the competition is read off this club's matches this
+ * season — the same reading that makes a player's club a fact about a match
+ * rather than a column on him.
  *
- * `OR` over both sides of the fixture rather than `homeMatches`: a club with no
- * home fixture in the data is a state the round-by-round hydration can produce,
- * and it should still draw a league.
+ * **It used to be `findFirst` with no `orderBy`, which was a bug waiting for a
+ * cup.** One competition per club made any match the right match; two makes the
+ * page say "Premier League" on one load and "UEFA Champions League" on the next,
+ * from unchanged data. `clubMainLeagues` is the rule that settles it, and this
+ * header, `/teams` and `/players` all ask it rather than each choosing.
  *
- * Both halves come back `null` for a club that exists with no match this season,
+ * Three queries where there were two, all sent together. The third is every
+ * league we hold — eight rows — because the tiebreak needs their names and
+ * fetching only the two this club plays in would cost a round trip that depends
+ * on the first.
+ *
+ * `league` comes back `null` for a club that exists with no match this season,
  * which is reachable by typing a URL and is the caller's empty state.
  */
 export async function teamHeader(teamId: number, season: number) {
-  const [team, played] = await Promise.all([
+  const [team, appearances, leagues] = await Promise.all([
     prisma.team.findUnique({
       where: { id: teamId },
       // What `crest()` needs, and no more — `Team.logo` renders nowhere.
       select: { id: true, name: true, code: true, colour: true },
     }),
-    prisma.match.findFirst({
-      where: { season, OR: [{ homeTeamId: teamId }, { awayTeamId: teamId }] },
-      select: { league: { select: { name: true } } },
-    }),
+    clubLeagues(season, teamId),
+    prisma.league.findMany({ select: { id: true, name: true } }),
   ])
 
   if (team === null) return null
-  return { ...team, league: played?.league.name ?? null }
+
+  const leagueId = clubMainLeagues(appearances, leagues).get(teamId)
+  const league = leagues.find((row) => row.id === leagueId)
+  return { ...team, league: league?.name ?? null }
 }
 
 /**

@@ -32,30 +32,20 @@
  */
 
 import { prisma } from '../prisma'
-import type { ClubLeagueRow, ClubSeenRow } from '../teams-index'
+import type { ClubSeenRow } from '../teams-index'
 
 /**
- * Which clubs played this season, and in what.
- *
  * **This is the club list**, and deriving it from the same rows that carry the
- * league is deliberate: a separate query for each would let the two disagree, and
- * the fold would have to cope with a club whose competition is unknown.
+ * league is deliberate: a separate query for each would let the two disagree,
+ * and the fold would have to cope with a club whose competition is unknown.
  *
- * Twenty-odd rows per side rather than the season's fixtures — `groupBy`
- * collapses them in Postgres. `_count` is not asked for, because how often a club
- * played is not a number this screen draws.
+ * It moved to [`clubs.ts`](../clubs.ts) when the Champions League landed and a
+ * club stopped having one competition. Three screens have to agree about which
+ * one names a club, so the query and the rule that reads it now live together,
+ * and this module keeps its import site rather than a second copy — the same
+ * arrangement, and for the same reason, as `leaguesWithMatches` below.
  */
-export async function clubLeagues(season: number): Promise<ClubLeagueRow[]> {
-  const [home, away] = await Promise.all([
-    prisma.match.groupBy({ by: ['homeTeamId', 'leagueId'], where: { season } }),
-    prisma.match.groupBy({ by: ['awayTeamId', 'leagueId'], where: { season } }),
-  ])
-
-  return [
-    ...home.map((row) => ({ teamId: row.homeTeamId, leagueId: row.leagueId })),
-    ...away.map((row) => ({ teamId: row.awayTeamId, leagueId: row.leagueId })),
-  ]
-}
+export { clubLeagues } from '../clubs'
 
 /**
  * Who those clubs are: what `crest()` needs, and no more.

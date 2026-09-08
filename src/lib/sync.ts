@@ -34,6 +34,8 @@ import {
 } from './hydration'
 import { prisma } from './prisma'
 
+import { withoutQualifying } from './rounds'
+
 // Re-exported so `scripts/sync.ts` keeps its single import site. The definition
 // lives in `rounds.ts` because pages need it too and may not import this file.
 export { roundLabel } from './rounds'
@@ -116,6 +118,12 @@ export interface FixturesSyncResult {
   league: { id: number; name: string }
   teams: number
   matches: number
+  /**
+   * Fixtures the provider sent that this run did not write, because they are
+   * the competition's qualifying rather than the competition. Zero for a
+   * league. See `withoutQualifying`.
+   */
+  qualifying: number
   remaining: number | null
   limit: number | null
   /** Every fixture written, so the caller can pick which ones to hydrate. */
@@ -139,19 +147,40 @@ export async function syncSeasonFixtures(
     season,
   })
 
-  const mapped = response.map(mapFixture)
+  const all = response.map(mapFixture)
   // `apiGet` throws on the `errors` field, so a refusal never reaches here. An
   // empty response therefore means a league id that does not exist, or one with
   // no such season — a configuration error, and one worth refusing loudly
   // rather than recording as a quiet zero. Every write above is an upsert, so
   // throwing after an earlier league succeeded costs nothing.
-  if (mapped.length === 0) {
+  //
+  // Asked of the provider's whole answer rather than of what survives the filter
+  // below, because the two mean different things: no fixtures at all is a
+  // configuration error, and a competition that is *entirely* qualifying is a
+  // competition that has not started.
+  if (all.length === 0) {
     throw new Error(
       `League ${leagueApiFootballId} has no fixtures in ${season} — check LEAGUES and SEASON`,
     )
   }
 
-  const league = mapped[0].league
+  const league = all[0].league
+
+  /*
+    **The qualifying rounds are dropped here, at the only place that writes a
+    fixture.** Filtering on the way in rather than on the way out is what keeps
+    the rest of the app from having to know: every screen, the hydration queues,
+    the club directory and the colour picker all read `Match`, so a fixture never
+    written is a fixture nothing has to filter. It also keeps the 38 clubs
+    knocked out in July from ever reaching the `Team` table, since the clubs
+    below are derived from the fixtures that survive this.
+
+    It writes nothing and deletes nothing. A qualifying fixture written by an
+    earlier run stays where it is: those rows can carry a reader's judgements,
+    and a sync that quietly deleted somebody's diary entries would be a far worse
+    bug than the one this fixes.
+  */
+  const mapped = withoutQualifying(all, (fixture) => fixture.match)
   const row = await prisma.league.upsert({
     where: { apiFootballId: league.apiFootballId },
     create: league,
@@ -174,6 +203,7 @@ export async function syncSeasonFixtures(
     league: { id: row.id, name: row.name },
     teams: teamIds.size,
     matches: mapped.length,
+    qualifying: all.length - mapped.length,
     remaining,
     limit,
     fixtures: mapped.map(({ match, homeTeam, awayTeam }) => ({

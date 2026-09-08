@@ -95,9 +95,13 @@ export async function runSync(
         // The league's name rather than a count of leagues: a name is evidence
         // the right competition came back, where "1 league" is evidence of
         // nothing.
+        // The dropped count is printed rather than left silent: a run that
+        // wrote 144 of the 234 fixtures the provider sent should say so on the
+        // line where somebody would otherwise read 144 as the whole answer.
+        const dropped = result.qualifying > 0 ? `, ${result.qualifying} qualifying skipped` : ''
         log(
           `  ok    ${result.league.name} — ${result.teams} teams, ` +
-            `${result.matches} matches (${quota(result.remaining, result.limit)})`,
+            `${result.matches} matches${dropped} (${quota(result.remaining, result.limit)})`,
         )
       } catch (error) {
         const reason = error instanceof Error ? error.message : String(error)

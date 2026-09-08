@@ -12,6 +12,7 @@
  * without a database.
  */
 
+import { clubMainLeagues, type ClubLeagueAppearance } from './leagues'
 import { searchKey, type Ranking } from './rankings'
 
 /* ---------------------------------------------------------------- storage -- */
@@ -97,8 +98,15 @@ export function foldPlayerRows(
   squads: readonly PlayerSquadRow[],
   seen: readonly SeenRow[],
   judgements: readonly JudgementRow[],
+  clubs: readonly ClubLeagueAppearance[] = [],
+  leagues: readonly { id: number; name: string }[] = [],
 ): PlayerIndexRow[] {
   const seenByPlayer = new Map(seen.map((row) => [row.playerId, row._count]))
+
+  // A player's competition is his club's, and his club may have two. See the
+  // note on the `leagueId` override below for why the squad row cannot answer
+  // this on its own, and `clubMainLeagues` for the rule.
+  const mainLeague = clubMainLeagues(clubs, leagues)
 
   const tallies = new Map<number, { total: number; mvps: number; standouts: number; flops: number }>()
   for (const judgement of judgements) {
@@ -119,6 +127,20 @@ export function foldPlayerRows(
 
     return {
       ...player,
+      /*
+        **The squad row's own `leagueId` is the wrong answer once a club plays
+        in two competitions**, and it is wrong in a way that moves. It comes off
+        the player's most recent match, so on the Wednesday after a European
+        night Saka's row would carry the Champions League, and filtering
+        `/players` by the Premier League would drop him from his own league
+        until Saturday. His club did not change; only which match was newest.
+
+        So the club decides, and the row's own value is the fallback — for a
+        club absent from the map, which on `/players` cannot happen and on a
+        club roster is the normal case: that screen passes no clubs at all,
+        because it draws one club and never filters by competition.
+      */
+      leagueId: mainLeague.get(player.teamId) ?? player.leagueId,
       key: searchKey(player.name),
       seen: seenByPlayer.get(player.id) ?? 0,
       total: tally?.total ?? 0,

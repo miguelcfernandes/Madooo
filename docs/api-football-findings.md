@@ -101,19 +101,48 @@ protect, and it cost exactly one variable in two places.
 
 ### Leagues actually fetchable
 
+Every figure below is the 2026 season, counted out of the captured payload
+rather than transcribed.
+
 | id | `league.name` | Clubs | Rounds | Fixtures | Round labels |
 |---|---|---|---|---|---|
 | 39 | Premier League | 20 | 38 | 380 | `Regular Season - N` |
 | 94 | **Primeira Liga** | 18 | 34 | 306 | `Regular Season - N` |
 | 140 | **La Liga** | 20 | 38 | 380 | `Regular Season - N` |
 | 135 | Serie A | 20 | 38 | 380 | `Regular Season - N` |
+| 78 | Bundesliga | 18 | 34 | 306 | `Regular Season - N` |
+| 61 | Ligue 1 | 18 | 34 | 306 | `Regular Season - N` |
+| 113 | Allsvenskan | 16 | 30 | 240 | `Regular Season - N` |
+| 2 | **UEFA Champions League** | 81 | 12 | 234 | see below |
 
-All four are entitled on Pro for every season 2010–2026. Coverage is flagged
-true throughout for 39 and 94; leagues 140 and 135 have every flag **false for
+All eight are entitled on Pro for every season 2010–2026. Coverage is flagged
+true throughout for 39, 94 and 2; leagues 140 and 135 have every flag **false for
 2026** and true for 2010–2025, and fetch 2026 perfectly anyway — the clearest
 instances of the coverage-is-not-entitlement rule in this document, and 135
 repeated it exactly, which makes it the pattern for an unstarted season rather
 than one league's quirk.
+
+**League 2 is the only one that is not a league, and it is shaped differently in
+every column.** Its country is `"World"` and its `type` is `"Cup"` — a field
+`/leagues` carries and `/fixtures` does not, which is why the app never reads it.
+Its clubs are 81 rather than a division's twenty, and 45 of those are gone before
+the competition starts. Its rounds, read from `/fixtures/rounds` on 2026-09-08:
+
+```
+1st Qualifying Round · 2nd Qualifying Round · 3rd Qualifying Round · Play-offs
+League Stage - 1 … League Stage - 8
+Round of 32 · Round of 16 · Quarter-finals · Semi-finals · Final
+```
+
+The last five appear only once drawn — the 2026 season lists twelve rounds and
+the completed 2025 season lists seventeen. Two things follow, and both are load
+bearing. **`roundNumber` reads `"League Stage - 4"` as matchday 4** because the
+digit is at the end, and returns null for `"1st Qualifying Round"` because there
+the digit is at the front; a provider spelling it `"Qualifying Round 1"` would
+break both `roundDisplay` and `withoutQualifying`. And **the qualifying rounds
+all finish before the league phase begins** — the play-off round's last kickoff
+is 2026-08-26 against League Stage 1's first on 2026-09-08 — which is the fact
+`withoutQualifying` is built on.
 
 **The provider's name for a competition is not the one a person would say, in
 either direction.** League 94 is "Primeira Liga", not Liga Portugal, which is how
