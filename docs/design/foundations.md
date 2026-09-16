@@ -1083,11 +1083,13 @@ a subdivision tag sequence and 🇬🇧 would be wrong.
 claim about a person rather than about a competition, and would have to be argued
 on its own rather than inherited from here.
 
-**The Champions League draws no mark, and clause 3 is why that costs nothing.**
-API-Football's country for it is "World", so `flagClass` returns null, the
-heading is the competition's name alone, and `LeagueMarks` — which draws a row of
-flags where names would not fit — falls back to the name in words. That was
-already the behaviour before the competition arrived; nothing was added.
+**Neither European competition draws a mark, and clause 3 is why that costs
+nothing.** API-Football's country for both the Champions League and the Europa
+League is "World", so `flagClass` returns null, each heading is the competition's
+name alone, and `LeagueMarks` — which draws a row of flags where names would not
+fit — falls back to the name in words. That was already the behaviour before the
+first of them arrived, and the second needed no decision at all: the argument
+below was made once and applies to both, which is what a rule is for.
 
 Three things were considered and declined, and the order matters because only the
 last is about design:
@@ -1100,7 +1102,7 @@ last is about design:
    differently. None of that touches trademark, which is the question this
    project declined to clear for club crests and which UEFA enforces harder than
    most clubs do. The image itself carries a ®. So `League.logo` renders nowhere,
-   for the eighth competition exactly as for the other seven.
+   for either European competition exactly as for the seven leagues.
 2. **The European flag**, twelve gold stars on blue. It would satisfy every
    clause but the first, and the first is the one that matters: `League.country`
    says "World", not "Europe", so drawing Europe would be a call site choosing a
@@ -1111,7 +1113,8 @@ last is about design:
    drawing of a competition that belongs in this vocabulary.
 
 A competition with no mark is the honest outcome, and it is what clause 3 was
-written to make survivable.
+written to make survivable. Two of the nine now draw none, and the page they
+appear on is unchanged by it.
 
 ### GitHub's mark is a second identity mark, and the only one
 

@@ -114,19 +114,22 @@ rather than transcribed.
 | 61 | Ligue 1 | 18 | 34 | 306 | `Regular Season - N` |
 | 113 | Allsvenskan | 16 | 30 | 240 | `Regular Season - N` |
 | 2 | **UEFA Champions League** | 81 | 12 | 234 | see below |
+| 3 | **UEFA Europa League** | 76 | 12 | 224 | see below |
 
-All eight are entitled on Pro for every season 2010–2026. Coverage is flagged
-true throughout for 39, 94 and 2; leagues 140 and 135 have every flag **false for
+All nine are entitled on Pro for every season 2010–2026. Coverage is flagged
+true throughout for 39, 94, 2 and 3; leagues 140 and 135 have every flag **false for
 2026** and true for 2010–2025, and fetch 2026 perfectly anyway — the clearest
 instances of the coverage-is-not-entitlement rule in this document, and 135
 repeated it exactly, which makes it the pattern for an unstarted season rather
 than one league's quirk.
 
-**League 2 is the only one that is not a league, and it is shaped differently in
-every column.** Its country is `"World"` and its `type` is `"Cup"` — a field
-`/leagues` carries and `/fixtures` does not, which is why the app never reads it.
-Its clubs are 81 rather than a division's twenty, and 45 of those are gone before
-the competition starts. Its rounds, read from `/fixtures/rounds` on 2026-09-08:
+**Leagues 2 and 3 are the ones that are not leagues, and they are shaped
+differently in every column.** The country of each is `"World"` and the `type` is
+`"Cup"` — a field `/leagues` carries and `/fixtures` does not, which is why the
+app never reads it. Their clubs are 81 and 76 rather than a division's twenty,
+and 45 and 40 of those are gone before the competition starts. **Their round
+labels are identical**, which is what let one rule serve both. Read from
+`/fixtures/rounds` on 2026-09-08 and 2026-09-16:
 
 ```
 1st Qualifying Round · 2nd Qualifying Round · 3rd Qualifying Round · Play-offs
@@ -134,15 +137,16 @@ League Stage - 1 … League Stage - 8
 Round of 32 · Round of 16 · Quarter-finals · Semi-finals · Final
 ```
 
-The last five appear only once drawn — the 2026 season lists twelve rounds and
-the completed 2025 season lists seventeen. Two things follow, and both are load
+The last five appear only once drawn — each 2026 season lists twelve rounds and
+the completed 2025 season of league 2 lists seventeen. Two things follow, and both are load
 bearing. **`roundNumber` reads `"League Stage - 4"` as matchday 4** because the
 digit is at the end, and returns null for `"1st Qualifying Round"` because there
 the digit is at the front; a provider spelling it `"Qualifying Round 1"` would
 break both `roundDisplay` and `withoutQualifying`. And **the qualifying rounds
 all finish before the league phase begins** — the play-off round's last kickoff
-is 2026-08-26 against League Stage 1's first on 2026-09-08 — which is the fact
-`withoutQualifying` is built on.
+is 2026-08-26 against League Stage 1's first on 2026-09-08, and league 3's
+2026-08-27 against 2026-09-16 — which is the fact `withoutQualifying` is built
+on.
 
 **The provider's name for a competition is not the one a person would say, in
 either direction.** League 94 is "Primeira Liga", not Liga Portugal, which is how
@@ -374,10 +378,10 @@ and pacing puts it at around three minutes of wall clock. The constraint that
 shaped the CLI's round-at-a-time discipline is gone.
 
 **Steady state** is negligible either way. The scheduled run fires 96 times a
-day and re-reads each league's calendar every time, which is 672 requests of
-7,500 at seven leagues before a single fixture is hydrated — the price of
+day and re-reads each league's calendar every time, which is 864 requests of
+7,500 at nine competitions before a single fixture is hydrated — the price of
 catching a kickoff a broadcaster has moved. Hydration adds two per finished
-fixture, so a full gameweek of seven leagues is another 240-odd. Adding a league multiplies the
+fixture, so a full gameweek of nine competitions is another 300-odd. Adding a league multiplies the
 backfill and the calendar floor, not the weekly load, and at 7,500/day there is
 room for several. The
 Primeira Liga measured it rather than predicted it: **613 requests** for its full

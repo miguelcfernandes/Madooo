@@ -42,6 +42,7 @@ function roundsIn(file: string): string[] {
 
 const rounds = roundsIn('fixtures_39_2024.json')
 const cupRounds = roundsIn('fixtures_2_2026.json')
+const europaRounds = roundsIn('fixtures_3_2026.json')
 
 /** A captured season as `withoutQualifying` takes it: a round and a kickoff. */
 function fixturesIn(file: string): { round: string; kickoff: Date }[] {
@@ -106,6 +107,14 @@ describe('roundDisplay', () => {
 })
 
 describe('a cup competition\u2019s rounds', () => {
+  it('reads both European competitions the same way', () => {
+    // The labels are the provider's and identical across the two, which is what
+    // lets one rule serve both. Asserted rather than assumed, because a second
+    // competition spelling its league phase differently is exactly the kind of
+    // thing that would pass review and fail in production.
+    expect(new Set(europaRounds)).toEqual(new Set(cupRounds))
+  })
+
   it('is a season of more than one shape, or these tests assert nothing', () => {
     // The guard on everything below. If the captured Champions League season
     // ever came back as one numbered run, the assertions would still pass while
@@ -146,6 +155,27 @@ describe('a cup competition\u2019s rounds', () => {
 
 describe('withoutQualifying', () => {
   const CUP = 'fixtures_2_2026.json'
+
+  it.each(['fixtures_2_2026.json', 'fixtures_3_2026.json'])(
+    'keeps only the league phase of a European competition — %s',
+    (file) => {
+      /*
+        Both competitions, because the second is what proves the rule generalised
+        rather than having been fitted to the first. They are shaped alike and
+        not identically: the Europa League plays 80 qualifying fixtures to the
+        Champions League's 90, spread over four rounds of different sizes, and
+        its league phase starts three weeks later. Neither number appears in the
+        rule.
+      */
+      const all = fixturesIn(file)
+      const kept = withoutQualifying(all, asDated)
+      for (const fixture of kept) {
+        expect(roundNumber(fixture.round), fixture.round).not.toBeNull()
+      }
+      expect(kept).toHaveLength(144)
+      expect(all.length).toBeGreaterThan(kept.length)
+    },
+  )
 
   it('drops the qualifying rounds and keeps the competition', () => {
     const all = fixturesIn(CUP)

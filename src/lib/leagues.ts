@@ -89,20 +89,21 @@ const FLAGS = new Map([
  * **`null` is the whole reason this is legal against `AGENTS.md`'s first
  * constraint.** The map above names no league, no id and no season — it is
  * indexed by a value that came out of the `League` table, so it cannot be
- * consulted without a row. An eighth league needs no edit here to work: it draws
- * its heading exactly as one is drawn today, which is what each of the seven
- * mapped countries did before its file was vendored.
+ * consulted without a row. A tenth competition needs no edit here to work: it
+ * draws its heading exactly as one is drawn today, which is what each of the
+ * seven mapped countries did before its file was vendored.
  * The moment the fallback became an invented flag or a reserved gap, the map
  * would be part of the price of a league and the constraint would be broken.
  *
- * **The unmapped case is now the live one rather than a hypothetical.**
- * API-Football's country for the Champions League is "World", so it is the one
- * competition the app holds that draws no mark at all — its heading is its name
- * and nothing else, and `LeagueMarks` falls back to the name in words.
+ * **The unmapped case is now the live one rather than a hypothetical, and it is
+ * two competitions rather than one.** API-Football's country for both the
+ * Champions League and the Europa League is "World", so neither draws a mark at
+ * all — each heading is the competition's name and nothing else, and
+ * `LeagueMarks` falls back to the name in words.
  *
  * That is a decision rather than a gap, and it is the same one that keeps club
- * crests off every screen. The Starball is a live UEFA trademark; the US
- * Copyright Office refused it copyright registration in 2018 for want of
+ * crests off every screen. Both are live UEFA trademarks; the US
+ * Copyright Office refused the Starball copyright registration in 2018 for want of
  * creativity, which settles copyright in the US and settles nothing about the
  * mark. There is no national flag to reach for either — a competition is not a
  * country, and the European flag would be our invention rather than a fact out
@@ -139,6 +140,16 @@ export function flagClass(league: LeagueIdentity): string | null {
  * competition sits is a preference and not a fact — the alternatives were
  * sixth, under the big five, and unranked.
  *
+ * **The Europa League did not follow it to second, and the claim above is why.**
+ * Putting the two European competitions together at the top would have read
+ * tidily and would have made this map say something false: more people follow
+ * the Premier League, La Liga, Serie A and the Bundesliga than follow the Europa
+ * League, and the order claims to be about that rather than about which
+ * competitions resemble each other. Seventh — under Ligue 1, which is the
+ * arguable one, and above the Primeira Liga — is the conservative reading of the
+ * same claim. It is one line if the author wants it otherwise, and the section
+ * order on `/fixtures` is the only thing in the app that would change.
+ *
  * **Why an order has to be stated at all.** Every derivable order is wrong here.
  * Alphabetical opens on La Liga forever. Earliest kickoff or most fixtures would
  * put whichever league happens to play at lunchtime above the one most readers
@@ -152,18 +163,19 @@ export function flagClass(league: LeagueIdentity): string | null {
  * already the behaviour an unset column would need.
  */
 const LEAGUE_ORDER = new Map([
-  // "UEFA Champions League", because these keys are the provider's spelling and
-  // not a person's. Dropping the "UEFA" here would rank nothing and sort the
-  // competition last while looking correct, which is the trap `leagueRank`'s
-  // test exists to catch.
+  // "UEFA Champions League" and "UEFA Europa League", because these keys are the
+  // provider's spelling and not a person's. Dropping either "UEFA" would rank
+  // nothing and sort the competition last while looking entirely correct, which
+  // is the trap `leagueRank`'s test exists to catch.
   ['uefa champions league', 1],
   ['premier league', 2],
   ['la liga', 3],
   ['serie a', 4],
   ['bundesliga', 5],
   ['ligue 1', 6],
-  ['primeira liga', 7],
-  ['allsvenskan', 8],
+  ['uefa europa league', 7],
+  ['primeira liga', 8],
+  ['allsvenskan', 9],
 ])
 
 /**
@@ -178,24 +190,33 @@ export function leagueRank(league: { name: string }): number {
  * How many competitions the team-of-the-week filter puts under "Top
  * competitions", counting down `LEAGUE_ORDER` from the top.
  *
- * Six: the big five, and the competition their best clubs play in midweek. That
- * the map ranks exactly those six 1 to 6 is not a coincidence — the order claims
- * "most followed", and this is the same claim with a line drawn across it.
+ * Seven: the big five, and the two European competitions their best clubs play
+ * in midweek. That the map ranks exactly those seven 1 to 7 is not a coincidence
+ * — the order claims "most followed", and this is the same claim with a line
+ * drawn across it.
  *
- * **It was five, and the Champions League taking first is what moved it.** The
- * number counts down `LEAGUE_ORDER`, so leaving it at five would have kept the
- * group at six names' worth of standing and quietly dropped Ligue 1 out of it —
- * a competition losing its place because a different one arrived, which is not
- * what the filter is saying. Six is the honest reading of the same order.
+ * **It has moved twice, and each time for the same reason.** The number counts
+ * down `LEAGUE_ORDER`, so a competition inserted above the line pushes one out
+ * of the group unless the line moves with it — a league losing its standing
+ * because a different competition arrived, which is not what the filter is
+ * saying. Five became six when the Champions League took first, and six became
+ * seven when the Europa League landed seventh. Both are the honest reading of
+ * the same order rather than a new opinion about it.
+ *
+ * **Where the line falls is now a decision rather than an inheritance**, because
+ * the Europa League is the first competition to land *on* it rather than above
+ * or below. Drawing it at six would have put a pan-European competition under
+ * "Other" beside Allsvenskan, which is not what a reader filtering for the
+ * competitions they follow means by it.
  *
  * **Reusing the rank is what keeps a league from costing code.** A checkbox
  * group with a hand-written list of top leagues would be a second place naming
- * competitions, and the ninth league would have to be added to it. Here an
+ * competitions, and the tenth would have to be added to it. Here an
  * unranked league sorts last and lands under "Other", which is what a new
  * competition should do until somebody decides otherwise — one line in
  * `LEAGUE_ORDER`, and nothing here.
  */
-const TOP_LEAGUES = 6
+const TOP_LEAGUES = 7
 
 /**
  * The order competitions are listed in, wherever a list of them is drawn.
@@ -211,8 +232,8 @@ export function compareLeagues(a: { name: string }, b: { name: string }): number
 }
 
 /**
- * Whether a competition is one of the six `TOP_LEAGUES` draws its line under —
- * the big five and the Champions League.
+ * Whether a competition is one of the seven `TOP_LEAGUES` draws its line under —
+ * the big five and the two European competitions.
  *
  * Structural on `{ name }`, like `leagueRank` — anything with a name satisfies
  * it, and the flattening is `searchKey`'s, so a provider recasing "Serie A"

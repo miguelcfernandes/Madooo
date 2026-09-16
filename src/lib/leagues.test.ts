@@ -69,6 +69,14 @@ const ALLSVENSKAN = leagueName('fixtures_113_2026.json')
 */
 const CHAMPIONS_LEAGUE = leagueName('fixtures_2_2026.json')
 
+/*
+ The second competition to land on the same trap, and the reason the note above
+ is worth keeping: "Europa League" is what anybody says, "UEFA Europa League" is
+ what the provider sends, and a rank keyed on the short name would sort it last
+ while reading correctly.
+*/
+const EUROPA_LEAGUE = leagueName('fixtures_3_2026.json')
+
 const ALL = [
   CHAMPIONS_LEAGUE,
   PREMIER_LEAGUE,
@@ -78,6 +86,7 @@ const ALL = [
   BUNDESLIGA,
   LIGUE_1,
   ALLSVENSKAN,
+  EUROPA_LEAGUE,
 ]
 
 /**
@@ -87,6 +96,7 @@ const ALL = [
  */
 const SECTIONS: LeagueSection[] = [
   { id: 8, name: CHAMPIONS_LEAGUE, country: rawLeague('fixtures_2_2026.json').country },
+  { id: 9, name: EUROPA_LEAGUE, country: rawLeague('fixtures_3_2026.json').country },
   { id: 1, name: PREMIER_LEAGUE, country: rawLeague('fixtures_39_2026.json').country },
   { id: 2, name: PRIMEIRA_LIGA, country: rawLeague('fixtures_94_2026.json').country },
   { id: 3, name: LA_LIGA, country: rawLeague('fixtures_140_2026.json').country },
@@ -124,7 +134,7 @@ describe('leagueSlug', () => {
 })
 
 describe('leagueRank', () => {
-  it('orders the eight competitions the app holds, most followed first', () => {
+  it('orders the nine competitions the app holds, most followed first', () => {
     const ordered = [...ALL].sort((a, b) => leagueRank({ name: a }) - leagueRank({ name: b }))
     expect(ordered).toEqual([
       CHAMPIONS_LEAGUE,
@@ -133,6 +143,7 @@ describe('leagueRank', () => {
       SERIE_A,
       BUNDESLIGA,
       LIGUE_1,
+      EUROPA_LEAGUE,
       PRIMEIRA_LIGA,
       ALLSVENSKAN,
     ])
@@ -164,7 +175,7 @@ describe('leagueRank', () => {
 })
 
 describe('splitByStanding', () => {
-  it('puts the big five and the Champions League on top, in rank order', () => {
+  it('puts the big five and both European competitions on top, in rank order', () => {
     const { top } = splitByStanding(SECTIONS)
     expect(top.map((league) => league.name)).toEqual([
       CHAMPIONS_LEAGUE,
@@ -173,16 +184,29 @@ describe('splitByStanding', () => {
       SERIE_A,
       BUNDESLIGA,
       LIGUE_1,
+      EUROPA_LEAGUE,
     ])
   })
 
-  it('keeps Ligue 1 in the top group now that a sixth competition leads it', () => {
-    // TOP_LEAGUES counts down LEAGUE_ORDER, so the Champions League taking first
-    // would have pushed Ligue 1 out of "Top competitions" had the count stayed
-    // at five — a league losing its standing because a different one arrived.
+  it('loses no league to a competition arriving above it', () => {
+    // TOP_LEAGUES counts down LEAGUE_ORDER, so a competition inserted above the
+    // line pushes one out of "Top competitions" unless the line moves with it —
+    // a league losing its standing because a different one arrived. It has
+    // happened twice now: the Champions League taking first, and the Europa
+    // League landing seventh.
     const { top } = splitByStanding(SECTIONS)
     expect(top.map((league) => league.name)).toContain(LIGUE_1)
-    expect(top).toHaveLength(6)
+    expect(top).toHaveLength(7)
+  })
+
+  it('keeps the Europa League out of "Other", where Allsvenskan belongs', () => {
+    // The line falls *on* this competition rather than above or below it, which
+    // makes six-or-seven a decision rather than arithmetic. A pan-European
+    // competition filed beside Allsvenskan is not what a reader filtering for
+    // the competitions they follow means by "Other".
+    const { top, other } = splitByStanding(SECTIONS)
+    expect(top.map((league) => league.name)).toContain(EUROPA_LEAGUE)
+    expect(other.map((league) => league.name)).toEqual([PRIMEIRA_LIGA, ALLSVENSKAN])
   })
 
   it('puts the rest below, also in rank order', () => {
@@ -200,8 +224,8 @@ describe('splitByStanding', () => {
   // costs no edit. It ranks last, lands under "Other", and still draws.
   it('sends a competition the map does not name to the other group', () => {
     expect(isTopLeague({ name: 'Eredivisie' })).toBe(false)
-    const { top, other } = splitByStanding([...SECTIONS, { id: 9, name: 'Eredivisie', country: 'Netherlands' }])
-    expect(top).toHaveLength(6)
+    const { top, other } = splitByStanding([...SECTIONS, { id: 10, name: 'Eredivisie', country: 'Netherlands' }])
+    expect(top).toHaveLength(7)
     expect(other.map((league) => league.name)).toEqual([PRIMEIRA_LIGA, ALLSVENSKAN, 'Eredivisie'])
   })
 
@@ -334,17 +358,21 @@ describe('flagClass', () => {
     expect(new Set(COUNTRIES.map((country) => flagClass({ country }))).size).toBe(COUNTRIES.length)
   })
 
-  it('draws nothing for the Champions League, whose country is not one', () => {
-    /*
-      No longer a hypothetical: this is the competition's own country, read out
-      of its payload like every other string here. The app draws no mark for it
-      at all — there is no flag for "World", and the Starball is a UEFA
-      trademark this project has not cleared, the same answer club crests get.
-      A test rather than a comment because the alternative failure is silent:
-      somebody vendoring a `flag-world.svg` would turn a decision into a bug.
-    */
-    expect(flagClass({ country: rawLeague('fixtures_2_2026.json').country })).toBeNull()
-  })
+  it.each(['fixtures_2_2026.json', 'fixtures_3_2026.json'])(
+    'draws nothing for a competition whose country is not one — %s',
+    (file) => {
+      /*
+        No longer a hypothetical, and now two competitions rather than one: both
+        European competitions are filed under the same non-country. Read out of
+        their payloads like every other string here. The app draws no mark for
+        either — there is no flag for "World", and the UEFA marks are a trademark
+        this project has not cleared, the same answer club crests get. A test
+        rather than a comment because the alternative failure is silent:
+        somebody vendoring a `flag-world.svg` would turn a decision into a bug.
+      */
+      expect(flagClass({ country: rawLeague(file).country })).toBeNull()
+    },
+  )
 
   it('survives the provider recasing a country', () => {
     expect(flagClass({ country: 'ENGLAND' })).toBe(flagClass({ country: 'England' }))

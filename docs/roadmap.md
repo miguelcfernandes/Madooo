@@ -41,7 +41,7 @@ which is the opposite of an instruction to build something. The tell is
 grammatical: a remark states what *is* true and survives being read a month
 later, while a plan uses imperatives — "add X", "set up Y".
 
-**Last updated:** 2026-09-08 (the Champions League)
+**Last updated:** 2026-09-16 (the Europa League)
 
 > **The rebrand is built.** **"Field Notes"** — Schibsted Grotesk and DM Mono on
 > a marine brand colour, zero radius everywhere, one shadow, and glyphs of our
@@ -60,11 +60,11 @@ later, while a plan uses imperatives — "add X", "set up Y".
 
 ## Current state
 
-**Eight competitions, on API-Football's Pro tier.** `SEASON=2026` and
-`LEAGUES=2,39,94,140,135,78,61,113`: the UEFA Champions League, the Premier
-League, the Primeira Liga, La Liga, Serie A, the Bundesliga, Ligue 1 and
-Allsvenskan. All eight calendars are in the database — 144 matches, 380, 306,
-380, 380, 306, 306 and 240.
+**Nine competitions, on API-Football's Pro tier.** `SEASON=2026` and
+`LEAGUES=2,3,39,94,140,135,78,61,113`: the UEFA Champions League, the UEFA Europa
+League, the Premier League, the Primeira Liga, La Liga, Serie A, the Bundesliga,
+Ligue 1 and Allsvenskan. All nine calendars are in the database — 144 matches,
+144, 380, 306, 380, 380, 306, 306 and 240.
 
 **The Champions League is the first of these that is not a league**, and it cost
 two rules a league does not. **The app carries the competition and not the
@@ -82,6 +82,15 @@ Its rounds are `"League Stage - 4"` rather than `"Regular Season - 4"`, which
 `roundNumber` reads as a matchday without being told about it. It draws no mark:
 API-Football's country for it is "World", and the Starball is a UEFA trademark
 this project has not cleared any more than it has cleared club crests.
+
+**The Europa League then cost one variable and one line**, which is the return on
+the two rules above. It is the same shape — country "World", the same round
+labels, 80 qualifying fixtures dropped of 224, 36 clubs in the league phase — and
+both `withoutQualifying` and `clubMainLeagues` took it unchanged. The one line is
+its rank: seventh, under Ligue 1 and above the Primeira Liga, which moved
+`TOP_LEAGUES` from six to seven so that Ligue 1 kept its place in the
+team-of-the-week filter. It draws no mark either, on the argument already made
+for the Champions League rather than a new one.
 
 **Allsvenskan is the first league here that runs on the calendar year**, and it
 is the first to join already half-played rather than on an opening weekend.
@@ -445,6 +454,11 @@ the squash-one-commit-per-slice flow, which is why they name several.
   [`leagues.ts`](../src/lib/leagues.ts) names a club by the competition it plays
   most of its football in, so the three screens that each used to pick
   arbitrarily now ask one question. It draws no mark.
+
+- **The Europa League.** The ninth competition, and the one that showed what the
+  eighth had bought: one environment variable and one line of rank, no new rule,
+  no special case. Seventh in the order, which moved the top-competitions line
+  with it.
 
 ## Not built, and why
 
@@ -909,19 +923,34 @@ must stay out of the Vercel build, are in
   wrong right now and wrong quietly. *Resolved by running
   `npm run colours -- --all` and working down the Premier League section.*
 
-  **The Champions League's thirteen are settled, and they settled the way the
-  tooling intends.** Every club the app carries only through Europe arrived with
-  no colour, drew the neutral fallback rather than a guess, and was picked by the
-  author in `npm run colours` with the chip in front of them. It was 56 clubs
-  before the qualifying rounds stopped being carried, which is most of what that
-  change bought. So the file now holds a confirmed colour for every club in it
-  bar the Premier League's twenty.
+  **Europe's thirty-six are settled, and they settled the way the tooling
+  intends.** Every club the app carries only through a European competition —
+  thirteen through the Champions League, twenty-three through the Europa League —
+  arrived with no colour, drew the neutral fallback rather than a guess, and was
+  picked by the author in `npm run colours` with the chip in front of them. It
+  was 56 clubs for the Champions League alone before the qualifying rounds
+  stopped being carried, which is most of what that change bought. So the file
+  now holds a confirmed colour for every club in it bar the Premier League's
+  twenty.
 
-  **All thirteen hold `code: null`**, which is the first block in the table to do
-  so. No competition publishes three-letter codes for them the way the Premier
-  League does, so `teamCode` draws the first three letters of the name — PSV,
-  FEY, GAL — and an invented code would have looked exactly as authoritative as
-  a real one.
+  **All thirty-six hold `code: null`.** No competition publishes three-letter
+  codes for them the way the Premier League does, so `teamCode` draws the first
+  three letters of the name — PSV, FEY, GAL — and an invented code would have
+  looked exactly as authoritative as a real one.
+
+  **What that costs came due with the Europa League: Celtic and Celje both draw
+  `CEL`, and both play in it**, so two chips on one screen are identical. It is
+  the documented cost of an unseeded code, the same one that gives both
+  Manchester clubs `MAN`, and the fix is the same — somebody types an
+  abbreviation for one of them in `npm run colours`. Left open rather than
+  invented, because choosing which of the two keeps `CEL` is a decision about
+  football clubs. *Resolved by typing one code.*
+
+  A second case from the same block was **not** left open, because it was a bug
+  rather than a cost: `teamCode` stripped every character outside `A-Za-z`, which
+  deleted an accented letter instead of folding it, so Beşiktaş drew `BEI` — the
+  `ş` gone and the `i` pulled forward. It now flattens through `searchKey`, the
+  app's one normalisation rule, and draws `BES`.
 
   **`Identity.code` is nullable for the same reason `colour` is**, and the
   Champions League is what made it so: a made-up three-letter abbreviation for a

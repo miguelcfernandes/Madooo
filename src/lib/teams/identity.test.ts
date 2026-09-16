@@ -15,6 +15,17 @@ import { describe, expect, it } from 'vitest'
 import { crest, crestInk, teamCode } from './identity'
 import type { ApiFootballEnvelope, RawFixture } from '../api-football/types'
 
+/** Club names out of a captured season, the provider's own spellings. */
+function namesIn(file: string): string[] {
+  const raw = readFileSync(join(process.cwd(), 'scratch', file), 'utf8')
+  const payload = JSON.parse(raw) as ApiFootballEnvelope<RawFixture>
+  return [
+    ...new Set(payload.response.flatMap((e) => [e.teams.home.name, e.teams.away.name])),
+  ]
+}
+
+const europaNames = namesIn('fixtures_3_2026.json')
+
 const path = join(process.cwd(), 'scratch', 'fixtures_39_2024.json')
 let payload: ApiFootballEnvelope<RawFixture>
 try {
@@ -39,6 +50,26 @@ describe('teamCode', () => {
 
   it('gives three uppercase letters for every real club name, seeded or not', () => {
     for (const name of teamNames) {
+      expect(teamCode({ name, code: null, colour: null }), name).toMatch(/^[A-Z]{3}$/)
+    }
+  })
+
+  it('folds an accented letter rather than deleting it', () => {
+    /*
+      Beşiktaş, read out of the Europa League payload rather than typed: the
+      whole point is that this is a real club name the app now draws. Stripping
+      everything outside A-Za-z gave BEI — the ş deleted and the i pulled
+      forward — which reads as a deliberate abbreviation and is not one.
+    */
+    const besiktas = europaNames.find((name) => name.startsWith('Be'))
+    expect(besiktas, 'no club beginning "Be" in the payload').toBeDefined()
+    expect(teamCode({ name: besiktas!, code: null, colour: null })).toBe('BES')
+  })
+
+  it('gives three uppercase letters for every European club name too', () => {
+    // The seven leagues are all ASCII; these are the names that exercise the
+    // fold, and every one still has to produce a drawable three-letter chip.
+    for (const name of europaNames) {
       expect(teamCode({ name, code: null, colour: null }), name).toMatch(/^[A-Z]{3}$/)
     }
   })

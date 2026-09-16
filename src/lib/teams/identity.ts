@@ -7,6 +7,8 @@
  * with a club nobody has seeded yet.
  */
 
+import { searchKey } from '../rankings'
+
 /**
  * The shape this module needs, rather than Prisma's `Team`.
  *
@@ -31,12 +33,26 @@ export interface Crest {
 /**
  * The code, or the first three letters of the name if the club has not been
  * seeded. The fallback can collide — it is what gives both Manchester clubs
- * `MAN` — which is exactly why the seeded codes exist.
+ * `MAN`, and both Celtic and Celje `CEL` — which is exactly why the seeded codes
+ * exist.
+ *
+ * **The fold through `searchKey` is not cosmetic.** Stripping everything outside
+ * `A-Za-z` deletes an accented letter rather than folding it, so Beşiktaş drew
+ * `BEI`: the `ş` vanished and the `i` moved up to take its place. That is not a
+ * collision, which is a documented cost of the fallback — it is a wrong
+ * abbreviation for a club whose name contains nothing unusual by its own
+ * alphabet's standards, and it would have shipped looking deliberate.
+ *
+ * `searchKey` is the app's one rule for flattening a name, and reusing it here
+ * is the same argument `leagueSlug` makes for reusing it there: two
+ * normalisations that can drift is one more than the problem needs. It
+ * NFD-decomposes and drops the combining marks, so `ş` becomes `s` and Beşiktaş
+ * draws `BES`.
  */
 export function teamCode(team: TeamIdentity): string {
   const code = team.code?.trim()
   if (code) return code.toUpperCase()
-  return team.name.replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase()
+  return searchKey(team.name).replace(/[^a-z]/g, '').slice(0, 3).toUpperCase()
 }
 
 /** `"#da2128"` and `"#abc"` to `[r, g, b]`, or null for anything else. */

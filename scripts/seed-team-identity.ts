@@ -381,6 +381,44 @@ const IDENTITIES: Record<number, Identity> = {
   759: { name: 'Viking', code: null, colour: '#72121c' },
   1026: { name: 'Lask Linz', code: null, colour: '#e50000' },
   13976: { name: 'Sabah FA', code: null, colour: '#002b7f' },
+
+  // UEFA Europa League, 2026/27 — the twenty-three clubs the app carries only
+  // through this competition. The other thirteen in its league phase are already
+  // above, under the leagues they play in: the table is keyed by club, not by
+  // competition, and a club has one identity whichever competition it is drawn
+  // in. Ids read out of `scratch/fixtures_3_2026.json`, colours picked by the
+  // author in `npm run colours` with the chip in front of them.
+  //
+  // Codes are null for the Champions League block's reason, and this block adds
+  // the case that shows what the fallback costs: **Celtic and Celje both draw
+  // CEL**, and both play in this competition, so two chips on the same screen
+  // are identical. That is the documented cost of an unseeded code — the same
+  // one that gives both Manchester clubs MAN — and the fix is the same: somebody
+  // types an abbreviation. Left for the author rather than invented, because
+  // choosing which of the two keeps CEL is a decision about football clubs.
+  201: { name: 'AZ Alkmaar', code: null, colour: '#ca0008' },
+  247: { name: 'Celtic', code: null, colour: '#00a851' },
+  321: { name: 'Lillestrom', code: null, colour: '#fddc02' },
+  336: { name: 'Jagiellonia', code: null, colour: '#fff200' },
+  347: { name: 'Lech Poznan', code: null, colour: '#004b92' },
+  413: { name: 'NEC Nijmegen', code: null, colour: '#008e5a' },
+  549: { name: 'Beşiktaş', code: null, colour: '#000000' },
+  553: { name: 'Olympiakos Piraeus', code: null, colour: '#231f20' },
+  554: { name: 'Anderlecht', code: null, colour: '#5f308f' },
+  563: { name: 'Hapoel Beer Sheva', code: null, colour: '#db1c30' },
+  567: { name: 'Plzen', code: null, colour: '#0000b2' },
+  571: { name: 'Red Bull Salzburg', code: null, colour: '#e30118' },
+  620: { name: 'Dinamo Zagreb', code: null, colour: '#004a99' },
+  628: { name: 'Sparta Praha', code: null, colour: '#000000' },
+  637: { name: 'Sturm Graz', code: null, colour: '#000000' },
+  646: { name: 'Levski Sofia', code: null, colour: '#28348a' },
+  651: { name: 'Ferencvarosi TC', code: null, colour: '#b39533' },
+  1124: { name: 'OFI', code: null, colour: '#000000' },
+  1393: { name: 'Union St. Gilloise', code: null, colour: '#1484d0' },
+  3402: { name: 'Omonia Nicosia', code: null, colour: '#165928' },
+  3683: { name: 'Ararat-Armenia', code: null, colour: '#231f20' },
+  4360: { name: 'Celje', code: null, colour: '#031b5b' },
+  4799: { name: 'Torreense', code: null, colour: '#ffcb08' },
 }
 
 async function main() {

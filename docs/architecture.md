@@ -332,7 +332,7 @@ counted over the season's whole calendar rather than the matches played so far �
 which is the part that stops the answer moving in August, when a club can
 genuinely have played one of each. A domestic season is 30 to 38 fixtures against
 a European campaign's 17 at most, so a club with a domestic league always keeps
-it, and the 13 clubs the app carries only through Europe are named by Europe.
+it, and the 36 clubs the app carries only through Europe are named by Europe.
 Ties fall to `compareLeagues`, so the answer never depends on row order.
 
 [`clubs.ts`](../src/lib/clubs.ts) is the single `groupBy` pair behind it, in its
@@ -590,8 +590,8 @@ somebody on it.
 **The competitions it was picked from are rows, and there is no "all" flag.** A
 team drawn from every league the app held stores every one of them, and the list
 says "All competitions" only while that set is still every league there is. When
-an eighth arrives, an older team starts listing seven flags instead — which is
-the truth about it. A stored boolean would have begun lying on the day a league
+a ninth arrives, an older team starts listing eight instead — which is the truth
+about it. A stored boolean would have begun lying on the day a league
 was added, and that is the whole argument for the join table over a column.
 
 The comparison it needs is a count, so both screens that draw a team fetch
@@ -964,13 +964,22 @@ last one is luck worth knowing about — a provider that spelled it
 **The qualifying rounds are not carried at all**, which is a separate decision
 from how they would be displayed. `withoutQualifying`, in the same module, drops
 them in `syncSeasonFixtures` before a fixture or a club is written — so nothing
-downstream has to filter, and the 45 clubs knocked out in July never reach the
-`Team` table. The rule is stated in dates rather than in names: **a round that
+downstream has to filter, and the clubs knocked out over the summer never reach
+the `Team` table: 45 of the Champions League's 81, and 40 of the Europa League's
+76. The rule is stated in dates rather than in names: **a round that
 starts before the competition's first numbered round is qualifying for it.**
 Written on names it would have had to list the provider's spellings, and it
 would have dropped a second division's promotion play-offs, which carry the same
 label and are the best-watched fixtures of that season. `rounds.test.ts` runs it
 over all seven league seasons and asserts it touches nothing.
+
+**The Europa League is the evidence that it generalised.** It arrived a week
+after the Champions League and took both this rule and `clubMainLeagues`
+unchanged — not a line, not a special case, not a second entry in a list
+somewhere. The two competitions are alike but not identical: 80 qualifying
+fixtures against 90, four qualifying rounds of different sizes, and a league
+phase starting three weeks later. None of those numbers appears in the rule,
+which is the whole reason it took the second competition for free.
 
 It writes and deletes nothing else. A qualifying fixture some earlier run already
 wrote stays where it is — those rows can carry a reader's judgements, and cascade

@@ -74,6 +74,11 @@ export type ChangelogEntry = Omit<Written, 'date'> & { date: Date }
  */
 const WRITTEN: Written[] = [
   {
+    date: '2026-09-16',
+    title: 'The Europa League',
+    note: 'The competition itself, on the same terms as the Champions League — the league phase and the knockout rounds after it, not the summer qualifying. It sits under Ligue 1 on the fixtures page, and the clubs you already follow keep their own league.',
+  },
+  {
     date: '2026-09-08',
     title: 'The Champions League',
     note: 'The competition itself, at the top of the fixtures page — the league phase and the knockout rounds after it, not the summer qualifying that decided who is in it. Clubs you already follow keep their own league on their profile and in the directories, so Arsenal are still a Premier League club; the thirteen the app now covers only through Europe are listed under it.',
